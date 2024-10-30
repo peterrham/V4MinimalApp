@@ -11,6 +11,8 @@ struct VoiceRecognitionApp: App {
     }
 }
 
+// testing
+
 class SpeechRecognitionManager: ObservableObject {
     private var audioEngine = AVAudioEngine()
     private var speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
@@ -56,19 +58,27 @@ class SpeechRecognitionManager: ObservableObject {
         
         // Start the recognition task
         recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
+            
+            print("got a recognition event")
             if let result = result {
                 let newText = result.bestTranscription.formattedString.lowercased()
                 
                 // Check for the "stop" keyword
                 if newText.contains("stop") {
+                    print("got a STOP")
                     let segments = newText.components(separatedBy: "stop")
                     if let firstSegment = segments.first {
                         self.recognizedText = firstSegment.trimmingCharacters(in: .whitespacesAndNewlines)
+                        print("self.recognizedText")
+                        print(self.recognizedText)
                     }
                     self.stopListening()
                 } else {
+                    print("NO stop")
                     self.interimText = newText
                     self.recognizedText = newText
+                    print("new text ....")
+                    print(newText)
                 }
             }
             
