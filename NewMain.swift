@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreData
 import AVFoundation
 import Speech
 
@@ -7,38 +8,89 @@ struct VoiceRecognitionApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.managedObjectContext, DynamicPersistenceController.shared.container.viewContext)
         }
     }
 }
 
-// testing
+// MARK: - Core Data Setup (Dynamic Persistence Controller)
+
+class DynamicPersistenceController {
+    static let shared = DynamicPersistenceController()
+    
+    let container: NSPersistentContainer
+
+    init() {
+        // Define the Core Data model programmatically
+        let model = NSManagedObjectModel()
+
+        // Define the entity `RecognizedTextEntity`
+        let recognizedTextEntity = NSEntityDescription()
+        recognizedTextEntity.name = "RecognizedTextEntity"
+        recognizedTextEntity.managedObjectClassName = NSStringFromClass(RecognizedTextEntity.self)
+
+        // Define the `content` attribute
+        let contentAttribute = NSAttributeDescription()
+        contentAttribute.name = "content"
+        contentAttribute.attributeType = .stringAttributeType
+        contentAttribute.isOptional = false
+
+        // Define the `timestamp` attribute
+        let timestampAttribute = NSAttributeDescription()
+        timestampAttribute.name = "timestamp"
+        timestampAttribute.attributeType = .dateAttributeType
+        timestampAttribute.isOptional = false
+
+        // Add attributes to the entity
+        recognizedTextEntity.properties = [contentAttribute, timestampAttribute]
+
+        // Set the entity to the model
+        model.entities = [recognizedTextEntity]
+
+        // Initialize the persistent container with the custom model
+        container = NSPersistentContainer(name: "DynamicModel", managedObjectModel: model)
+
+        container.loadPersistentStores { (description, error) in
+            if let error = error {
+                fatalError("Failed to load Core Data store: \(error)")
+            }
+        }
+    }
+}
+
+// Define the RecognizedTextEntity NSManagedObject subclass
+@objc(RecognizedTextEntity)
+public class RecognizedTextEntity: NSManagedObject, Identifiable {
+    @NSManaged public var content: String?
+    @NSManaged public var timestamp: Date?
+}
+
+// MARK: - Speech Recognition Manager
 
 class SpeechRecognitionManager: ObservableObject {
     private var audioEngine = AVAudioEngine()
     private var speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
-    
+    private let context: NSManagedObjectContext
+
     @Published var recognizedText: String = ""
-    private var interimText: String = ""
     
-    init() {
+    init(context: NSManagedObjectContext) {
+        self.context = context
         requestMicrophonePermission()
     }
     
     func startListening() {
-        // Ensure permissions are granted
         guard SFSpeechRecognizer.authorizationStatus() == .authorized,
               AVAudioSession.sharedInstance().recordPermission == .granted else {
             print("Permissions not granted.")
             return
         }
         
-        // Reset any previous task
         recognitionTask?.cancel()
         recognitionTask = nil
         
-        // Configure audio session
         let audioSession = AVAudioSession.sharedInstance()
         do {
             try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
@@ -48,7 +100,6 @@ class SpeechRecognitionManager: ObservableObject {
             return
         }
         
-        // Create a new recognition request
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
         guard let recognitionRequest = recognitionRequest else {
             print("Unable to create recognition request.")
@@ -56,29 +107,18 @@ class SpeechRecognitionManager: ObservableObject {
         }
         recognitionRequest.shouldReportPartialResults = true
         
-        // Start the recognition task
         recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
-            
-            print("got a recognition event")
             if let result = result {
                 let newText = result.bestTranscription.formattedString.lowercased()
                 
-                // Check for the "stop" keyword
                 if newText.contains("stop") {
-                    print("got a STOP")
                     let segments = newText.components(separatedBy: "stop")
                     if let firstSegment = segments.first {
-                        self.recognizedText = firstSegment.trimmingCharacters(in: .whitespacesAndNewlines)
-                        print("self.recognizedText")
-                        print(self.recognizedText)
+                        self.saveRecognizedText(firstSegment.trimmingCharacters(in: .whitespacesAndNewlines))
+                        self.recognizedText = ""  // Reset recognized text for new segment
                     }
-                    self.stopListening()
                 } else {
-                    print("NO stop")
-                    self.interimText = newText
                     self.recognizedText = newText
-                    print("new text ....")
-                    print(newText)
                 }
             }
             
@@ -90,14 +130,12 @@ class SpeechRecognitionManager: ObservableObject {
             }
         }
         
-        // Configure the audio engine
         let inputNode = audioEngine.inputNode
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
             self.recognitionRequest?.append(buffer)
         }
         
-        // Start the audio engine
         do {
             audioEngine.prepare()
             try audioEngine.start()
@@ -133,22 +171,52 @@ class SpeechRecognitionManager: ObservableObject {
             }
         }
     }
+    
+    private func saveRecognizedText(_ text: String) {
+        let newEntry = RecognizedTextEntity(context: context)
+        newEntry.content = text
+        newEntry.timestamp = Date()
+        
+        do {
+            try context.save()
+        } catch {
+            print("Failed to save recognized text: \(error)")
+        }
+    }
 }
 
+// MARK: - Content View
+
 struct ContentView: View {
-    @StateObject private var speechManager = SpeechRecognitionManager()
+    @Environment(\.managedObjectContext) private var viewContext
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \RecognizedTextEntity.timestamp, ascending: false)],
+        animation: .default
+    ) private var recognizedTexts: FetchedResults<RecognizedTextEntity>
+    
+    @StateObject private var speechManager: SpeechRecognitionManager
     @State private var isListening = false
+
+    init() {
+        _speechManager = StateObject(wrappedValue: SpeechRecognitionManager(context: DynamicPersistenceController.shared.container.viewContext))
+    }
     
     var body: some View {
         VStack(spacing: 20) {
             Text("Recognized Text:")
                 .font(.headline)
             
-            Text(speechManager.recognizedText)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(10)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(recognizedTexts) { text in
+                        Text(text.content ?? "")
+                            .padding()
+                            .background(Color(.secondarySystemBackground))
+                            .cornerRadius(10)
+                    }
+                }
+            }
+            .padding()
             
             Button(action: {
                 if isListening {

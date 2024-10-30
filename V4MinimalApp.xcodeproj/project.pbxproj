@@ -8,11 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		BEEEFAA52CD2C9120072891A /* NewMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEEFAA42CD2C9120072891A /* NewMain.swift */; };
+		BEEEFAAB2CD2DC350072891A /* VoiceDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = BEEEFAA92CD2DC350072891A /* VoiceDataModel.xcdatamodeld */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		BEEEFA8F2CD292BA0072891A /* V4MinimalApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = V4MinimalApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BEEEFAA42CD2C9120072891A /* NewMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewMain.swift; sourceTree = "<group>"; };
+		BEEEFAAA2CD2DC350072891A /* VoiceDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = VoiceDataModel.xcdatamodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -50,6 +52,7 @@
 		BEEEFA862CD292BA0072891A = {
 			isa = PBXGroup;
 			children = (
+				BEEEFAA92CD2DC350072891A /* VoiceDataModel.xcdatamodeld */,
 				BEEEFAA42CD2C9120072891A /* NewMain.swift */,
 				BEEEFA912CD292BA0072891A /* V4MinimalApp */,
 				BEEEFA902CD292BA0072891A /* Products */,
@@ -139,6 +142,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BEEEFAA52CD2C9120072891A /* NewMain.swift in Sources */,
+				BEEEFAAB2CD2DC350072891A /* VoiceDataModel.xcdatamodeld in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -356,6 +360,19 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		BEEEFAA92CD2DC350072891A /* VoiceDataModel.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				BEEEFAAA2CD2DC350072891A /* VoiceDataModel.xcdatamodel */,
+			);
+			currentVersion = BEEEFAAA2CD2DC350072891A /* VoiceDataModel.xcdatamodel */;
+			path = VoiceDataModel.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = BEEEFA872CD292BA0072891A /* Project object */;
 }
