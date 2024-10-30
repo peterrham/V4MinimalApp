@@ -6,13 +6,31 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		BEEEFAA52CD2C9120072891A /* NewMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEEFAA42CD2C9120072891A /* NewMain.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		BEEEFA8F2CD292BA0072891A /* V4MinimalApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = V4MinimalApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BEEEFAA42CD2C9120072891A /* NewMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewMain.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		BEEEFAA12CD29BD50072891A /* Exceptions for "V4MinimalApp" folder in "V4MinimalApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = BEEEFA8E2CD292BA0072891A /* V4MinimalApp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		BEEEFA912CD292BA0072891A /* V4MinimalApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				BEEEFAA12CD29BD50072891A /* Exceptions for "V4MinimalApp" folder in "V4MinimalApp" target */,
+			);
 			path = V4MinimalApp;
 			sourceTree = "<group>";
 		};
@@ -32,6 +50,7 @@
 		BEEEFA862CD292BA0072891A = {
 			isa = PBXGroup;
 			children = (
+				BEEEFAA42CD2C9120072891A /* NewMain.swift */,
 				BEEEFA912CD292BA0072891A /* V4MinimalApp */,
 				BEEEFA902CD292BA0072891A /* Products */,
 			);
@@ -119,6 +138,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BEEEFAA52CD2C9120072891A /* NewMain.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -255,6 +275,12 @@
 				DEVELOPMENT_TEAM = BX37W36VT3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = V4MinimalApp/Info.plist;
+				"INFOPLIST_FILE[sdk=*]" = "";
+				INFOPLIST_KEY_CFBundleDisplayName = "";
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Need to listen to voice input.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Need to recognize voice.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -284,6 +310,12 @@
 				DEVELOPMENT_TEAM = BX37W36VT3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = V4MinimalApp/Info.plist;
+				"INFOPLIST_FILE[sdk=*]" = "";
+				INFOPLIST_KEY_CFBundleDisplayName = "";
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Need to listen to voice input.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Need to recognize voice.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
