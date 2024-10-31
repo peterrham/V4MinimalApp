@@ -74,7 +74,8 @@ class SpeechRecognitionManager: ObservableObject {
     private var recognitionTask: SFSpeechRecognitionTask?
     private let context: NSManagedObjectContext
 
-    @Published var recognizedText: String = ""
+    @Published var incrementalText: String = ""  // Shows incremental speech as it's recognized
+    @Published var finalText: String = ""        // Shows finalized speech after "stop" is detected
     
     init(context: NSManagedObjectContext) {
         self.context = context
@@ -114,11 +115,12 @@ class SpeechRecognitionManager: ObservableObject {
                 if newText.contains("stop") {
                     let segments = newText.components(separatedBy: "stop")
                     if let firstSegment = segments.first {
-                        self.saveRecognizedText(firstSegment.trimmingCharacters(in: .whitespacesAndNewlines))
-                        self.recognizedText = ""  // Reset recognized text for new segment
+                        let moreText = firstSegment.trimmingCharacters(in: .whitespacesAndNewlines)
+                        self.saveRecognizedText(moreText)
+                        self.finalText = "final text" // moreText  // Reset recognized text for new segment
                     }
                 } else {
-                    self.recognizedText = newText
+                    self.incrementalText = "new text" // newText
                 }
             }
             
@@ -194,18 +196,33 @@ struct ContentView: View {
         animation: .default
     ) private var recognizedTexts: FetchedResults<RecognizedTextEntity>
     
-    @StateObject private var speechManager: SpeechRecognitionManager
-    @State private var isListening = false
+    @StateObject private var speechManager = SpeechRecognitionManager(context: DynamicPersistenceController.shared.container.viewContext)
 
     init() {
-        _speechManager = StateObject(wrappedValue: SpeechRecognitionManager(context: DynamicPersistenceController.shared.container.viewContext))
+        
     }
     
     var body: some View {
         VStack(spacing: 20) {
-            Text("Recognized Text:")
+            Text("Incremental Speech:")
                 .font(.headline)
-            
+           // Text(speechManager.incrementalText)
+            Text("bogus")
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
+
+           Text("Finalized Speech:")
+           
+                .font(.headline)
+           //  Text(speechManager.finalText)
+            Text("MORE bogus")
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     ForEach(recognizedTexts) { text in
@@ -217,24 +234,8 @@ struct ContentView: View {
                 }
             }
             .padding()
-            
-            Button(action: {
-                if isListening {
-                    speechManager.stopListening()
-                } else {
-                    speechManager.startListening()
-                }
-                isListening.toggle()
-            }) {
-                Text(isListening ? "Stop Listening" : "Start Listening")
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(isListening ? Color.red : Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
-            .padding(.horizontal)
         }
         .padding()
     }
 }
+    
