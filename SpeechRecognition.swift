@@ -22,10 +22,10 @@ class SpeechRecognitionManager: ObservableObject {
     init(context: NSManagedObjectContext) {
         self.context = context
         requestMicrophonePermission()
-        
         startListening()
     }
     
+    // Starts listening and sets up the speech recognition task
     func startListening() {
         // Ensure permissions are granted
         guard SFSpeechRecognizer.authorizationStatus() == .authorized,
@@ -44,7 +44,6 @@ class SpeechRecognitionManager: ObservableObject {
             return
         }
         
-        print("before starting")
         // Reset and create a new recognition task
         clearRecognitionTask()
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
@@ -52,24 +51,19 @@ class SpeechRecognitionManager: ObservableObject {
         
         // Start the recognition task
         recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest!) { [weak self] result, error in
-            
-            print("got a result")
+            print("got recognition result")
             if let result = result {
-                self?.incrementalText = result.bestTranscription.formattedString
-                if result.isFinal {
-                    print("it's final")
-                    self?.finalText = result.bestTranscription.formattedString
-                    self?.stopListening()
-                    // saveRecognizedText(self?.finalText?)
-                    
-                    let textToSave = self?.finalText
-                        self?.saveRecognizedText(textToSave!)
-                    
-                    self?.startListening()
-                    
-                } else {
-                    self?.resetSilenceTimer()  // Reset timer when partial results are received
-                    self?.startSilenceTimer()
+                let recognizedText = result.bestTranscription.formattedString.lowercased()
+                self?.incrementalText = recognizedText
+                if recognizedText.contains("stop") {
+                    self?.finalText = recognizedText
+                    self?.saveRecognizedText(recognizedText)  // Save text after detecting "stop"
+                    self?.stopListening()                     // Stop and clear audio processing
+                    // self?.startListening()                    // Restart listening after detecting "stop"
+                } else if result.isFinal {
+                    self?.finalText = recognizedText
+                    self?.saveRecognizedText(recognizedText)  // Save text when final result is received
+                    // self?.startListening()
                 }
             } else if let error = error {
                 print("Recognition error: \(error.localizedDescription)")
@@ -82,7 +76,7 @@ class SpeechRecognitionManager: ObservableObject {
         let inputNode = audioEngine.inputNode
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, when in
-            // print("got some audio")
+            // print("got buffer")
             self?.recognitionRequest?.append(buffer)
         }
         
@@ -94,7 +88,7 @@ class SpeechRecognitionManager: ObservableObject {
             print("Audio engine could not start: \(error)")
         }
         
-        startSilenceTimer()  // Start silence detection timer
+        // startSilenceTimer()  // Start silence detection timer
     }
     
     private func clearRecognitionTask() {
@@ -104,23 +98,24 @@ class SpeechRecognitionManager: ObservableObject {
     }
     
     func stopListening() {
-        recognitionRequest?.endAudio()
-        audioEngine.stop()
-        audioEngine.inputNode.removeTap(onBus: 0)
+        recognitionRequest?.endAudio()  // Signal end of audio to finalize recognition
+        audioEngine.stop()              // Stop the audio engine to free resources
+        audioEngine.inputNode.removeTap(onBus: 0)  // Remove the tap to stop capturing audio
+
         clearRecognitionTask()
         resetSilenceTimer()
     }
     
     private func requestMicrophonePermission() {
-        SFSpeechRecognizer.requestAuthorization { authStatus in
+        SFSpeechRecognizer.requestAuthorization { status in
             DispatchQueue.main.async {
-                switch authStatus {
+                switch status {
                 case .authorized:
-                    print("Microphone permission granted.")
+                    print("Speech recognition authorized")
                 case .denied, .restricted, .notDetermined:
-                    print("Microphone permission not granted.")
+                    print("Speech recognition not authorized")
                 @unknown default:
-                    print("Unknown authorization status.")
+                    print("Unknown authorization status")
                 }
             }
         }
@@ -128,40 +123,38 @@ class SpeechRecognitionManager: ObservableObject {
         AVAudioSession.sharedInstance().requestRecordPermission { granted in
             DispatchQueue.main.async {
                 if granted {
-                    print("Recording permission granted.")
+                    print("Microphone access granted")
                 } else {
-                    print("Recording permission not granted.")
+                    print("Microphone access denied")
                 }
             }
         }
     }
     
+    // Saves the recognized text to Core Data
+    private func saveRecognizedText(_ text: String) {
+        let newEntry = RecognizedTextEntity(context: context) // Replace RecognizedTextEntity with your Core Data entity name
+        newEntry.content = text
+        newEntry.timestamp = Date()  // Add a timestamp if needed
+
+        do {
+            try context.save()
+            print("Text saved successfully: \(text)")
+        } catch {
+            print("Failed to save text: \(error.localizedDescription)")
+        }
+    }
+    
     // Silence detection methods
     private func startSilenceTimer() {
-        print("starting silence timer")
         resetSilenceTimer()
         silenceTimer = Timer.scheduledTimer(withTimeInterval: silenceThreshold, repeats: false) { [weak self] _ in
-            print("silence timer fired")
             self?.stopListening()  // Stop if no audio is detected within threshold
-            self?.startSilenceTimer()
         }
     }
     
     private func resetSilenceTimer() {
         silenceTimer?.invalidate()
         silenceTimer = nil
-    }
-
-    
-    private func saveRecognizedText(_ text: String) {
-        let newEntry = RecognizedTextEntity(context: context)
-        newEntry.content = text
-        newEntry.timestamp = Date()
-        
-        do {
-            try context.save()
-        } catch {
-            print("Failed to save recognized text: \(error)")
-        }
     }
 }
