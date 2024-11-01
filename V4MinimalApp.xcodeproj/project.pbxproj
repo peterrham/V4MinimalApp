@@ -7,12 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BE867F982CD578A3001FCABE /* SpeechRecognitionExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */; };
 		BEAD2E312CD452C500AB0FBD /* SpeechRecognition.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */; };
 		BEEEFAA52CD2C9120072891A /* NewMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEEFAA42CD2C9120072891A /* NewMain.swift */; };
 		BEEEFAAB2CD2DC350072891A /* VoiceDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = BEEEFAA92CD2DC350072891A /* VoiceDataModel.xcdatamodeld */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionExtension.swift; sourceTree = "<group>"; };
 		BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognition.swift; sourceTree = "<group>"; };
 		BEEEFA8F2CD292BA0072891A /* V4MinimalApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = V4MinimalApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BEEEFAA42CD2C9120072891A /* NewMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewMain.swift; sourceTree = "<group>"; };
@@ -54,6 +56,7 @@
 		BEEEFA862CD292BA0072891A = {
 			isa = PBXGroup;
 			children = (
+				BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */,
 				BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */,
 				BEEEFAA92CD2DC350072891A /* VoiceDataModel.xcdatamodeld */,
 				BEEEFAA42CD2C9120072891A /* NewMain.swift */,
@@ -145,6 +148,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BEEEFAA52CD2C9120072891A /* NewMain.swift in Sources */,
+				BE867F982CD578A3001FCABE /* SpeechRecognitionExtension.swift in Sources */,
 				BEAD2E312CD452C500AB0FBD /* SpeechRecognition.swift in Sources */,
 				BEEEFAAB2CD2DC350072891A /* VoiceDataModel.xcdatamodeld in Sources */,
 			);

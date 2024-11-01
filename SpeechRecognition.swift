@@ -88,7 +88,7 @@ class SpeechRecognitionManager: ObservableObject {
             print("Audio engine could not start: \(error)")
         }
         
-        // startSilenceTimer()  // Start silence detection timer
+       // startSilenceTimer()  // Start silence detection timer
     }
     
     private func clearRecognitionTask() {
@@ -104,31 +104,6 @@ class SpeechRecognitionManager: ObservableObject {
 
         clearRecognitionTask()
         resetSilenceTimer()
-    }
-    
-    private func requestMicrophonePermission() {
-        SFSpeechRecognizer.requestAuthorization { status in
-            DispatchQueue.main.async {
-                switch status {
-                case .authorized:
-                    print("Speech recognition authorized")
-                case .denied, .restricted, .notDetermined:
-                    print("Speech recognition not authorized")
-                @unknown default:
-                    print("Unknown authorization status")
-                }
-            }
-        }
-        
-        AVAudioSession.sharedInstance().requestRecordPermission { granted in
-            DispatchQueue.main.async {
-                if granted {
-                    print("Microphone access granted")
-                } else {
-                    print("Microphone access denied")
-                }
-            }
-        }
     }
     
     // Saves the recognized text to Core Data
