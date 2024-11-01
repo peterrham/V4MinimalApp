@@ -92,8 +92,6 @@ struct ContentView: View {
     
     init() {
         
-        //  speechManager.startListening()
-        
         UIScrollView.appearance().indicatorStyle = .black // Optional: Set color style
         UIScrollView.appearance().scrollIndicatorInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: -2)
         
