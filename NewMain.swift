@@ -15,6 +15,24 @@ struct VoiceRecognitionApp: App {
 
 // MARK: - Core Data Setup (Dynamic Persistence Controller)
 
+var sqlLitePathURL:URL?
+
+func exportDatabase() -> URL? {
+    let fileManager = FileManager.default
+    let dbURL =  sqlLitePathURL /* Your SQLite file URL here */
+    let exportURL = fileManager.temporaryDirectory.appendingPathComponent("exportedDatabase.sqlite")
+
+    do {
+        try fileManager.copyItem(at: dbURL!, to: exportURL)
+        print("copied the file")
+        return exportURL
+    } catch {
+        print("Error exporting database: \(error)")
+        return nil
+    }
+}
+
+
 class DynamicPersistenceController {
     static let shared = DynamicPersistenceController()
     
@@ -57,7 +75,9 @@ class DynamicPersistenceController {
             
             // Access and print the database file path
                    if let databaseURL = description.url {
-                       print("Core Data SQLite database path: \n cd \"\(databaseURL.path)\"")
+                       sqlLitePathURL = databaseURL
+                       let pathString : String = sqlLitePathURL!.absoluteString
+                       print("Core Data SQLite database path: \n cd \"\(pathString)\"")
                    }
         }
     }
@@ -81,6 +101,14 @@ let shortDateFormatter: DateFormatter = {
 }()
 
 
+import UIKit
+
+func exportFile(_ fileURL: URL, viewController: UIViewController) {
+    let documentPicker = UIDocumentPickerViewController(forExporting: [fileURL])
+    viewController.present(documentPicker, animated: true, completion: nil)
+}
+
+
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
@@ -89,6 +117,8 @@ struct ContentView: View {
     ) private var recognizedTexts: FetchedResults<RecognizedTextEntity>
     
     @StateObject private var speechManager = SpeechRecognitionManager(context: DynamicPersistenceController.shared.container.viewContext)
+    
+    @State private var isShowingDocumentPicker = false
     
     init() {
         
@@ -99,6 +129,18 @@ struct ContentView: View {
     
     var body: some View {
         VStack(spacing: 20) {
+            Button("Export File to Shared Documents") {
+                isShowingDocumentPicker = true
+            }
+            .font(.title)
+            .padding()
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .cornerRadius(8)
+            // Present the document picker
+            .sheet(isPresented: $isShowingDocumentPicker) {
+                DocumentExporter(fileURL: sqlLitePathURL!)
+            }
             Text("Incremental Speech:")
                 .font(.headline)
             Text(speechManager.incrementalText)
@@ -107,7 +149,6 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity)
                 .background(Color(.systemGray6))
                 .cornerRadius(8)
-            
             Text("Finalized Speech:")
             
                 .font(.headline)
@@ -153,3 +194,18 @@ struct ContentView: View {
     }
 }
 
+// Document Picker Wrapper for Exporting
+struct DocumentExporter: UIViewControllerRepresentable {
+    let fileURL: URL
+    
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        // Initialize the document picker for exporting the file
+        print("inside makeView")
+        let documentPicker = UIDocumentPickerViewController(forExporting: [fileURL])
+        return documentPicker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {
+        print("inside updateUIView")
+    }
+}

@@ -166,23 +166,35 @@ class SpeechRecognitionManager: ObservableObject {
             
             // printTranscriptionSegments(transcription: result.bestTranscription)
             
-            // let stopWord = "go"
+        
             // let stopWord = "new line"
-            let stopWord = "\n"
+            var stopWord = "\n"
+            stopWord = "go"
             
             
             let recognizedText = result.bestTranscription.formattedString
             debugPrint(recognizedText)
+            
+            if (result.bestTranscription.segments.first?.confidence ?? 0.0) > 0.0 {
+                accumulatedText = accumulatedText + " " + previousText
+                print("got zero confidence")
+                isReset = true
+            } else {
+                accumulatedText = recognizedText
+            }
             
             self.incrementalText = recognizedText
             previousText = recognizedText
             self.finalText = accumulatedText
             
             if recognizedText.contains(stopWord) {
+                print("got the stop word")
                 
-                if isReset {
-                    let strippedText = recognizedText.replacingOccurrences(of: stopWord, with: "")
-                    self.saveRecognizedText(accumulatedText)  // Save text when final result is received'
+               // exportDatabase()
+                
+                if true || isReset {
+                    let strippedText = accumulatedText.replacingOccurrences(of: stopWord, with: "")
+                    self.saveRecognizedText(strippedText)  // Save text when final result is received'
                     accumulatedText = ""
                     debugPrint(strippedText)
                     // self?.stopListening()                     // Stop and clear audio processing
