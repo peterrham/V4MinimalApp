@@ -118,7 +118,7 @@ struct ContentView: View {
     
     @StateObject private var speechManager = SpeechRecognitionManager(context: DynamicPersistenceController.shared.container.viewContext)
     
-    @State private var isShowingDocumentPicker = false
+    @State private var isShowingShareSheet = false
     
     init() {
         
@@ -127,70 +127,104 @@ struct ContentView: View {
         
     }
     
+    
+    
+    
     var body: some View {
-        VStack(spacing: 20) {
-            Button("Export File to Shared Documents") {
-                isShowingDocumentPicker = true
-            }
-            .font(.title)
-            .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(8)
-            // Present the document picker
-            .sheet(isPresented: $isShowingDocumentPicker) {
-                DocumentExporter(fileURL: sqlLitePathURL!)
-            }
-            Text("Incremental Speech:")
-                .font(.headline)
-            Text(speechManager.incrementalText)
-            // Text("bogus")
+        NavigationStack{
+            VStack(spacing: 20) {
+                NavigationLink(destination: ExportToCSVView()) {
+                    Text("ExportToCSVView")
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                }
+                NavigationLink(destination: TextFileSharerView()) {
+                    Text("TextFileSharerView")
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                }
+                NavigationLink(destination: TextFileCreatorView()) {
+                    Text("TextFileCreatorView")
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                }
+                NavigationLink(destination: SecondView()) {
+                    Text("Go to Second Page")
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                }
+                Button("Export File to Shared Documents") {
+                    isShowingShareSheet = true
+                }
+                .font(.title)
                 .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color(.systemGray6))
+                .background(Color.blue)
+                .foregroundColor(.white)
                 .cornerRadius(8)
-            Text("Finalized Speech:")
-            
-                .font(.headline)
-            Text(speechManager.finalText)
-            //Text("MORE bogus")
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(Color(.systemGray6))
-                .cornerRadius(8)
-            
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(recognizedTexts.indices, id: \.self) { index in
-                        let text = recognizedTexts[index]
-                        // Text("abcd")
-                        // Text(text.content ?? "")
-                        // Text(DateFormatter().string(from: text.timestamp ?? Date()))
-                        Text("\(index): \(shortDateFormatter.string(from: text.timestamp!)): \(text.content!)")
-                            .onAppear {
-                                // print("timestamp: \(text.timestamp!)")
-                                
-                            }
-                            .padding()
-                            .background(Color(.secondarySystemBackground))
-                            .cornerRadius(10)
+                // Present the document picker
+                .sheet(isPresented:  $isShowingShareSheet) {
+                    // Present the share sheet
+                    ShareSheet(activityItems: [sqlLitePathURL])
+                }
+                Text("Incremental Speech:")
+                    .font(.headline)
+                Text(speechManager.incrementalText)
+                // Text("bogus")
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
+                Text("Finalized Speech:")
+                
+                    .font(.headline)
+                Text(speechManager.finalText)
+                //Text("MORE bogus")
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(recognizedTexts.indices, id: \.self) { index in
+                            let text = recognizedTexts[index]
+                            // Text("abcd")
+                            // Text(text.content ?? "")
+                            // Text(DateFormatter().string(from: text.timestamp ?? Date()))
+                            Text("\(index): \(shortDateFormatter.string(from: text.timestamp!)): \(text.content!)")
+                                .onAppear {
+                                    // print("timestamp: \(text.timestamp!)")
+                                    
+                                }
+                                .padding()
+                                .background(Color(.secondarySystemBackground))
+                                .cornerRadius(10)
+                        }
                     }
                 }
+                .padding()
+                .overlay(
+                    GeometryReader { geometry in
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 6)
+                            .cornerRadius(3)
+                            .padding(.trailing, 4)
+                            .offset(x: geometry.size.width - 10) // Position on the right side
+                    },
+                    alignment: .trailing
+                )
             }
             .padding()
-            .overlay(
-                GeometryReader { geometry in
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 6)
-                        .cornerRadius(3)
-                        .padding(.trailing, 4)
-                        .offset(x: geometry.size.width - 10) // Position on the right side
-                },
-                alignment: .trailing
-            )
         }
-        .padding()
     }
 }
 
@@ -209,3 +243,35 @@ struct DocumentExporter: UIViewControllerRepresentable {
         print("inside updateUIView")
     }
 }
+
+// Wrapper for UIActivityViewController
+struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+struct SecondView: View {
+    var body: some View {
+        VStack {
+            Text("Second Page")
+                .font(.largeTitle)
+                .padding()
+            NavigationLink(destination: ContentView()) {
+                Text("Go to Third Page")
+                    .padding()
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+            }
+        }
+    }
+}
+
+
+
