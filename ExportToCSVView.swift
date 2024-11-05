@@ -62,7 +62,13 @@ struct ExportToCSVView: View {
         
         let fileManager = FileManager.default
         let tempDirectory = fileManager.temporaryDirectory
-        let tempFileURL = tempDirectory.appendingPathComponent("RecognizedTextData.csv")
+  
+        
+        let fileDateFormatter = DateFormatter()
+        fileDateFormatter.dateFormat = "yyyyMMdd_HHmmss"
+        let dateString = fileDateFormatter.string(from: Date())
+        let tempFileURL = tempDirectory.appendingPathComponent("RecognizedTextData_\(dateString).csv")
+
         
         do {
             print("Attempting to write CSV file to temporary directory")

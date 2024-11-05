@@ -28,8 +28,6 @@ class SpeechRecognitionManager: ObservableObject {
     private var silenceTimer: Timer?
     private let silenceThreshold: TimeInterval = 12.0  // Adjust as needed
     
-    func debugPrint(_ str: String) {
-    }
     
     init(context: NSManagedObjectContext) {
         
@@ -45,7 +43,7 @@ class SpeechRecognitionManager: ObservableObject {
     
     @objc func handleAudioSessionInterruption(_ notification: Notification) {
         
-        debugPrint("handleAudioSessionInterruption")
+        logWithTimestamp("handleAudioSessionInterruption")
         guard let userInfo = notification.userInfo,
               let interruptionTypeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
               let interruptionType = AVAudioSession.InterruptionType(rawValue: interruptionTypeValue) else {
@@ -53,37 +51,33 @@ class SpeechRecognitionManager: ObservableObject {
         }
         
         if interruptionType == .began {
-            debugPrint("Audio session interruption began. Pausing recognition.")
+            logWithTimestamp("Audio session interruption began. Pausing recognition.")
             recognitionTask?.cancel() // Cancel the task if an interruption begins
         } else if interruptionType == .ended {
-            debugPrint("Audio session interruption ended.")
+            logWithTimestamp("Audio session interruption ended.")
         }
     }
     
-    func logWithTimestamp(_ message: String) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
-        let timestamp = dateFormatter.string(from: Date())
-        debugPrint("[\(timestamp)] \(message)")
-    }
+   
     
     let index = 0;
     
     func printTranscriptionSegments(transcription: SFTranscription) {
         for (index, segment) in transcription.segments.enumerated() {
-            debugPrint("index: \(index)")
-            debugPrint("Text: \(segment.substring)")
-            debugPrint("Range: \(segment.substringRange)")
-            debugPrint("Timestamp: \(segment.timestamp) seconds")
-            debugPrint("Duration: \(segment.duration) seconds")
-            debugPrint("Confidence: \(segment.confidence)")
-            debugPrint("-----------------------")
+            logWithTimestamp("<<<<<<<<<<<<<<<<<<<<<<<<")
+            logWithTimestamp("index: \(index)")
+            logWithTimestamp("Text: \(segment.substring)")
+            logWithTimestamp("Range: \(segment.substringRange)")
+            logWithTimestamp("Timestamp: \(segment.timestamp) seconds")
+            logWithTimestamp("Duration: \(segment.duration) seconds")
+            logWithTimestamp("Confidence: \(segment.confidence)")
+            logWithTimestamp("-----------------------")
             
             if (index == 0) {
                 if segment.timestamp == 0 {
-                    debugPrint("ignore this one")
+                    logWithTimestamp("ignore this one")
                 } else {
-                    debugPrint("keep this one")
+                    logWithTimestamp("keep this one")
                 }
             }
         }
@@ -92,41 +86,41 @@ class SpeechRecognitionManager: ObservableObject {
     
     func processRecognitionResult(recognitionResult: SFSpeechRecognitionResult?, error: Error?)
     {
-        self.logWithTimestamp("got recognition result")
+        logWithTimestamp("got recognition result")
         
         
-        debugPrint("recognitionTask: \(self.recognitionTask)")
-        debugPrint("recognitionTask.state: \(self.recognitionTask!.state)")
+        logWithTimestamp("recognitionTask: \(self.recognitionTask)")
+        logWithTimestamp("recognitionTask.state: \(self.recognitionTask!.state)")
         
-        // debugPrint(recognitionTask!)
+        // logWithTimestamp(recognitionTask!)
         
-        debugPrint("Recognition Task Properties:")
-        debugPrint("----------------------------")
-        debugPrint("State: \(recognitionTask!.state)")
-        debugPrint("Is Finishing: \(recognitionTask!.isFinishing)")
-        debugPrint("Is Cancelled: \(recognitionTask!.isCancelled)")
+        logWithTimestamp("Recognition Task Properties:")
+        logWithTimestamp("----------------------------")
+        logWithTimestamp("State: \(recognitionTask!.state)")
+        logWithTimestamp("Is Finishing: \(recognitionTask!.isFinishing)")
+        logWithTimestamp("Is Cancelled: \(recognitionTask!.isCancelled)")
         
         // Print the current state of the task
-        debugPrint("Recognition Task State:")
+        logWithTimestamp("Recognition Task State:")
         switch recognitionTask!.state {
         case .starting:
-            debugPrint("The task is starting.")
+            logWithTimestamp("The task is starting.")
         case .running:
-            debugPrint("The task is running.")
+            logWithTimestamp("The task is running.")
         case .finishing:
-            debugPrint("The task is finishing.")
+            logWithTimestamp("The task is finishing.")
         case .canceling:
-            debugPrint("The task is canceling.")
+            logWithTimestamp("The task is canceling.")
         case .completed:
-            debugPrint("The task is completed.")
+            logWithTimestamp("The task is completed.")
         @unknown default:
-            debugPrint("Unknown state.")
+            logWithTimestamp("Unknown state.")
         }
         
         
         
         
-        // debugPrint(result)
+        // logWithTimestamp(result)
         if let result = recognitionResult {
             
             // if this one starts at timestamp 0, then I know the the previous segments have been trimmed
@@ -135,7 +129,7 @@ class SpeechRecognitionManager: ObservableObject {
             /* This one does not seem to quite work ...
              if (result.bestTranscription.segments[0].timestamp == 0) {
              accumulatedText = accumulatedText + " " + previousText
-             print("got a restart")
+             logWithTimestamp("got a restart")
              // return
              }
              */
@@ -144,27 +138,27 @@ class SpeechRecognitionManager: ObservableObject {
             
             if (result.bestTranscription.segments.first?.confidence ?? 0.0) > 0.0 {
                 accumulatedText = accumulatedText + " " + previousText
-                print("got zero confidence")
+                logWithTimestamp("got zero confidence")
                 isReset = true
             }
             
             
             
             
-            debugPrint("result.isFinal: \(result.isFinal)")
+            logWithTimestamp("result.isFinal: \(result.isFinal)")
             
             
-            /*
+           
              for segment in result.bestTranscription.segments {
-             // debugPrint("Recognized word: \(segment.substring), Confidence: \(segment.confidence)")
-             debugPrint("Recognized word: \(segment.substring)")
+             // logWithTimestamp("Recognized word: \(segment.substring), Confidence: \(segment.confidence)")
+             logWithTimestamp("Recognized word: \(segment.substring)")
              }
              for transcription in result.transcriptions {
-             debugPrint("Alternative transcription: \(transcription.formattedString)")
+             logWithTimestamp("Alternative transcription: \(transcription.formattedString)")
              }
-             */
             
-            // printTranscriptionSegments(transcription: result.bestTranscription)
+            
+            printTranscriptionSegments(transcription: result.bestTranscription)
             
         
             // let stopWord = "new line"
@@ -173,11 +167,11 @@ class SpeechRecognitionManager: ObservableObject {
             
             
             let recognizedText = result.bestTranscription.formattedString
-            debugPrint(recognizedText)
+            logWithTimestamp("recognizedText: \(recognizedText)")
             
             if (result.bestTranscription.segments.first?.confidence ?? 0.0) > 0.0 {
                 accumulatedText = accumulatedText + " " + previousText
-                print("got zero confidence")
+                logWithTimestamp("got zero confidence")
                 isReset = true
             } else {
                 accumulatedText = recognizedText
@@ -188,7 +182,7 @@ class SpeechRecognitionManager: ObservableObject {
             self.finalText = accumulatedText
             
             if recognizedText.contains(stopWord) {
-                print("got the stop word")
+                logWithTimestamp("got the stop word")
                 
                // exportDatabase()
                 
@@ -196,17 +190,17 @@ class SpeechRecognitionManager: ObservableObject {
                     let strippedText = accumulatedText.replacingOccurrences(of: stopWord, with: "")
                     self.saveRecognizedText(strippedText)  // Save text when final result is received'
                     accumulatedText = ""
-                    debugPrint(strippedText)
-                    // self?.stopListening()                     // Stop and clear audio processing
-                    // self?.startListening()
+                    logWithTimestamp(strippedText)
+                    self.stopListening()                     // Stop and clear audio processing
+                    self.startListening()
                 }                    // Restart listening after detecting "stop"
             } else if result.isFinal {
-                debugPrint("got isFinal")
+                logWithTimestamp("got isFinal")
                 
                 self.startListening()
             }
         } else if let error = error {
-            debugPrint("Recognition error: \(error.localizedDescription)")
+            logWithTimestamp("Recognition error: \(error.localizedDescription)")
             self.stopListening()
             self.startListening()
         }
@@ -218,7 +212,7 @@ class SpeechRecognitionManager: ObservableObject {
         // Ensure permissions are granted
         guard SFSpeechRecognizer.authorizationStatus() == .authorized,
               AVAudioSession.sharedInstance().recordPermission == .granted else {
-            debugPrint("Permissions not granted.")
+            logWithTimestamp("Permissions not granted.")
             return
         }
         
@@ -233,7 +227,7 @@ class SpeechRecognitionManager: ObservableObject {
             // try audioSession.setPreferredIOBufferDuration(0.01)  // Set a lower buffer duration for real-time processing
             try audioSession.setPreferredIOBufferDuration(100)
         } catch {
-            debugPrint("Audio session setup error: \(error)")
+            logWithTimestamp("Audio session setup error: \(error)")
             return
         }
         
@@ -261,7 +255,7 @@ class SpeechRecognitionManager: ObservableObject {
         
         
         inputNode.installTap(onBus: 0, bufferSize: 1024 * 1024, format: recordingFormat) { [weak self] buffer, when in
-            // debugPrint("got buffer")
+            // logWithTimestamp("got buffer")
             self?.recognitionRequest?.append(buffer)
         }
         
@@ -271,7 +265,7 @@ class SpeechRecognitionManager: ObservableObject {
         do {
             try audioEngine.start()
         } catch {
-            debugPrint("Audio engine could not start: \(error)")
+            logWithTimestamp("Audio engine could not start: \(error)")
         }
         
         // startSilenceTimer()  // Start silence detection timer
@@ -284,7 +278,7 @@ class SpeechRecognitionManager: ObservableObject {
     }
     
     func stopListening() {
-        debugPrint("inside stopListening")
+        logWithTimestamp("inside stopListening")
         recognitionRequest?.endAudio()  // Signal end of audio to finalize recognition
         audioEngine.stop()              // Stop the audio engine to free resources
         //audioEngine.inputNode.removeTap(onBus: 0)  // Remove the tap to stop capturing audio
@@ -301,9 +295,9 @@ class SpeechRecognitionManager: ObservableObject {
         
         do {
             try context.save()
-            debugPrint("Text saved successfully: \(text)")
+            logWithTimestamp("Text saved successfully: \(text)")
         } catch {
-            debugPrint("Failed to save text: \(error.localizedDescription)")
+            logWithTimestamp("Failed to save text: \(error.localizedDescription)")
         }
     }
     
@@ -311,7 +305,7 @@ class SpeechRecognitionManager: ObservableObject {
     private func startSilenceTimer() {
         resetSilenceTimer()
         silenceTimer = Timer.scheduledTimer(withTimeInterval: silenceThreshold, repeats: false) { [weak self] _ in
-            self?.debugPrint("timer fired")
+            logWithTimestamp("timer fired")
             self?.stopListening()  // Stop if no audio is detected within threshold
         }
     }
