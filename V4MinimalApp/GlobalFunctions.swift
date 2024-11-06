@@ -16,5 +16,5 @@ func logWithTimestamp(_ message: String) {
     let dateFormatter = DateFormatter()
     dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
     let timestamp = dateFormatter.string(from: Date())
-    debugPrint(str: "[\(timestamp)] \(message)")
+   // debugPrint(str: "[\(timestamp)] \(message)")
 }

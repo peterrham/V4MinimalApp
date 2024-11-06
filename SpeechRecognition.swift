@@ -197,7 +197,7 @@ class SpeechRecognitionManager: ObservableObject {
             } else if result.isFinal {
                 logWithTimestamp("got isFinal")
                 
-                self.startListening()
+                // self.startListening()
             }
         } else if let error = error {
             logWithTimestamp("Recognition error: \(error.localizedDescription)")
@@ -242,10 +242,17 @@ class SpeechRecognitionManager: ObservableObject {
         
         
         // Start the recognition task
+        // how can result be null "what does weak self" mean
         recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest!) { [weak self] result, error in
+                
+            let one = 1 // adding a test line of code to see where the exception is raised
+            logWithTimestamp("about to handle the recognitionRequest")
             
-            self?.processRecognitionResult(recognitionResult: result!, error: error)
-            
+            if let result = result {
+                self?.processRecognitionResult(recognitionResult: result, error: error)
+            } else {
+                logWithTimestamp("result is NULL")
+            }
         }
         
         // Attach audio input node
@@ -281,7 +288,7 @@ class SpeechRecognitionManager: ObservableObject {
         logWithTimestamp("inside stopListening")
         recognitionRequest?.endAudio()  // Signal end of audio to finalize recognition
         audioEngine.stop()              // Stop the audio engine to free resources
-        //audioEngine.inputNode.removeTap(onBus: 0)  // Remove the tap to stop capturing audio
+        audioEngine.inputNode.removeTap(onBus: 0)  // Remove the tap to stop capturing audio
         
         clearRecognitionTask()
         resetSilenceTimer()

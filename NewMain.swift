@@ -128,11 +128,16 @@ struct ContentView: View {
     }
     
     
-    
-    
     var body: some View {
         NavigationStack{
             VStack(spacing: 20) {
+                NavigationLink(destination: DeleteAllRecognizedTextView()) {
+                    Text("DeleteAllRecognizedTextView")
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                }
                 NavigationLink(destination: ExportToCSVView()) {
                     Text("ExportToCSVView")
                         .padding()
