@@ -7,37 +7,51 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		BE6204AE2CD97169001823E5 /* ExportToCSVView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE6204AD2CD97169001823E5 /* ExportToCSVView.swift */; };
-		BE867F982CD578A3001FCABE /* SpeechRecognitionExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */; };
-		BEAD2E312CD452C500AB0FBD /* SpeechRecognition.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */; };
-		BEEEFAA52CD2C9120072891A /* NewMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEEFAA42CD2C9120072891A /* NewMain.swift */; };
-		BEEEFAAB2CD2DC350072891A /* VoiceDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = BEEEFAA92CD2DC350072891A /* VoiceDataModel.xcdatamodeld */; };
+		BE54A2872CDDA6D200C6B639 /* NewMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEEFAA42CD2C9120072891A /* NewMain.swift */; };
+		BE54A2892CDDA81E00C6B639 /* SpeechRecognitionExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */; };
+		BE54A28B2CDDA81E00C6B639 /* SpeechRecognition.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */; };
+		BE54A28D2CDDA81E00C6B639 /* ExportToCSVView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE6204AD2CD97169001823E5 /* ExportToCSVView.swift */; };
+		BEAD1D912CDDB4C300ACE1A0 /* client_748381179204-pmnlavrbccrsc9v17qtqepjum0rd1kok.apps.googleusercontent.com.plist in Resources */ = {isa = PBXBuildFile; fileRef = BEAD1D8E2CDDB26A00ACE1A0 /* client_748381179204-pmnlavrbccrsc9v17qtqepjum0rd1kok.apps.googleusercontent.com.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		BE54A2172CDDA27F00C6B639 /* V4MinimalApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = V4MinimalApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE6204AD2CD97169001823E5 /* ExportToCSVView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportToCSVView.swift; sourceTree = "<group>"; };
 		BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionExtension.swift; sourceTree = "<group>"; };
+		BEAD1D8E2CDDB26A00ACE1A0 /* client_748381179204-pmnlavrbccrsc9v17qtqepjum0rd1kok.apps.googleusercontent.com.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "client_748381179204-pmnlavrbccrsc9v17qtqepjum0rd1kok.apps.googleusercontent.com.plist"; sourceTree = "<group>"; };
 		BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognition.swift; sourceTree = "<group>"; };
-		BEEEFA8F2CD292BA0072891A /* V4MinimalApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = V4MinimalApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BEEEFAA42CD2C9120072891A /* NewMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewMain.swift; sourceTree = "<group>"; };
 		BEEEFAAA2CD2DC350072891A /* VoiceDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = VoiceDataModel.xcdatamodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		BEEEFAA12CD29BD50072891A /* Exceptions for "V4MinimalApp" folder in "V4MinimalApp" target */ = {
+		BE54A2642CDDA2E700C6B639 /* Exceptions for "V4MinimalApp" folder in "V4MinimalApp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				V4MinimalAppApp.swift,
 			);
-			target = BEEEFA8E2CD292BA0072891A /* V4MinimalApp */;
+			target = BE54A2162CDDA27F00C6B639 /* V4MinimalApp */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		BE54A2922CDDA81E00C6B639 /* Exceptions for "V4MinimalApp" folder in "Compile Sources" phase from "V4MinimalApp" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = BE54A2132CDDA27F00C6B639 /* Sources */;
+			membershipExceptions = (
+				Assets.xcassets,
+				"Preview Content/Preview Assets.xcassets",
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		BEEEFA912CD292BA0072891A /* V4MinimalApp */ = {
+		BE54A2182CDDA27F00C6B639 /* V4MinimalApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				BEEEFAA12CD29BD50072891A /* Exceptions for "V4MinimalApp" folder in "V4MinimalApp" target */,
+				BE54A2642CDDA2E700C6B639 /* Exceptions for "V4MinimalApp" folder in "V4MinimalApp" target */,
+				BE54A2922CDDA81E00C6B639 /* Exceptions for "V4MinimalApp" folder in "Compile Sources" phase from "V4MinimalApp" target */,
 			);
 			path = V4MinimalApp;
 			sourceTree = "<group>";
@@ -45,7 +59,7 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		BEEEFA8C2CD292BA0072891A /* Frameworks */ = {
+		BE54A2142CDDA27F00C6B639 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -55,15 +69,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		BE20F1102CDC2D17004F3007 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		BEEEFA862CD292BA0072891A = {
 			isa = PBXGroup;
 			children = (
+				BEAD1D8E2CDDB26A00ACE1A0 /* client_748381179204-pmnlavrbccrsc9v17qtqepjum0rd1kok.apps.googleusercontent.com.plist */,
 				BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */,
 				BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */,
 				BEEEFAA92CD2DC350072891A /* VoiceDataModel.xcdatamodeld */,
 				BEEEFAA42CD2C9120072891A /* NewMain.swift */,
 				BE6204AD2CD97169001823E5 /* ExportToCSVView.swift */,
-				BEEEFA912CD292BA0072891A /* V4MinimalApp */,
+				BE54A2182CDDA27F00C6B639 /* V4MinimalApp */,
+				BE20F1102CDC2D17004F3007 /* Frameworks */,
 				BEEEFA902CD292BA0072891A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -71,7 +94,7 @@
 		BEEEFA902CD292BA0072891A /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				BEEEFA8F2CD292BA0072891A /* V4MinimalApp.app */,
+				BE54A2172CDDA27F00C6B639 /* V4MinimalApp.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -79,26 +102,26 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		BEEEFA8E2CD292BA0072891A /* V4MinimalApp */ = {
+		BE54A2162CDDA27F00C6B639 /* V4MinimalApp */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = BEEEFA9D2CD292BC0072891A /* Build configuration list for PBXNativeTarget "V4MinimalApp" */;
+			buildConfigurationList = BE54A2272CDDA28100C6B639 /* Build configuration list for PBXNativeTarget "V4MinimalApp" */;
 			buildPhases = (
-				BEEEFA8B2CD292BA0072891A /* Sources */,
-				BEEEFA8C2CD292BA0072891A /* Frameworks */,
-				BEEEFA8D2CD292BA0072891A /* Resources */,
+				BE54A2132CDDA27F00C6B639 /* Sources */,
+				BE54A2142CDDA27F00C6B639 /* Frameworks */,
+				BE54A2152CDDA27F00C6B639 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				BEEEFA912CD292BA0072891A /* V4MinimalApp */,
+				BE54A2182CDDA27F00C6B639 /* V4MinimalApp */,
 			);
 			name = V4MinimalApp;
 			packageProductDependencies = (
 			);
 			productName = V4MinimalApp;
-			productReference = BEEEFA8F2CD292BA0072891A /* V4MinimalApp.app */;
+			productReference = BE54A2172CDDA27F00C6B639 /* V4MinimalApp.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -111,7 +134,7 @@
 				LastSwiftUpdateCheck = 1610;
 				LastUpgradeCheck = 1610;
 				TargetAttributes = {
-					BEEEFA8E2CD292BA0072891A = {
+					BE54A2162CDDA27F00C6B639 = {
 						CreatedOnToolsVersion = 16.1;
 					};
 				};
@@ -125,42 +148,102 @@
 			);
 			mainGroup = BEEEFA862CD292BA0072891A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = BEEEFA902CD292BA0072891A /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				BEEEFA8E2CD292BA0072891A /* V4MinimalApp */,
+				BE54A2162CDDA27F00C6B639 /* V4MinimalApp */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		BEEEFA8D2CD292BA0072891A /* Resources */ = {
+		BE54A2152CDDA27F00C6B639 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BEAD1D912CDDB4C300ACE1A0 /* client_748381179204-pmnlavrbccrsc9v17qtqepjum0rd1kok.apps.googleusercontent.com.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		BEEEFA8B2CD292BA0072891A /* Sources */ = {
+		BE54A2132CDDA27F00C6B639 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BEEEFAA52CD2C9120072891A /* NewMain.swift in Sources */,
-				BE867F982CD578A3001FCABE /* SpeechRecognitionExtension.swift in Sources */,
-				BEAD2E312CD452C500AB0FBD /* SpeechRecognition.swift in Sources */,
-				BEEEFAAB2CD2DC350072891A /* VoiceDataModel.xcdatamodeld in Sources */,
-				BE6204AE2CD97169001823E5 /* ExportToCSVView.swift in Sources */,
+				BE54A2892CDDA81E00C6B639 /* SpeechRecognitionExtension.swift in Sources */,
+				BE54A28B2CDDA81E00C6B639 /* SpeechRecognition.swift in Sources */,
+				BE54A28D2CDDA81E00C6B639 /* ExportToCSVView.swift in Sources */,
+				BE54A2872CDDA6D200C6B639 /* NewMain.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		BE54A2282CDDA28100C6B639 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"V4MinimalApp/Preview Content\"";
+				DEVELOPMENT_TEAM = BX37W36VT3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Test-Organization.V4MinimalApp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BE54A2292CDDA28100C6B639 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"V4MinimalApp/Preview Content\"";
+				DEVELOPMENT_TEAM = BX37W36VT3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Test-Organization.V4MinimalApp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		BEEEFA9B2CD292BC0072891A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -280,95 +363,23 @@
 			};
 			name = Release;
 		};
-		BEEEFA9E2CD292BC0072891A /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"V4MinimalApp/Preview Content\"";
-				DEVELOPMENT_TEAM = BX37W36VT3;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = V4MinimalApp/Info.plist;
-				"INFOPLIST_FILE[sdk=*]" = "";
-				INFOPLIST_KEY_CFBundleDisplayName = "";
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Need to listen to voice input.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Need to recognize voice.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "Test-Organization.V4MinimalApp";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		BEEEFA9F2CD292BC0072891A /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"V4MinimalApp/Preview Content\"";
-				DEVELOPMENT_TEAM = BX37W36VT3;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = V4MinimalApp/Info.plist;
-				"INFOPLIST_FILE[sdk=*]" = "";
-				INFOPLIST_KEY_CFBundleDisplayName = "";
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Need to listen to voice input.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Need to recognize voice.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "Test-Organization.V4MinimalApp";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		BE54A2272CDDA28100C6B639 /* Build configuration list for PBXNativeTarget "V4MinimalApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BE54A2282CDDA28100C6B639 /* Debug */,
+				BE54A2292CDDA28100C6B639 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		BEEEFA8A2CD292BA0072891A /* Build configuration list for PBXProject "V4MinimalApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				BEEEFA9B2CD292BC0072891A /* Debug */,
 				BEEEFA9C2CD292BC0072891A /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		BEEEFA9D2CD292BC0072891A /* Build configuration list for PBXNativeTarget "V4MinimalApp" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				BEEEFA9E2CD292BC0072891A /* Debug */,
-				BEEEFA9F2CD292BC0072891A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

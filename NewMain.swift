@@ -3,8 +3,71 @@ import CoreData
 import AVFoundation
 import Speech
 
+import UIKit
+
+
+
+class AppDelegate: UIResponder, UIApplicationDelegate {
+    func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+        print("AppDelegate received URL: \(url.absoluteString)")
+        // Handle URL here
+        return true
+    }
+}
+
+
 @main
 struct VoiceRecognitionApp: App {
+    
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    
+    func printActiveInfoPlistProperties() {
+        if let infoDictionary = Bundle.main.infoDictionary {
+            print("Active properties in Info.plist:")
+            for (key, value) in infoDictionary {
+                print("\(key): \(value)")
+            }
+        } else {
+            print("Could not retrieve Info.plist properties.")
+        }
+    }
+
+    // Usage
+   
+    
+    init() {
+        
+        print(Bundle.main.infoDictionary ?? "Info.plist not found or empty")
+
+        
+        printActiveInfoPlistProperties()
+        
+        // Custom setup code, such as checking URL schemes
+        checkURLSchemes()
+        
+        
+    }
+    
+    // Example function to check URL schemes in Info.plist
+    func checkURLSchemes() {
+        if let urlTypes = Bundle.main.infoDictionary?["CFBundleURLTypes"] as? [[String: Any]] {
+            for urlType in urlTypes {
+                if let urlSchemes = urlType["CFBundleURLSchemes"] as? [String] {
+                    print("URL Schemes found: \(urlSchemes)")
+                    
+                    let expectedScheme = "com.googleusercontent.apps.YOUR_CLIENT_ID" // Replace with your scheme
+                    if urlSchemes.contains(expectedScheme) {
+                        print("Expected URL scheme '\(expectedScheme)' is correctly registered.")
+                    } else {
+                        print("Expected URL scheme '\(expectedScheme)' is NOT registered.")
+                    }
+                }
+            }
+        } else {
+            print("No URL schemes found in Info.plist.")
+        }
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -127,10 +190,20 @@ struct ContentView: View {
         
     }
     
-    
     var body: some View {
         NavigationStack{
             VStack(spacing: 20) {
+                
+                
+                // NavigationLink(destination: GoogleAuthenticatorView()) {
+                // NavigationLink(destination: GoogleSheetWriterView()) {
+                NavigationLink(destination: GoogleAuthenticateViaSafariView()) {
+                    Text("Write Google Sheet")
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                }
                 NavigationLink(destination: DeleteAllRecognizedTextView()) {
                     Text("DeleteAllRecognizedTextView")
                         .padding()
@@ -166,7 +239,7 @@ struct ContentView: View {
                         .foregroundColor(.white)
                         .cornerRadius(8)
                 }
-                Button("Export File to Shared Documents") {
+                Button("Copy sqlite") {
                     isShowingShareSheet = true
                 }
                 .font(.title)

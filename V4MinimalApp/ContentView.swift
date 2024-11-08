@@ -2,114 +2,87 @@
 //  ContentView.swift
 //  V4MinimalApp
 //
-//  Created by Ham, Peter on 10/30/24.
+//  Created by Ham, Peter on 11/7/24.
 //
 /*
 import SwiftUI
-
-import AVFoundation
-
-class AudioRecorder: ObservableObject {
-    private var audioEngine = AVAudioEngine()
-
-    func startListening() {
-        // Access the microphone input
-        let inputNode = audioEngine.inputNode
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
-
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, time in
-            // Process the audio buffer here (e.g., send to a speech recognition API)
-           //  print("Audio buffer received: \(buffer)")
-            
-            // Analyze buffer for amplitude to detect voice input
-                        let level = self.averagePower(for: buffer)
-                        if level > -30 { // Adjust threshold as needed
-                            print("Voice detected with amplitude: \(level)")
-                        } else {
-                            // print("Silence or background noise detected.")
-                        }
-        }
-
-        // Start the audio engine
-        do {
-            try audioEngine.start()
-            print("Audio engine started and listening...")
-        } catch {
-            print("Failed to start audio engine: \(error)")
-        }
-    }
-    
-    private func averagePower(for buffer: AVAudioPCMBuffer) -> Float {
-        guard let channelData = buffer.floatChannelData?[0] else {
-            return -160 // Very low dB for silence if there's no data
-        }
-        let frameLength = Int(buffer.frameLength)
-        
-        // Step 1: Calculate the sum of squares
-        var sum: Float = 0.0
-        for i in 0..<frameLength {
-            sum += channelData[i] * channelData[i]
-        }
-        
-        // Step 2: Calculate the mean
-        let mean = sum / Float(frameLength)
-        
-        // Step 3: Calculate the RMS (root mean square)
-        let rms = sqrt(mean)
-        
-        // Step 4: Convert to decibels
-        let decibels = 20 * log10(rms)
-        return decibels
-    }
-
-
-    func stopListening() {
-        audioEngine.stop()
-        audioEngine.inputNode.removeTap(onBus: 0)
-        print("Audio engine stopped.")
-    }
-}
-
-
-
+import CoreData
 
 struct ContentView: View {
-    
-    @StateObject private var audioRecorder = AudioRecorder()
-    @StateObject private var speechManager = SpeechRecognitionManager()
+    @Environment(\.managedObjectContext) private var viewContext
+
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
+        animation: .default)
+    private var items: FetchedResults<Item>
+
     var body: some View {
-        VStack {
-            Text(speechManager.recognizedText)
-                           .padding()
-                       
-                       Button("Start Transcribing") {
-                           speechManager.startTranscribing()
-                       }
-                       .padding()
-                       
-                       Button("Stop Transcribing") {
-                           speechManager.stopTranscribing()
-                       }
-                       .padding()
-            Button("Start Listening") {
-                          audioRecorder.startListening()
-                      }
-                      .padding()
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-            
-            Button("Stop Listening") {
-                           audioRecorder.stopListening()
-                       }
-                       .padding()
+        NavigationView {
+            List {
+                ForEach(items) { item in
+                    NavigationLink {
+                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
+                    } label: {
+                        Text(item.timestamp!, formatter: itemFormatter)
+                    }
+                }
+                .onDelete(perform: deleteItems)
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    EditButton()
+                }
+                ToolbarItem {
+                    Button(action: addItem) {
+                        Label("Add Item", systemImage: "plus")
+                    }
+                }
+            }
+            Text("Select an item")
         }
-        .padding()
+    }
+
+    private func addItem() {
+        withAnimation {
+            let newItem = Item(context: viewContext)
+            newItem.timestamp = Date()
+
+            do {
+                try viewContext.save()
+            } catch {
+                // Replace this implementation with code to handle the error appropriately.
+                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                let nsError = error as NSError
+                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            }
+        }
+    }
+
+    private func deleteItems(offsets: IndexSet) {
+        withAnimation {
+            offsets.map { items[$0] }.forEach(viewContext.delete)
+
+            do {
+                try viewContext.save()
+            } catch {
+                // Replace this implementation with code to handle the error appropriately.
+                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
+                let nsError = error as NSError
+                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            }
+        }
     }
 }
 
+private let itemFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateStyle = .short
+    formatter.timeStyle = .medium
+    return formatter
+}()
+
 #Preview {
-    ContentView()
+    ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 }
+
 */
