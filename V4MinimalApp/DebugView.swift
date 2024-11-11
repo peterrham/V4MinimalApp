@@ -8,9 +8,23 @@
 import SwiftUI
 
 struct DebugView: View {
+    
+    @StateObject private var googleSignInManager = GoogleSignInManager(clientID: "748381179204-hp1qqcpa5jr929nj0hs6sou0sb6df60a.apps.googleusercontent.com")
+    
     var body: some View {
         
         VStack(spacing: 20) {
+            
+            // GoogleSignInView
+            
+            NavigationLink(destination: GoogleSignInView().environmentObject(googleSignInManager)) {
+                Text("GoogleSignInView")
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+            }
+             
             // NavigationLink(destination: GoogleAuthenticatorView()) {
             // NavigationLink(destination: GoogleSheetWriterView()) {
             NavigationLink(destination: GoogleAuthenticateViaSafariView()) {
