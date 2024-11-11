@@ -35,6 +35,7 @@ struct GoogleAuthenticateViaSafariView: View {
     private func startGoogleSignIn() {
         let authURL = getAuthorizationURL()
         let safariVC = SFSafariViewController(url: authURL)
+        logWithTimestamp("inside startGoogleSignIn")
         logWithTimestamp(authURL.absoluteString)
         UIApplication.shared.windows.first?.rootViewController?.present(safariVC, animated: true, completion: nil)
     }

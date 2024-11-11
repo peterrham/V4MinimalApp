@@ -72,7 +72,7 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "52C4B76C-7ED8-457B-A6CE-C5E6024DCF7A"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "V4MinimalApp/GoogleSheetWriterView.swift"
@@ -88,7 +88,7 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "F72BD652-0EB7-42C1-80CC-143862B86480"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "V4MinimalApp/GoogleSheetWriterView.swift"
@@ -110,8 +110,8 @@
             filePath = "V4MinimalApp/GoogleoAuth.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "42"
-            endingLineNumber = "42"
+            startingLineNumber = "44"
+            endingLineNumber = "44"
             landmarkName = "getOAuthToken(completion:)"
             landmarkType = "9">
          </BreakpointContent>
@@ -126,10 +126,72 @@
             filePath = "V4MinimalApp/GoogleoAuth.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "40"
-            endingLineNumber = "40"
+            startingLineNumber = "42"
+            endingLineNumber = "42"
             landmarkName = "getOAuthToken(completion:)"
             landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "D17115A9-EDD6-40AA-A478-16D6893156BB"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "V4MinimalApp/GoogleAuthenticateViaSafari.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "40"
+            endingLineNumber = "40"
+            landmarkName = "startGoogleSignIn()"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "66C22B6F-E13E-4906-A72E-9DF80A50B644"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "V4MinimalApp/GoogleSheetWriterView.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "39"
+            endingLineNumber = "39"
+            landmarkName = "createGoogleSheet()"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "66C22B6F-E13E-4906-A72E-9DF80A50B644 - ece2d02a6fba4742"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "V4MinimalApp.GoogleSheetWriterView.createGoogleSheet() -&gt; ()"
+                  moduleName = "V4MinimalApp.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/peterham/Library/CloudStorage/GoogleDrive-peterrham@gmail.com/My%20Drive/personal/personal_programming/Iphone/V4MinimalApp/V4MinimalApp/GoogleSheetWriterView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "39"
+                  endingLineNumber = "39">
+               </Location>
+               <Location
+                  uuid = "66C22B6F-E13E-4906-A72E-9DF80A50B644 - 7b2428d04f66d69f"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #1 (Swift.Optional&lt;Swift.String&gt;) -&gt; () in V4MinimalApp.GoogleSheetWriterView.createGoogleSheet() -&gt; ()"
+                  moduleName = "V4MinimalApp.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/peterham/Library/CloudStorage/GoogleDrive-peterrham@gmail.com/My%20Drive/personal/personal_programming/Iphone/V4MinimalApp/V4MinimalApp/GoogleSheetWriterView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "40"
+                  endingLineNumber = "40">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

@@ -13,6 +13,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Handle URL here
         return true
     }
+    
+    func application(_ application: UIApplication,
+                         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+            print("AppDelegate didFinishLaunchingWithOptions called")
+            return true
+        }
+
 }
 
 
@@ -55,7 +62,7 @@ struct VoiceRecognitionApp: App {
                 if let urlSchemes = urlType["CFBundleURLSchemes"] as? [String] {
                     print("URL Schemes found: \(urlSchemes)")
                     
-                    let expectedScheme = "com.googleusercontent.apps.YOUR_CLIENT_ID" // Replace with your scheme
+                    let expectedScheme = "com.googleusercontent.apps.748381179204-pmnlavrbccrsc9v17qtqepjum0rd1kok.apps.googleusercontent.com" // Replace with your scheme
                     if urlSchemes.contains(expectedScheme) {
                         print("Expected URL scheme '\(expectedScheme)' is correctly registered.")
                     } else {

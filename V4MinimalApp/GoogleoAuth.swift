@@ -14,6 +14,8 @@ func getOAuthToken(completion: @escaping (String?) -> Void) {
     var request = URLRequest(url: tokenURL)
     request.httpMethod = "POST"
     
+    let propertyValue = "com.googleusercontent.apps.748381179204-pmnlavrbccrsc9v17qtqepjum0rd1kok.apps.googleusercontent.com"
+    
     let params: [String: String] = [
         "client_id": "748381179204-pmnlavrbccrsc9v17qtqepjum0rd1kok.apps.googleusercontent.com",
         // "client_secret": "YOUR_CLIENT_SECRET",
