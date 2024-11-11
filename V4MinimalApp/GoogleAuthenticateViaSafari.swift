@@ -19,27 +19,24 @@ struct GoogleAuthenticateViaSafariView: View {
     // com.googleusercontent.apps.748381179204-pmnlavrbccrsc9v17qtqepjum0rd1kok:/oauth2redirect"
     // = "a"
     // "www.google.com" // com.googleusercontent.apps.748381179204-pmnlavrbccrsc9v17qtqepjum0rd1kok:/oauth2redirect
-
+    
     var body: some View {
         VStack {
-            if let accessToken = accessToken {
-                Text("Access Token: \(accessToken)")
-            } else {
-                Button(action: startGoogleSignIn) {
-                    Text("Sign in with Google")
-                }
+            Text("Access Token: \(accessToken)")
+            Button(action: startGoogleSignIn) {
+                Text("Sign in with Google")
             }
         }
     }
-
+    
     private func startGoogleSignIn() {
         let authURL = getAuthorizationURL()
         let safariVC = SFSafariViewController(url: authURL)
-        logWithTimestamp("inside startGoogleSignIn")
+        logWithTimestamp("inside Safari: startGoogleSignIn")
         logWithTimestamp(authURL.absoluteString)
         UIApplication.shared.windows.first?.rootViewController?.present(safariVC, animated: true, completion: nil)
     }
-
+    
     private func getAuthorizationURL() -> URL {
         var components = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
         components.queryItems = [
