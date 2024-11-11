@@ -30,6 +30,9 @@ struct GoogleSignInView: View {
         Button("createSpreadsheet") {
             googleSignInManager.createSpreadsheet()
         }
+        Button("AppendTest") {
+            googleSignInManager.appendTest()
+        }
         Button("Disconect") {
             googleSignInManager.disconnect()
         }

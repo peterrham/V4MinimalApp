@@ -5,12 +5,58 @@ class GoogleSignInManager: ObservableObject {
     @Published var user: GIDGoogleUser? = nil
     private let signInConfig: GIDConfiguration
     
+    private var spreadsheetID: String = ""
+    
     init(clientID: String) {
         // Initialize GIDConfiguration with your client ID
         self.signInConfig = GIDConfiguration(clientID: clientID)
         
         GIDSignIn.sharedInstance.configuration = self.signInConfig
         
+    }
+    
+    func appendTest() {
+        
+        // Assuming you have a valid access token and spreadsheet ID
+        let accessToken =  self.user?.accessToken.tokenString
+        var spreadsheetId = "YOUR_SPREADSHEET_ID"
+        
+        let apiClient = GoogleSheetsAPI(accessToken: accessToken!)
+        
+        
+        let semaphore = DispatchSemaphore(value: 0)
+        
+        apiClient.createSpreadsheet(title: "New Sheet") { result in
+            switch result {
+            case .success(let spreadsheetId):
+                print("Spreadsheet created with ID: \(spreadsheetId)")
+                self.spreadsheetID = spreadsheetId
+            case .failure(let error):
+                print("Error creating spreadsheet: \(error)")
+            }
+            
+            semaphore.signal()  // Signal that async work is complete
+        }
+        
+        // Wait for the async function to complete
+        semaphore.wait()
+
+        // Data to append: a 2D array where each inner array is a row
+        let values = [
+            ["Name", "Age", "City"],
+            ["Alice", "30", "Seattle"],
+            ["Bob", "25", "San Francisco"]
+        ]
+
+        apiClient.appendData(to: self.spreadsheetID, range: "Sheet1!A1", values: values) { result in
+            switch result {
+            case .success:
+                print("Data successfully appended.")
+            case .failure(let error):
+                print("Error appending data: \(error)")
+            }
+        }
+
     }
     
     func createSpreadsheet() {
