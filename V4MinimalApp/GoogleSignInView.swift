@@ -31,10 +31,7 @@ struct GoogleSignInView: View {
             googleSignInManager.createSpreadsheet()
         }
         Button("PopulateGoogleSheet") {
-            GoogleSheetsClient(accessToken: "foobar").CopyToSheet()
-        }
-        Button("AppendTest") {
-            googleSignInManager.appendTest()
+            GoogleSheetsClient(inputAccessToken: googleSignInManager.user!.accessToken.tokenString).CopyToSheet(argSpreadsheetId: googleSignInManager.spreadsheetID)
         }
         Button("Disconect") {
             googleSignInManager.disconnect()

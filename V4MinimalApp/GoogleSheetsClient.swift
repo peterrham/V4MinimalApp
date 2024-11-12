@@ -11,21 +11,18 @@ import CoreData
 import UniformTypeIdentifiers
 
 struct GoogleSheetsClient {
-    /*
-     @Environment(\.managedObjectContext) private var viewContext
     
-    @FetchRequest(
-        entity: RecognizedTextEntity.entity(),
-        sortDescriptors: [NSSortDescriptor(keyPath: \RecognizedTextEntity.timestamp, ascending: true)]
-    ) private var recognizedTexts: FetchedResults<RecognizedTextEntity>
-     */
+    var spreadsheetId : String = "YOUR_SPREADSHEET_ID"  // Replace with your Google Sheets ID
+    var accessToken : String = "YOUR_ACCESS_TOKEN"      // Replace with the OAuth 2.0 access token
+  
     
-    init(accessToken: String)
+    init(inputAccessToken: String)
     {
         logWithTimestamp("GoogleSheetsClient")
+        accessToken = inputAccessToken
     }
     
-    func CopyToSheet()
+    func CopyToSheet(argSpreadsheetId: String)
     {
         logWithTimestamp("****** CopyToSheet")
         
@@ -53,16 +50,9 @@ struct GoogleSheetsClient {
         }
        
         print(csvText)
-        /*
         
-        for textEntity in  DynamicPersistenceController.shared.fetchRecognizedTextEntities() {
-            let content = textEntity.content ?? "N/A"
-            let timestamp = dateFormatter.string(from: textEntity.timestamp ?? Date())
-            let row = "\"\(content)\",\"\(timestamp)\"\n"
-            logWithTimestamp(row)
-            csvText += row
-        }
-        */
+        // TODO, next step is to actually append the data to a google sheet using the append method
+        
         logWithTimestamp("CopyToSheet ******")
     }
 }

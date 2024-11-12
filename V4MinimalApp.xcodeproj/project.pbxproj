@@ -13,12 +13,14 @@
 		BE54A28D2CDDA81E00C6B639 /* ExportToCSVView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE6204AD2CD97169001823E5 /* ExportToCSVView.swift */; };
 		BE7A78DB2CE273C500045E0F /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = BE7A78DA2CE273C500045E0F /* GoogleSignIn */; };
 		BE7A78DD2CE273C500045E0F /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = BE7A78DC2CE273C500045E0F /* GoogleSignInSwift */; };
+		BE8B14B22CE3DBBA00714DB0 /* AppendExtention.swift in Resources */ = {isa = PBXBuildFile; fileRef = BE8B14B12CE3DBBA00714DB0 /* AppendExtention.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		BE54A2172CDDA27F00C6B639 /* V4MinimalApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = V4MinimalApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE6204AD2CD97169001823E5 /* ExportToCSVView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportToCSVView.swift; sourceTree = "<group>"; };
 		BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionExtension.swift; sourceTree = "<group>"; };
+		BE8B14B12CE3DBBA00714DB0 /* AppendExtention.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppendExtention.swift; sourceTree = "<group>"; };
 		BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognition.swift; sourceTree = "<group>"; };
 		BEEEFAA42CD2C9120072891A /* NewMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewMain.swift; sourceTree = "<group>"; };
 		BEEEFAAA2CD2DC350072891A /* VoiceDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = VoiceDataModel.xcdatamodel; sourceTree = "<group>"; };
@@ -89,6 +91,7 @@
 				BE54A2182CDDA27F00C6B639 /* V4MinimalApp */,
 				BE20F1102CDC2D17004F3007 /* Frameworks */,
 				BEEEFA902CD292BA0072891A /* Products */,
+				BE8B14B12CE3DBBA00714DB0 /* AppendExtention.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -169,6 +172,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BE8B14B22CE3DBBA00714DB0 /* AppendExtention.swift in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

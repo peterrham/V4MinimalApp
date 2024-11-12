@@ -5,7 +5,7 @@ class GoogleSignInManager: ObservableObject {
     @Published var user: GIDGoogleUser? = nil
     private let signInConfig: GIDConfiguration
     
-    private var spreadsheetID: String = ""
+    @Published var spreadsheetID: String = ""
     
     init(clientID: String) {
         // Initialize GIDConfiguration with your client ID
@@ -114,6 +114,14 @@ class GoogleSignInManager: ObservableObject {
             do {
                 if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
                     print("New Spreadsheet created: \(json)")
+                    
+                    if let localSpreadsheetId = json["spreadsheetId"] as? String {
+                            print("New Spreadsheet created with ID: \(localSpreadsheetId)")
+                        self.spreadsheetID = localSpreadsheetId
+                            // You can now use `spreadsheetId` for further API calls
+                        } else {
+                            print("Error: Could not find spreadsheetId in response.")
+                        }
                 }
             } catch {
                 print("Error parsing JSON response: \(error)")
