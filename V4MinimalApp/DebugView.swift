@@ -17,7 +17,7 @@ struct DebugView: View {
             
             // GoogleSignInView
             
-            NavigationLink(destination: GoogleSignInView().environmentObject(googleSignInManager)) {
+            NavigationLink(destination: GoogleSignInView().environmentObject(googleSignInManager).environment(\.managedObjectContext, DynamicPersistenceController.shared.container.viewContext)) {
                 Text("GoogleSignInView")
                     .padding()
                     .background(Color.blue)

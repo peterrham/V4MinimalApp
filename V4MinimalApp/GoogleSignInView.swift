@@ -30,6 +30,9 @@ struct GoogleSignInView: View {
         Button("createSpreadsheet") {
             googleSignInManager.createSpreadsheet()
         }
+        Button("PopulateGoogleSheet") {
+            GoogleSheetsClient(accessToken: "foobar").CopyToSheet()
+        }
         Button("AppendTest") {
             googleSignInManager.appendTest()
         }

@@ -52,6 +52,17 @@ struct VoiceRecognitionApp: App {
         // Custom setup code, such as checking URL schemes
         checkURLSchemes()
         
+        if let recognizedTextEntities = DynamicPersistenceController.shared.fetchRecognizedTextEntities() {
+            for entity in recognizedTextEntities {
+                if let content = entity.value(forKey: "content") as? String,
+                   let timestamp = entity.value(forKey: "timestamp") as? Date {
+                    print("Content: \(content), Timestamp: \(timestamp)")
+                }
+            }
+        } else {
+            print("No records found or an error occurred.")
+        }
+
         
     }
     
@@ -107,6 +118,19 @@ class DynamicPersistenceController {
     static let shared = DynamicPersistenceController()
     
     let container: NSPersistentContainer
+    
+    func fetchRecognizedTextEntities() -> [RecognizedTextEntity]? {
+        let context = container.viewContext
+        let fetchRequest = NSFetchRequest<RecognizedTextEntity>(entityName: "RecognizedTextEntity")
+        
+        do {
+            let results = try context.fetch(fetchRequest)
+            return results
+        } catch {
+            print("Failed to fetch RecognizedTextEntities: \(error)")
+            return nil
+        }
+    }
     
     init() {
         // Define the Core Data model programmatically

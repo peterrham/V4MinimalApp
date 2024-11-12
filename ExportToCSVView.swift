@@ -46,19 +46,32 @@ struct ExportToCSVView: View {
     
     // Function to export data to CSV
     private func exportToCSV() {
-        print("exportToCSV function called")
+        logWithTimestamp("exportToCSV function called")
+        
+        print("view")
+        print(viewContext)
+        
+        print("enivonments")
+        logEnvironmentObjects(viewContext)
+        print("details")
+        printEnvironmentObjectDetails(viewContext)
         
         let headers = "Content,Timestamp\n"
         var csvText = headers
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         
+        logWithTimestamp("before loop")
+        
         for textEntity in recognizedTexts {
             let content = textEntity.content ?? "N/A"
+            logWithTimestamp("content: \(content)")
             let timestamp = dateFormatter.string(from: textEntity.timestamp ?? Date())
             let row = "\"\(content)\",\"\(timestamp)\"\n"
             csvText += row
         }
+        
+        logWithTimestamp("after loop")
         
         let fileManager = FileManager.default
         let tempDirectory = fileManager.temporaryDirectory
