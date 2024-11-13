@@ -2,7 +2,7 @@ import SwiftUI
 import CoreData
 import AVFoundation
 import Speech
-
+import GoogleSignIn
 import UIKit
 
 
@@ -17,6 +17,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication,
                          didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
             print("AppDelegate didFinishLaunchingWithOptions called")
+        
+        
+        // Restore previous Google Sign-In session if available
+               GIDSignIn.sharedInstance.restorePreviousSignIn { user, error in
+                   if let error = error {
+                       print("No previous Google Sign-In session: \(error.localizedDescription)")
+                   } else if let user = user {
+                       print("Restored Google Sign-In session for user: \(user.profile?.name ?? "Unknown")")
+                       // Handle restored session (e.g., notify view model)
+                       
+                       print("Restored Token String: \(GIDSignIn.sharedInstance.currentUser!.accessToken.tokenString)")
+                   } else {
+                       print("No previous Google Sign-In session found.")
+                   }
+               }
             return true
         }
 

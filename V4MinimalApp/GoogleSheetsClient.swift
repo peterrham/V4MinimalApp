@@ -22,9 +22,11 @@ struct GoogleSheetsClient {
         accessToken = inputAccessToken
     }
     
-    func CopyToSheet(argSpreadsheetId: String)
+    mutating func CopyToSheet(argSpreadsheetId: String)
     {
         logWithTimestamp("****** CopyToSheet")
+        
+        spreadsheetId = argSpreadsheetId
         
         let headers = "Content,Timestamp\n"
         var csvText = headers
@@ -53,7 +55,65 @@ struct GoogleSheetsClient {
         
         // TODO, next step is to actually append the data to a google sheet using the append method
         
+        var rows :  [[String]] = [["Time", "Item"]]
+        
+        if let recognizedTextEntities = DynamicPersistenceController.shared.fetchRecognizedTextEntities() {
+            
+            
+            for entity in recognizedTextEntities {
+                if let content = entity.value(forKey: "content") as? String,
+                   let timestamp = entity.value(forKey: "timestamp") as? Date {
+                    
+                    let timestampStr = dateFormatter.string(from: timestamp)
+                    let row = [timestampStr, content]  // Each row is an array with content and timestamp
+                    rows.append(row)  // Append the row to the rows array
+                }
+            }
+        }
+        
+        self.appendDataToGoogleSheet(data: rows)
+        
+        
         logWithTimestamp("CopyToSheet ******")
+    }
+    
+    internal func appendDataToGoogleSheet(data: [[String]]) {
+        let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId)/values/Sheet1!A1:append?valueInputOption=RAW")!
+        
+        // Prepare the request
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Prepare the data payload
+        let body = [
+            "values": data
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [])
+        } catch {
+            print("Error serializing JSON:", error)
+            return
+        }
+        
+        // Perform the network request
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Request error:", error)
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                print("Unexpected response:", response ?? "No response")
+                return
+            }
+            
+            print("Data successfully appended to Google Sheets.")
+        }
+        
+        task.resume()
     }
 }
 

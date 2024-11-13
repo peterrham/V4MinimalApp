@@ -8,11 +8,24 @@ class GoogleSignInManager: ObservableObject {
     @Published var spreadsheetID: String = ""
     
     init(clientID: String) {
+        
+        print("GoogleSignInManager() init")
+        
+        
         // Initialize GIDConfiguration with your client ID
         self.signInConfig = GIDConfiguration(clientID: clientID)
         
         GIDSignIn.sharedInstance.configuration = self.signInConfig
         
+        user = GIDSignIn.sharedInstance.currentUser
+        
+        if  user == nil {
+            print("user == nil")
+            print("user: \(user)")
+        } else {
+            print("Existing Token String: \(GIDSignIn.sharedInstance.currentUser!.accessToken.tokenString)")
+            print("Existing Token String: \(GIDSignIn.sharedInstance.currentUser!.accessToken.tokenString)")
+        }
     }
     
     func appendTest() {

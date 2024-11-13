@@ -5,11 +5,12 @@
 //  Created by Ham, Peter on 11/12/24.
 //
 
+// XXX this code does not seem to be used .... not sure why
 
 extension GoogleSheetsClient {
     
 
-    func appendDataToGoogleSheet(data: [[String]]) {
+    internal func appendDataToGoogleSheet(data: [[String]]) {
         let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId)/values/Sheet1!A1:append?valueInputOption=RAW")!
         
         // Prepare the request
