@@ -9,7 +9,7 @@ import SwiftUI
 
 struct DebugView: View {
     
-    @StateObject private var googleSignInManager = GoogleSignInManager(clientID: "748381179204-hp1qqcpa5jr929nj0hs6sou0sb6df60a.apps.googleusercontent.com")
+   // @StateObject private var googleSignInManager = GoogleSignInManager(clientID: "748381179204-hp1qqcpa5jr929nj0hs6sou0sb6df60a.apps.googleusercontent.com")
     
     var body: some View {
         
@@ -17,7 +17,8 @@ struct DebugView: View {
             
             // GoogleSignInView
             
-            NavigationLink(destination: GoogleSignInView().environmentObject(googleSignInManager).environment(\.managedObjectContext, DynamicPersistenceController.shared.container.viewContext)) {
+           // NavigationLink(destination: GoogleSignInView().environmentObject(googleSignInManager).environment(\.managedObjectContext, // DynamicPersistenceController.shared.container.viewContext)) {
+            NavigationLink(destination: GoogleSignInView()) {
                 Text("GoogleSignInView")
                     .buttonStyle(PrimaryButtonStyle())
             }

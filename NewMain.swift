@@ -8,6 +8,9 @@ import UIKit
 
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
+    
+    var appState: AppState?
+    
     func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
         print("AppDelegate received URL: \(url.absoluteString)")
         // Handle URL here
@@ -35,8 +38,12 @@ struct VoiceRecognitionApp: App {
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
+    @StateObject private var appState = AppState()
+    
     init() {
         _ = AppHelper.shared
+        
+        appDelegate.appState = appState
         
         if let recognizedTextEntities = DynamicPersistenceController.shared.fetchRecognizedTextEntities() {
             for entity in recognizedTextEntities {
@@ -53,12 +60,15 @@ struct VoiceRecognitionApp: App {
         
     }
     
-    
-    
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environment(\.managedObjectContext, DynamicPersistenceController.shared.container.viewContext)
+            
+            if appState.isAuthenticated {
+                ContentView()
+                    .environment(\.managedObjectContext, DynamicPersistenceController.shared.container.viewContext)
+            } else {
+                GoogleSignInView()
+            }
         }
     }
 }

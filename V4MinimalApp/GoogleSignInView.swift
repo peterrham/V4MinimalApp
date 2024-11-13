@@ -10,15 +10,26 @@ import SwiftUI
 
 struct GoogleSignInView: View {
     
-    @EnvironmentObject var googleSignInManager: GoogleSignInManager
-    
+    func googleSignInManager() -> GoogleSignInManager {
+        return AuthManager.shared.googleSignInManager!
+    }
     
     func signIn() {
-        googleSignInManager.signIn()
+        AuthManager.shared.googleSignInManager!.signIn()
+    }
+    
+    func signOut() {
+        AuthManager.shared.googleSignInManager!.signOut()
     }
     
     var body: some View {
-  
+        
+        
+        Button(action: signOut) {
+            Text("Sign OUT")
+        }
+        .buttonStyle(PrimaryButtonStyle())
+        
         Button("Append") {
            print("Append")
             AppendLog().append()
@@ -30,19 +41,19 @@ struct GoogleSignInView: View {
         }
         .buttonStyle(PrimaryButtonStyle())
         Button("createSpreadsheet") {
-            googleSignInManager.createSpreadsheet()
+            googleSignInManager().createSpreadsheet()
         }.buttonStyle(PrimaryButtonStyle())
         Button("PopulateGoogleSheet") {
             
-            var  client =  GoogleSheetsClient(inputAccessToken: googleSignInManager.user!.accessToken.tokenString)
-           client.CopyToSheet(argSpreadsheetId: googleSignInManager.spreadsheetID)
+            var  client =  GoogleSheetsClient(inputAccessToken: googleSignInManager().user!.accessToken.tokenString)
+           client.CopyToSheet(argSpreadsheetId: googleSignInManager().spreadsheetID)
         }.buttonStyle(PrimaryButtonStyle())
         
         Button("Disconect") {
-            googleSignInManager.disconnect()
+            googleSignInManager().disconnect()
         }.buttonStyle(PrimaryButtonStyle())
         Button("FetchUserInfo") {
-            googleSignInManager.fetchAndPrintUserInfo()
+            googleSignInManager().fetchAndPrintUserInfo()
         }.buttonStyle(PrimaryButtonStyle())
         
     }

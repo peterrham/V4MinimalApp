@@ -11,6 +11,11 @@ import GoogleSignIn
 
 class AuthManager {
     static let shared = AuthManager()
+    
+    private let GoogleAuthClientID: String = "748381179204-hp1qqcpa5jr929nj0hs6sou0sb6df60a.apps.googleusercontent.com"
+    
+    public var googleSignInManager: GoogleSignInManager?
+    
     private init() {}
     
     // for some reason I think that this is a safer place to put this ....
@@ -19,6 +24,8 @@ class AuthManager {
         
         // init this singleton
         _ = GIDSignIn.sharedInstance
+        
+        googleSignInManager = GoogleSignInManager(clientID: GoogleAuthClientID)
         
         
         // Restore previous Google Sign-In session if available
