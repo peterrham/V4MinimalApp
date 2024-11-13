@@ -18,29 +18,32 @@ struct GoogleSignInView: View {
     }
     
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+  
+        Button("Append") {
+           print("Append")
+            AppendLog().append()
+        }
+        .buttonStyle(PrimaryButtonStyle())
         
         Button(action: signIn) {
             Text("Sign In")
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(8)
         }
+        .buttonStyle(PrimaryButtonStyle())
         Button("createSpreadsheet") {
             googleSignInManager.createSpreadsheet()
-        }
+        }.buttonStyle(PrimaryButtonStyle())
         Button("PopulateGoogleSheet") {
             
             var  client =  GoogleSheetsClient(inputAccessToken: googleSignInManager.user!.accessToken.tokenString)
            client.CopyToSheet(argSpreadsheetId: googleSignInManager.spreadsheetID)
-        }
+        }.buttonStyle(PrimaryButtonStyle())
+        
         Button("Disconect") {
             googleSignInManager.disconnect()
-        }
+        }.buttonStyle(PrimaryButtonStyle())
         Button("FetchUserInfo") {
             googleSignInManager.fetchAndPrintUserInfo()
-        }
+        }.buttonStyle(PrimaryButtonStyle())
         
     }
 }

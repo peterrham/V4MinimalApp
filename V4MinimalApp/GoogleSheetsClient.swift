@@ -77,7 +77,7 @@ struct GoogleSheetsClient {
         logWithTimestamp("CopyToSheet ******")
     }
     
-    internal func appendDataToGoogleSheet(data: [[String]]) {
+     func appendDataToGoogleSheet(data: [[String]]) {
         let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId)/values/Sheet1!A1:append?valueInputOption=RAW")!
         
         // Prepare the request

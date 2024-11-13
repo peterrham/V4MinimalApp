@@ -5,6 +5,14 @@ class GoogleSignInManager: ObservableObject {
     @Published var user: GIDGoogleUser? = nil
     private let signInConfig: GIDConfiguration
     
+    public func tokenString() -> String {
+        let retval = GIDSignIn.sharedInstance.currentUser!.accessToken.tokenString
+        
+        logWithTimestamp("tokenString(): \(retval)")
+        
+        return retval
+    }
+
     @Published var spreadsheetID: String = ""
     
     init(clientID: String) {
@@ -23,7 +31,6 @@ class GoogleSignInManager: ObservableObject {
             print("user == nil")
             print("user: \(user)")
         } else {
-            print("Existing Token String: \(GIDSignIn.sharedInstance.currentUser!.accessToken.tokenString)")
             print("Existing Token String: \(GIDSignIn.sharedInstance.currentUser!.accessToken.tokenString)")
         }
     }

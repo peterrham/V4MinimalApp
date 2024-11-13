@@ -19,55 +19,34 @@ struct DebugView: View {
             
             NavigationLink(destination: GoogleSignInView().environmentObject(googleSignInManager).environment(\.managedObjectContext, DynamicPersistenceController.shared.container.viewContext)) {
                 Text("GoogleSignInView")
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .buttonStyle(PrimaryButtonStyle())
             }
              
             // NavigationLink(destination: GoogleAuthenticatorView()) {
             // NavigationLink(destination: GoogleSheetWriterView()) {
             NavigationLink(destination: GoogleAuthenticateViaSafariView()) {
                 Text("Write Google Sheet")
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .buttonStyle(PrimaryButtonStyle())
             }
             NavigationLink(destination: DeleteAllRecognizedTextView()) {
                 Text("DeleteAllRecognizedTextView")
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .buttonStyle(PrimaryButtonStyle())
             }
             NavigationLink(destination: ExportToCSVView()) {
                 Text("ExportToCSVView")
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .buttonStyle(PrimaryButtonStyle())
             }
             NavigationLink(destination: TextFileSharerView()) {
                 Text("TextFileSharerView")
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .buttonStyle(PrimaryButtonStyle())
             }
             NavigationLink(destination: TextFileCreatorView()) {
                 Text("TextFileCreatorView")
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .buttonStyle(PrimaryButtonStyle())
             }
             NavigationLink(destination: SecondView()) {
                 Text("Go to Second Page")
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .buttonStyle(PrimaryButtonStyle())
             }
         }
     }

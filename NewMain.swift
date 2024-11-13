@@ -15,26 +15,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
     
     func application(_ application: UIApplication,
-                         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-            print("AppDelegate didFinishLaunchingWithOptions called")
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        print("AppDelegate didFinishLaunchingWithOptions called")
+        
+        // initialize singleton
+        
+        _ = AuthManager.shared
+        AuthManager.shared.initialize()
         
         
-        // Restore previous Google Sign-In session if available
-               GIDSignIn.sharedInstance.restorePreviousSignIn { user, error in
-                   if let error = error {
-                       print("No previous Google Sign-In session: \(error.localizedDescription)")
-                   } else if let user = user {
-                       print("Restored Google Sign-In session for user: \(user.profile?.name ?? "Unknown")")
-                       // Handle restored session (e.g., notify view model)
-                       
-                       print("Restored Token String: \(GIDSignIn.sharedInstance.currentUser!.accessToken.tokenString)")
-                   } else {
-                       print("No previous Google Sign-In session found.")
-                   }
-               }
-            return true
-        }
-
+        return true
+    }
+    
 }
 
 
@@ -43,63 +35,25 @@ struct VoiceRecognitionApp: App {
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
-    func printActiveInfoPlistProperties() {
-        if let infoDictionary = Bundle.main.infoDictionary {
-            print("Active properties in Info.plist:")
-            for (key, value) in infoDictionary {
-                print("\(key): \(value)")
-            }
-        } else {
-            print("Could not retrieve Info.plist properties.")
-        }
-    }
-
-    // Usage
-   
-    
     init() {
-        
-        print(Bundle.main.infoDictionary ?? "Info.plist not found or empty")
-
-        
-        printActiveInfoPlistProperties()
-        
-        // Custom setup code, such as checking URL schemes
-        checkURLSchemes()
+        _ = AppHelper.shared
         
         if let recognizedTextEntities = DynamicPersistenceController.shared.fetchRecognizedTextEntities() {
             for entity in recognizedTextEntities {
-                if let content = entity.value(forKey: "content") as? String,
-                   let timestamp = entity.value(forKey: "timestamp") as? Date {
+                if
+                    let content = entity.value(forKey: "content") as? String,
+                    let timestamp = entity.value(forKey: "timestamp") as? Date {
                     print("Content: \(content), Timestamp: \(timestamp)")
                 }
             }
         } else {
             print("No records found or an error occurred.")
         }
-
+        
         
     }
     
-    // Example function to check URL schemes in Info.plist
-    func checkURLSchemes() {
-        if let urlTypes = Bundle.main.infoDictionary?["CFBundleURLTypes"] as? [[String: Any]] {
-            for urlType in urlTypes {
-                if let urlSchemes = urlType["CFBundleURLSchemes"] as? [String] {
-                    print("URL Schemes found: \(urlSchemes)")
-                    
-                    let expectedScheme = "com.googleusercontent.apps.748381179204-pmnlavrbccrsc9v17qtqepjum0rd1kok.apps.googleusercontent.com" // Replace with your scheme
-                    if urlSchemes.contains(expectedScheme) {
-                        print("Expected URL scheme '\(expectedScheme)' is correctly registered.")
-                    } else {
-                        print("Expected URL scheme '\(expectedScheme)' is NOT registered.")
-                    }
-                }
-            }
-        } else {
-            print("No URL schemes found in Info.plist.")
-        }
-    }
+    
     
     var body: some Scene {
         WindowGroup {
@@ -117,7 +71,7 @@ func exportDatabase() -> URL? {
     let fileManager = FileManager.default
     let dbURL =  sqlLitePathURL /* Your SQLite file URL here */
     let exportURL = fileManager.temporaryDirectory.appendingPathComponent("exportedDatabase.sqlite")
-
+    
     do {
         try fileManager.copyItem(at: dbURL!, to: exportURL)
         print("copied the file")
@@ -183,11 +137,11 @@ class DynamicPersistenceController {
             }
             
             // Access and print the database file path
-                   if let databaseURL = description.url {
-                       sqlLitePathURL = databaseURL
-                       let pathString : String = sqlLitePathURL!.absoluteString
-                       print("Core Data SQLite database path: \n cd \"\(pathString)\"")
-                   }
+            if let databaseURL = description.url {
+                sqlLitePathURL = databaseURL
+                let pathString : String = sqlLitePathURL!.absoluteString
+                print("Core Data SQLite database path: \n cd \"\(pathString)\"")
+            }
         }
     }
 }
@@ -239,22 +193,14 @@ struct ContentView: View {
     var body: some View {
         NavigationStack{
             VStack(spacing: 20) {
-                
                 NavigationLink(destination: DebugView()) {
                     Text("DebugView")
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
                 }
+                .buttonStyle(PrimaryButtonStyle())
                 Button("Copy sqlite") {
                     isShowingShareSheet = true
                 }
-                .font(.title)
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(8)
+                .buttonStyle(PrimaryButtonStyle())
                 // Present the document picker
                 .sheet(isPresented:  $isShowingShareSheet) {
                     // Present the share sheet
@@ -333,12 +279,12 @@ struct DocumentExporter: UIViewControllerRepresentable {
 // Wrapper for UIActivityViewController
 struct ShareSheet: UIViewControllerRepresentable {
     let activityItems: [Any]
-
+    
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let controller = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
         return controller
     }
-
+    
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
