@@ -38,7 +38,7 @@ struct GoogleSheetsClient {
             for entity in recognizedTextEntities {
                 if let content = entity.value(forKey: "content") as? String,
                    let timestamp = entity.value(forKey: "timestamp") as? Date {
-                    print("Content: \(content), Timestamp: \(timestamp)")
+                    // print("Content: \(content), Timestamp: \(timestamp)")
                     
                     let timestampStr = dateFormatter.string(from: entity.timestamp ?? Date())
                     let row = "\"\(content)\",\"\(timestampStr)\"\n"
@@ -71,13 +71,13 @@ struct GoogleSheetsClient {
             }
         }
         
-        self.appendDataToGoogleSheet(data: rows)
+        self.appendDataToGoogleSheet(spreadsheetId: argSpreadsheetId, data: rows)
         
         
         logWithTimestamp("CopyToSheet ******")
     }
     
-     func appendDataToGoogleSheet(data: [[String]]) {
+    func appendDataToGoogleSheet(spreadsheetId: String, data: [[String]]) {
         let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets/\(spreadsheetId)/values/Sheet1!A1:append?valueInputOption=RAW")!
         
         // Prepare the request

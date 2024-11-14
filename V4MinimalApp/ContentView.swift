@@ -98,7 +98,7 @@ struct ContentView: View {
     
     @StateObject private var speechManager = SpeechRecognitionManager(context: DynamicPersistenceController.shared.container.viewContext)
     
-    @State private var isShowingShareSheet = false
+  
     
     init() {
         
@@ -114,15 +114,7 @@ struct ContentView: View {
                     Text("DebugView")
                 }
                 .buttonStyle(PrimaryButtonStyle())
-                Button("Copy sqlite") {
-                    isShowingShareSheet = true
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                // Present the document picker
-                .sheet(isPresented:  $isShowingShareSheet) {
-                    // Present the share sheet
-                    ShareSheet(activityItems: [sqlLitePathURL])
-                }
+                
                 Text("Incremental Speech:")
                     .font(.headline)
                 Text(speechManager.incrementalText)

@@ -9,6 +9,8 @@ import SwiftUI
 
 struct DebugView: View {
     
+    @State private var isShowingShareSheet = false
+    
    // @StateObject private var googleSignInManager = GoogleSignInManager(clientID: "748381179204-hp1qqcpa5jr929nj0hs6sou0sb6df60a.apps.googleusercontent.com")
     
     var body: some View {
@@ -21,6 +23,16 @@ struct DebugView: View {
             NavigationLink(destination: GoogleSignInView()) {
                 Text("GoogleSignInView")
                     .buttonStyle(PrimaryButtonStyle())
+            }
+            
+            Button("Copy sqlite") {
+                isShowingShareSheet = true
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            // Present the document picker
+            .sheet(isPresented:  $isShowingShareSheet) {
+                // Present the share sheet
+                ShareSheet(activityItems: [sqlLitePathURL])
             }
              
             // NavigationLink(destination: GoogleAuthenticatorView()) {

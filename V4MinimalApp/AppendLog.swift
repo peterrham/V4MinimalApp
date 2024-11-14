@@ -13,13 +13,12 @@ import Foundation
 class AppendLog {
     static let appendSheetID: String = "1TPUVf37GLcvAiK1HsI6-36h_OVE_JrvGHNQ2Jd3xo9I"
     
-    func append()
+    func append(text: String)
     {
         print("append()")
         
-       // let accessToken = googleSignInManager.user!.accessToken.tokenString
+       let accessToken = AuthManager.shared.getAccessToken()!
         
-        GoogleSheetsClient(inputAccessToken: "bogus token").appendDataToGoogleSheet(data:[["efg"]])
-        
+        GoogleSheetsClient(inputAccessToken: accessToken).appendDataToGoogleSheet(spreadsheetId: AppendLog.appendSheetID, data:[[text]])
     }
 }

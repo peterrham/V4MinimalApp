@@ -32,7 +32,7 @@ struct GoogleSignInView: View {
         
         Button("Append") {
            print("Append")
-            AppendLog().append()
+            AppendLog().append(text: "abc")
         }
         .buttonStyle(PrimaryButtonStyle())
         

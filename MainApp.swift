@@ -21,18 +21,19 @@ struct VoiceRecognitionApp: App {
         
         appDelegate.appState = appState
         
-        if let recognizedTextEntities = DynamicPersistenceController.shared.fetchRecognizedTextEntities() {
-            for entity in recognizedTextEntities {
-                if
-                    let content = entity.value(forKey: "content") as? String,
-                    let timestamp = entity.value(forKey: "timestamp") as? Date {
-                    print("Content: \(content), Timestamp: \(timestamp)")
+        if false {
+            if let recognizedTextEntities = DynamicPersistenceController.shared.fetchRecognizedTextEntities() {
+                for entity in recognizedTextEntities {
+                    if
+                        let content = entity.value(forKey: "content") as? String,
+                        let timestamp = entity.value(forKey: "timestamp") as? Date {
+                        print("Content: \(content), Timestamp: \(timestamp)")
+                    }
                 }
+            } else {
+                print("No records found or an error occurred.")
             }
-        } else {
-            print("No records found or an error occurred.")
         }
-        
         
     }
     
