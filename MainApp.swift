@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 
+// bogus comment to force a git commit
 
 @main
 struct VoiceRecognitionApp: App {
