@@ -296,7 +296,7 @@ class SpeechRecognitionManager: ObservableObject {
     {
         let appendLog = AppendLog()
         
-        appendLog.append(text: text!)
+        appendLog.appendRow(row: [timestamp!, text!])
     }
     
     func stopListening() {

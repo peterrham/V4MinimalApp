@@ -13,6 +13,13 @@ import Foundation
 class AppendLog {
     static let appendSheetID: String = "1TPUVf37GLcvAiK1HsI6-36h_OVE_JrvGHNQ2Jd3xo9I"
     
+    func appendRow(row: [String]){
+        
+       let accessToken = AuthManager.shared.getAccessToken()!
+        
+        GoogleSheetsClient(inputAccessToken: accessToken).appendDataToGoogleSheet(spreadsheetId: AppendLog.appendSheetID, data:[row])
+    }
+    
     func append(text: String)
     {
         print("append()")
