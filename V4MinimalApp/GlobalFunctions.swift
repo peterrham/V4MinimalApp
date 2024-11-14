@@ -209,3 +209,23 @@ import CoreData
  }
  }
  */
+
+
+// MARK: - Core Data Setup (Dynamic Persistence Controller)
+
+var sqlLitePathURL:URL?
+
+func exportDatabase() -> URL? {
+    let fileManager = FileManager.default
+    let dbURL =  sqlLitePathURL /* Your SQLite file URL here */
+    let exportURL = fileManager.temporaryDirectory.appendingPathComponent("exportedDatabase.sqlite")
+    
+    do {
+        try fileManager.copyItem(at: dbURL!, to: exportURL)
+        print("copied the file")
+        return exportURL
+    } catch {
+        print("Error exporting database: \(error)")
+        return nil
+    }
+}

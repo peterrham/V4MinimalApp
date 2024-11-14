@@ -16,13 +16,10 @@ class AppHelper {
         // sorting just does not work for some reason ...
         
         prettyPrintSortedJSONFromInfoDictionary()
-
         
         // Custom setup code, such as checking URL schemes
         checkURLSchemes()
     }
-    
-   
 }
 
 
