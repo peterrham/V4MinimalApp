@@ -20,6 +20,10 @@ struct DebugView: View {
             // GoogleSignInView
             
            // NavigationLink(destination: GoogleSignInView().environmentObject(googleSignInManager).environment(\.managedObjectContext, // DynamicPersistenceController.shared.container.viewContext)) {
+            
+            Button("Create Image") {
+            }.buttonStyle(PrimaryButtonStyle())
+                          
             NavigationLink(destination: GoogleSignInView()) {
                 Text("GoogleSignInView")
                     .buttonStyle(PrimaryButtonStyle())
