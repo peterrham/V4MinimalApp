@@ -1,10 +1,6 @@
-//
-//  MainApp.swift
-//  V4MinimalApp
-//
-//  Created by Ham, Peter on 11/13/24.
-//
-
+/* MainApp.swift - Entry point for V4MinimalApp.
+ Manages app initialization, authentication state, and conditional view loading.
+*/
 import Foundation
 import SwiftUI
 
@@ -49,4 +45,11 @@ struct VoiceRecognitionApp: App {
             }
         }
     }
+    
+    func sayHelloWorld() {
+        print("Hello, World!")
+    }
+    
+    // 👋 You've now got a Hello World function! Time to celebrate. 🎉
 }
+    
