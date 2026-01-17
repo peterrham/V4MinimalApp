@@ -21,7 +21,8 @@ struct DebugView: View {
             
            // NavigationLink(destination: GoogleSignInView().environmentObject(googleSignInManager).environment(\.managedObjectContext, // DynamicPersistenceController.shared.container.viewContext)) {
             
-            Button("Create Image") {
+            Button("Print To Log") {
+                print("printing to log")
             }.buttonStyle(PrimaryButtonStyle())
                           
             NavigationLink(destination: GoogleSignInView()) {
