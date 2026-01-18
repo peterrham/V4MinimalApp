@@ -17,10 +17,9 @@ func logWithTimestamp(_ message: String) {
     let dateFormatter = DateFormatter()
     dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
     let timestamp = dateFormatter.string(from: Date())
-    debugPrint(str: "[\(timestamp)] \(message)")
+    print("[\(timestamp)] \(message)")
+    NSLog("[\(timestamp)] \(message)")
 }
-
-import Foundation
 
 func prettyPrintSortedJSONFromInfoDictionary() {
     if let infoDictionary = Bundle.main.infoDictionary {
@@ -70,9 +69,6 @@ func recursivelySortDictionary(_ dictionary: [String: Any]) -> [String: Any] {
     return sortedDictionary
 }
 
-import Foundation
-
-
 func prettyPrintSortedInfoDictionaryRecursively() {
     if let infoDictionary = Bundle.main.infoDictionary {
         let sortedDictionary = recursivelySortDictionary(infoDictionary)
@@ -90,8 +86,6 @@ func prettyPrintSortedInfoDictionaryRecursively() {
         print("No Info.plist found.")
     }
 }
-
-
 
 func prettyPrintInfoDictionary() {
     // Access the main info dictionary
@@ -229,3 +223,4 @@ func exportDatabase() -> URL? {
         return nil
     }
 }
+

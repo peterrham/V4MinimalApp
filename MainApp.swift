@@ -14,6 +14,8 @@ struct VoiceRecognitionApp: App {
     @StateObject private var appState = AppState()
     
     init() {
+        logWithTimestamp("App struct: VoiceRecognitionApp initialized")
+        
         _ = AppHelper.shared
         
         appDelegate.appState = appState

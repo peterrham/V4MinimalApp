@@ -3,6 +3,13 @@ import CoreData
 import AVFoundation
 import Speech
 
+/*
+func logWithTimestamp(_ string: String) {
+    let timestamp = ISO8601DateFormatter().string(from: Date())
+    print("[\(timestamp)] \(string)")
+}
+ */
+
 // MARK: - Speech Recognition Manager
 
 class SpeechRecognitionManager: ObservableObject {
@@ -30,6 +37,8 @@ class SpeechRecognitionManager: ObservableObject {
     
     
     init(context: NSManagedObjectContext) {
+        
+        logWithTimestamp("App launched: SpeechRecognitionManager initialized")
         
         print("inside init()")
         self.context = context
@@ -217,6 +226,37 @@ class SpeechRecognitionManager: ObservableObject {
     
     // Starts listening and sets up the speech recognition task
     func startListening() {
+        // Log current authorization statuses with timestamps
+        
+        // Commented out old logs
+        // logWithTimestamp("SFSpeechRecognizer.authorizationStatus() = \(SFSpeechRecognizer.authorizationStatus())")
+        // logWithTimestamp("AVAudioSession.sharedInstance().recordPermission = \(AVAudioSession.sharedInstance().recordPermission)")
+        
+        // New detailed authorization status logs:
+        switch SFSpeechRecognizer.authorizationStatus() {
+        case .notDetermined:
+            logWithTimestamp("Speech permission: not determined")
+        case .denied:
+            logWithTimestamp("Speech permission: denied")
+        case .restricted:
+            logWithTimestamp("Speech permission: restricted")
+        case .authorized:
+            logWithTimestamp("Speech permission: authorized")
+        @unknown default:
+            logWithTimestamp("Speech permission: unknown")
+        }
+        
+        switch AVAudioSession.sharedInstance().recordPermission {
+        case .undetermined:
+            logWithTimestamp("Microphone permission: undetermined")
+        case .denied:
+            logWithTimestamp("Microphone permission: denied")
+        case .granted:
+            logWithTimestamp("Microphone permission: granted")
+        @unknown default:
+            logWithTimestamp("Microphone permission: unknown")
+        }
+        
         // Ensure permissions are granted
         guard SFSpeechRecognizer.authorizationStatus() == .authorized,
               AVAudioSession.sharedInstance().recordPermission == .granted else {
@@ -270,8 +310,44 @@ class SpeechRecognitionManager: ObservableObject {
         
         
         inputNode.installTap(onBus: 0, bufferSize: 1024 * 1024, format: recordingFormat) { [weak self] buffer, when in
-            // detailedLog(string: "got buffer")
+       
             self?.recognitionRequest?.append(buffer)
+            
+            let timestamp = ISO8601DateFormatter().string(from: Date())
+            
+            print("[\(timestamp)] Buffer format:", buffer.format)
+            print("[\(timestamp)] Common format:", buffer.format.commonFormat.rawValue)
+            
+            // Print number of bytes in the buffer
+            let frameLength = Int(buffer.frameLength)
+            let channelCount = Int(buffer.format.channelCount)
+            let bytesPerSample = 4 // Float32 is 4 bytes
+            let totalBytes = frameLength * channelCount * bytesPerSample
+            print("[\(timestamp)] Number of bytes in buffer:", totalBytes)
+            
+            // Print first sample if format is Float32
+            if let floatChannelData = buffer.floatChannelData {
+                let firstSample = floatChannelData.pointee[0]
+                print("[\(timestamp)] First float sample:", firstSample)
+            }
+            
+            // Print the first 16 bytes as hex
+            if let floatChannelData = buffer.floatChannelData {
+                // Assume non-interleaved, print from the first channel
+                let bytePtr = UnsafeRawPointer(floatChannelData.pointee).assumingMemoryBound(to: UInt8.self)
+                let hexString = (0..<16).map { String(format: "%02X", bytePtr[$0]) }.joined(separator: " ")
+                print("[\(timestamp)] First 16 bytes as hex:", hexString)
+            }
+            
+            /*
+            // Print the first 16 bits (first Int16 sample) of the buffer
+            if let channelData = buffer.int16ChannelData {
+                let firstSample = channelData.pointee[0]
+                print("First 16 bits of buffer (as Int16): \(firstSample)")
+            }
+            */
+            
+            print("got buffer afterwards")
         }
         
         
@@ -340,3 +416,4 @@ class SpeechRecognitionManager: ObservableObject {
         silenceTimer = nil
     }
 }
+

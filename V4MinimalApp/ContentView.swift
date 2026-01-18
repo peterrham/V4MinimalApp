@@ -111,7 +111,7 @@ struct ContentView: View {
         NavigationStack{
             VStack(spacing: 20) {
                 NavigationLink(destination: DebugView()) {
-                    Text("DebugView")
+                    Text("#1 DebugView")
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 
