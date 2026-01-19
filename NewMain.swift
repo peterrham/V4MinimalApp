@@ -1,10 +1,12 @@
 import SwiftUI
+import os
 import CoreData
 import AVFoundation
 import Speech
 import GoogleSignIn
 import UIKit
 
+let appBootLog = Logger(subsystem: "com.yourcompany.yourapp", category: "Boot")
 
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -19,6 +21,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        appBootLog.error("BEFORE_ERROR_BOOT_MARKER_123 — didFinishLaunching (error-level test)")
+        
+        appBootLog.info("INFO_BOOT_MARKER_123 — didFinishLaunching (-level test)")
+        
+        appBootLog.error("AFTER_ERROR_BOOT_MARKER_123 — didFinishLaunching (error-level test)")
+        
+        
         print("AppDelegate didFinishLaunchingWithOptions called")
         
         // initialize singleton
@@ -170,6 +179,10 @@ struct SecondView: View {
         }
     }
 }
+
+
+
+
 
 
 

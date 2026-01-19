@@ -310,46 +310,55 @@ class SpeechRecognitionManager: ObservableObject {
         
         
         inputNode.installTap(onBus: 0, bufferSize: 1024 * 1024, format: recordingFormat) { [weak self] buffer, when in
-       
+            
             self?.recognitionRequest?.append(buffer)
             
-            let timestamp = ISO8601DateFormatter().string(from: Date())
+            // this looging is too frequent
             
-            print("[\(timestamp)] Buffer format:", buffer.format)
-            print("[\(timestamp)] Common format:", buffer.format.commonFormat.rawValue)
-            
-            // Print number of bytes in the buffer
-            let frameLength = Int(buffer.frameLength)
-            let channelCount = Int(buffer.format.channelCount)
-            let bytesPerSample = 4 // Float32 is 4 bytes
-            let totalBytes = frameLength * channelCount * bytesPerSample
-            print("[\(timestamp)] Number of bytes in buffer:", totalBytes)
-            
-            // Print first sample if format is Float32
-            if let floatChannelData = buffer.floatChannelData {
-                let firstSample = floatChannelData.pointee[0]
-                print("[\(timestamp)] First float sample:", firstSample)
+            if (false) {
+                
+                appBootLog.info("INFO_BOOT_MARKER_123_AUDIO —  audio buffer")
+                
             }
             
-            // Print the first 16 bytes as hex
-            if let floatChannelData = buffer.floatChannelData {
-                // Assume non-interleaved, print from the first channel
-                let bytePtr = UnsafeRawPointer(floatChannelData.pointee).assumingMemoryBound(to: UInt8.self)
-                let hexString = (0..<16).map { String(format: "%02X", bytePtr[$0]) }.joined(separator: " ")
-                print("[\(timestamp)] First 16 bytes as hex:", hexString)
+            if (false) {
+                let timestamp = ISO8601DateFormatter().string(from: Date())
+                
+                print("[\(timestamp)] Buffer format:", buffer.format)
+                print("[\(timestamp)] Common format:", buffer.format.commonFormat.rawValue)
+                
+                // Print number of bytes in the buffer
+                let frameLength = Int(buffer.frameLength)
+                let channelCount = Int(buffer.format.channelCount)
+                let bytesPerSample = 4 // Float32 is 4 bytes
+                let totalBytes = frameLength * channelCount * bytesPerSample
+                print("[\(timestamp)] Number of bytes in buffer:", totalBytes)
+                
+                // Print first sample if format is Float32
+                if let floatChannelData = buffer.floatChannelData {
+                    let firstSample = floatChannelData.pointee[0]
+                    print("[\(timestamp)] First float sample:", firstSample)
+                }
+                
+                // Print the first 16 bytes as hex
+                if let floatChannelData = buffer.floatChannelData {
+                    // Assume non-interleaved, print from the first channel
+                    let bytePtr = UnsafeRawPointer(floatChannelData.pointee).assumingMemoryBound(to: UInt8.self)
+                    let hexString = (0..<16).map { String(format: "%02X", bytePtr[$0]) }.joined(separator: " ")
+                    print("[\(timestamp)] First 16 bytes as hex:", hexString)
+                }
+                
+                /*
+                 // Print the first 16 bits (first Int16 sample) of the buffer
+                 if let channelData = buffer.int16ChannelData {
+                 let firstSample = channelData.pointee[0]
+                 print("First 16 bits of buffer (as Int16): \(firstSample)")
+                 }
+                 */
+                
+                print("got buffer afterwards")
             }
-            
-            /*
-            // Print the first 16 bits (first Int16 sample) of the buffer
-            if let channelData = buffer.int16ChannelData {
-                let firstSample = channelData.pointee[0]
-                print("First 16 bits of buffer (as Int16): \(firstSample)")
-            }
-            */
-            
-            print("got buffer afterwards")
         }
-        
         
         // Start audio engine
         audioEngine.prepare()
