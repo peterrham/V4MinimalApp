@@ -38,9 +38,9 @@ class SpeechRecognitionManager: ObservableObject {
     
     init(context: NSManagedObjectContext) {
         
-        logWithTimestamp("App launched: SpeechRecognitionManager initialized")
+        appBootLog.infoWithContext("App launched: SpeechRecognitionManager initialized")
         
-        print("inside init()")
+        appBootLog.infoWithContext("inside init()")
         self.context = context
         requestMicrophonePermission()
         startListening()
@@ -73,64 +73,62 @@ class SpeechRecognitionManager: ObservableObject {
     
     func printTranscriptionSegments(transcription: SFTranscription) {
         for (index, segment) in transcription.segments.enumerated() {
-            detailedLog(string: "<<<<<<<<<<<<<<<<<<<<<<<<")
-            detailedLog(string: "index: \(index)")
-            detailedLog(string: "Text: \(segment.substring)")
-            detailedLog(string: "Range: \(segment.substringRange)")
-            detailedLog(string: "Timestamp: \(segment.timestamp) seconds")
-            detailedLog(string: "Duration: \(segment.duration) seconds")
-            detailedLog(string: "Confidence: \(segment.confidence)")
-            detailedLog(string: "-----------------------")
+            appBootLog.infoWithContext("<<<<<<<<<<<<<<<<<<<<<<<<")
+            appBootLog.infoWithContext("index: \(index)")
+            appBootLog.infoWithContext("Text: \(segment.substring)")
+            appBootLog.infoWithContext("Range: \(segment.substringRange)")
+            appBootLog.infoWithContext("Timestamp: \(segment.timestamp) seconds")
+            appBootLog.infoWithContext("Duration: \(segment.duration) seconds")
+            appBootLog.infoWithContext("Confidence: \(segment.confidence)")
+            appBootLog.infoWithContext("-----------------------")
             
             if (index == 0) {
                 if segment.timestamp == 0 {
-                    detailedLog(string: "ignore this one")
+                    appBootLog.infoWithContext("ignore this one")
                 } else {
-                    detailedLog(string: "keep this one")
+                    appBootLog.infoWithContext("keep this one")
                 }
             }
         }
     }
     
     func detailedLog(string: String) {
-        if false {
-            logWithTimestamp (string)
-        }
+        appBootLog.debugWithContext(string)
     }
     
     func processRecognitionResult(recognitionResult: SFSpeechRecognitionResult?, error: Error?)
     {
-        detailedLog(string: "got recognition result")
+        appBootLog.debugWithContext("got recognition result")
         
         
         if false {
             
-            detailedLog(string: "recognitionTask: \(self.recognitionTask)")
-            detailedLog(string: "recognitionTask.state: \(self.recognitionTask!.state)")
+            appBootLog.debugWithContext("recognitionTask: \(self.recognitionTask)")
+            appBootLog.debugWithContext("recognitionTask.state: \(self.recognitionTask!.state)")
             
             // detailedLog(string: recognitionTask!)
             
-            detailedLog(string: "Recognition Task Properties:")
-            detailedLog(string: "----------------------------")
-            detailedLog(string: "State: \(recognitionTask!.state)")
-            detailedLog(string: "Is Finishing: \(recognitionTask!.isFinishing)")
-            detailedLog(string: "Is Cancelled: \(recognitionTask!.isCancelled)")
+            appBootLog.debugWithContext("Recognition Task Properties:")
+            appBootLog.debugWithContext("----------------------------")
+            appBootLog.debugWithContext("State: \(recognitionTask!.state)")
+            appBootLog.debugWithContext("Is Finishing: \(recognitionTask!.isFinishing)")
+            appBootLog.debugWithContext("Is Cancelled: \(recognitionTask!.isCancelled)")
             
             // Print the current state of the task
-            detailedLog(string: "Recognition Task State:")
+            appBootLog.debugWithContext("Recognition Task State:")
             switch recognitionTask!.state {
             case .starting:
-                detailedLog(string: "The task is starting.")
+                appBootLog.debugWithContext("The task is starting.")
             case .running:
-                detailedLog(string: "The task is running.")
+                appBootLog.debugWithContext("The task is running.")
             case .finishing:
-                detailedLog(string: "The task is finishing.")
+                appBootLog.debugWithContext("The task is finishing.")
             case .canceling:
-                detailedLog(string: "The task is canceling.")
+                appBootLog.debugWithContext("The task is canceling.")
             case .completed:
-                detailedLog(string: "The task is completed.")
+                appBootLog.debugWithContext("The task is completed.")
             @unknown default:
-                detailedLog(string: "Unknown state.")
+                appBootLog.debugWithContext("Unknown state.")
             }
             
             
@@ -154,23 +152,23 @@ class SpeechRecognitionManager: ObservableObject {
             
             if (result.bestTranscription.segments.first?.confidence ?? 0.0) > 0.0 {
                 accumulatedText = accumulatedText + " " + previousText
-                detailedLog(string: "got zero confidence")
+                appBootLog.debugWithContext("got zero confidence")
                 isReset = true
             }
             
             
             
             
-            detailedLog(string: "result.isFinal: \(result.isFinal)")
+            appBootLog.debugWithContext("result.isFinal: \(result.isFinal)")
             
             
             if false {
                 for segment in result.bestTranscription.segments {
                     // detailedLog(string: "Recognized word: \(segment.substring), Confidence: \(segment.confidence)")
-                    detailedLog(string: "Recognized word: \(segment.substring)")
+                    appBootLog.debugWithContext("Recognized word: \(segment.substring)")
                 }
                 for transcription in result.transcriptions {
-                    detailedLog(string: "Alternative transcription: \(transcription.formattedString)")
+                    appBootLog.debugWithContext("Alternative transcription: \(transcription.formattedString)")
                 }
             }
             
@@ -184,11 +182,11 @@ class SpeechRecognitionManager: ObservableObject {
             
             
             let recognizedText = result.bestTranscription.formattedString
-            detailedLog(string: "recognizedText: \(recognizedText)")
+            appBootLog.debugWithContext("recognizedText: \(recognizedText)")
             
             if (result.bestTranscription.segments.first?.confidence ?? 0.0) > 0.0 {
                 accumulatedText = accumulatedText + " " + previousText
-                detailedLog(string: "got zero confidence")
+                appBootLog.debugWithContext("got zero confidence")
                 isReset = true
             } else {
                 accumulatedText = recognizedText
@@ -199,7 +197,7 @@ class SpeechRecognitionManager: ObservableObject {
             self.finalText = accumulatedText
             
             if recognizedText.contains(stopWord) {
-                detailedLog(string: "got the stop word")
+                appBootLog.debugWithContext("got the stop word")
                 
                 // exportDatabase()
                 
@@ -212,12 +210,12 @@ class SpeechRecognitionManager: ObservableObject {
                     self.startListening()
                 }                    // Restart listening after detecting "stop"
             } else if result.isFinal {
-                detailedLog(string: "got isFinal")
+                appBootLog.debugWithContext("got isFinal")
                 
                 // self.startListening()
             }
         } else if let error = error {
-            detailedLog(string: "Recognition error: \(error.localizedDescription)")
+            appBootLog.debugWithContext("Recognition error: \(error.localizedDescription)")
             self.stopListening()
             self.startListening()
         }
@@ -235,32 +233,32 @@ class SpeechRecognitionManager: ObservableObject {
         // New detailed authorization status logs:
         switch SFSpeechRecognizer.authorizationStatus() {
         case .notDetermined:
-            logWithTimestamp("Speech permission: not determined")
+            appBootLog.infoWithContext("Speech permission: not determined")
         case .denied:
-            logWithTimestamp("Speech permission: denied")
+            appBootLog.infoWithContext("Speech permission: denied")
         case .restricted:
-            logWithTimestamp("Speech permission: restricted")
+            appBootLog.infoWithContext("Speech permission: restricted")
         case .authorized:
-            logWithTimestamp("Speech permission: authorized")
+            appBootLog.infoWithContext("Speech permission: authorized")
         @unknown default:
-            logWithTimestamp("Speech permission: unknown")
+            appBootLog.infoWithContext("Speech permission: unknown")
         }
         
         switch AVAudioSession.sharedInstance().recordPermission {
         case .undetermined:
-            logWithTimestamp("Microphone permission: undetermined")
+            appBootLog.infoWithContext("Microphone permission: undetermined")
         case .denied:
-            logWithTimestamp("Microphone permission: denied")
+            appBootLog.infoWithContext("Microphone permission: denied")
         case .granted:
-            logWithTimestamp("Microphone permission: granted")
+            appBootLog.infoWithContext("Microphone permission: granted")
         @unknown default:
-            logWithTimestamp("Microphone permission: unknown")
+            appBootLog.infoWithContext("Microphone permission: unknown")
         }
         
         // Ensure permissions are granted
         guard SFSpeechRecognizer.authorizationStatus() == .authorized,
               AVAudioSession.sharedInstance().recordPermission == .granted else {
-            detailedLog(string: "Permissions not granted.")
+            appBootLog.debugWithContext("Permissions not granted.")
             return
         }
         
@@ -275,7 +273,7 @@ class SpeechRecognitionManager: ObservableObject {
             // try audioSession.setPreferredIOBufferDuration(0.01)  // Set a lower buffer duration for real-time processing
             try audioSession.setPreferredIOBufferDuration(100)
         } catch {
-            detailedLog(string: "Audio session setup error: \(error)")
+            appBootLog.debugWithContext("Audio session setup error: \(error)")
             return
         }
         
@@ -294,12 +292,12 @@ class SpeechRecognitionManager: ObservableObject {
         recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest!) { [weak self] result, error in
             
             let one = 1 // adding a test line of code to see where the exception is raised
-            self?.detailedLog(string: "about to handle the recognitionRequest")
+            appBootLog.infoWithContext("about to handle the recognitionRequest")
             
             if let result = result {
                 self?.processRecognitionResult(recognitionResult: result, error: error)
             } else {
-                self?.detailedLog(string: "result is NULL")
+                appBootLog.debugWithContext("result is NULL")
             }
         }
         
@@ -310,54 +308,7 @@ class SpeechRecognitionManager: ObservableObject {
         
         
         inputNode.installTap(onBus: 0, bufferSize: 1024 * 1024, format: recordingFormat) { [weak self] buffer, when in
-            
-            self?.recognitionRequest?.append(buffer)
-            
-            // this looging is too frequent
-            
-            if (false) {
-                
-                appBootLog.info("INFO_BOOT_MARKER_123_AUDIO —  audio buffer")
-                
-            }
-            
-            if (false) {
-                let timestamp = ISO8601DateFormatter().string(from: Date())
-                
-                print("[\(timestamp)] Buffer format:", buffer.format)
-                print("[\(timestamp)] Common format:", buffer.format.commonFormat.rawValue)
-                
-                // Print number of bytes in the buffer
-                let frameLength = Int(buffer.frameLength)
-                let channelCount = Int(buffer.format.channelCount)
-                let bytesPerSample = 4 // Float32 is 4 bytes
-                let totalBytes = frameLength * channelCount * bytesPerSample
-                print("[\(timestamp)] Number of bytes in buffer:", totalBytes)
-                
-                // Print first sample if format is Float32
-                if let floatChannelData = buffer.floatChannelData {
-                    let firstSample = floatChannelData.pointee[0]
-                    print("[\(timestamp)] First float sample:", firstSample)
-                }
-                
-                // Print the first 16 bytes as hex
-                if let floatChannelData = buffer.floatChannelData {
-                    // Assume non-interleaved, print from the first channel
-                    let bytePtr = UnsafeRawPointer(floatChannelData.pointee).assumingMemoryBound(to: UInt8.self)
-                    let hexString = (0..<16).map { String(format: "%02X", bytePtr[$0]) }.joined(separator: " ")
-                    print("[\(timestamp)] First 16 bytes as hex:", hexString)
-                }
-                
-                /*
-                 // Print the first 16 bits (first Int16 sample) of the buffer
-                 if let channelData = buffer.int16ChannelData {
-                 let firstSample = channelData.pointee[0]
-                 print("First 16 bits of buffer (as Int16): \(firstSample)")
-                 }
-                 */
-                
-                print("got buffer afterwards")
-            }
+            self?.handleAudioTap(buffer: buffer, when: when)
         }
         
         // Start audio engine
@@ -365,10 +316,55 @@ class SpeechRecognitionManager: ObservableObject {
         do {
             try audioEngine.start()
         } catch {
-            detailedLog(string: "Audio engine could not start: \(error)")
+            appBootLog.debugWithContext("Audio engine could not start: \(error)")
         }
         
         // startSilenceTimer()  // Start silence detection timer
+    }
+    
+    private func handleAudioTap(buffer: AVAudioPCMBuffer, when: AVAudioTime) {
+        self.recognitionRequest?.append(buffer)
+
+        // this logging is too frequent
+        if (false) {
+            appBootLog.info("INFO_BOOT_MARKER_123_AUDIO —  audio buffer")
+        }
+
+        if (true) {
+            appBootLog.infoWithContext("Buffer format: \(buffer.format)")
+            appBootLog.infoWithContext("Common format: \(buffer.format.commonFormat.rawValue)")
+
+            // Print number of bytes in the buffer
+            let frameLength = Int(buffer.frameLength)
+            let channelCount = Int(buffer.format.channelCount)
+            let bytesPerSample = 4 // Float32 is 4 bytes
+            let totalBytes = frameLength * channelCount * bytesPerSample
+            appBootLog.infoWithContext("Number of bytes in buffer: \(totalBytes)")
+
+            // Print first sample if format is Float32
+            if let floatChannelData = buffer.floatChannelData {
+                let firstSample = floatChannelData.pointee[0]
+                appBootLog.infoWithContext("First float sample: \(firstSample)")
+            }
+
+            // Print the first 16 bytes as hex
+            if let floatChannelData = buffer.floatChannelData {
+                // Assume non-interleaved, print from the first channel
+                let bytePtr = UnsafeRawPointer(floatChannelData.pointee).assumingMemoryBound(to: UInt8.self)
+                let hexString = (0..<16).map { String(format: "%02X", bytePtr[$0]) }.joined(separator: " ")
+                appBootLog.infoWithContext("First 16 bytes as hex: \(hexString)")
+            }
+
+            /*
+             // Print the first 16 bits (first Int16 sample) of the buffer
+             if let channelData = buffer.int16ChannelData {
+             let firstSample = channelData.pointee[0]
+             print("First 16 bits of buffer (as Int16): \(firstSample)")
+             }
+             */
+
+            appBootLog.infoWithContext("got buffer afterwards")
+        }
     }
     
     private func clearRecognitionTask() {
@@ -385,7 +381,7 @@ class SpeechRecognitionManager: ObservableObject {
     }
     
     func stopListening() {
-        detailedLog(string: "inside stopListening")
+        appBootLog.debugWithContext("inside stopListening")
         recognitionRequest?.endAudio()  // Signal end of audio to finalize recognition
         audioEngine.stop()              // Stop the audio engine to free resources
         audioEngine.inputNode.removeTap(onBus: 0)  // Remove the tap to stop capturing audio
@@ -402,9 +398,9 @@ class SpeechRecognitionManager: ObservableObject {
         
         do {
             try context.save()
-            detailedLog(string: "Text saved successfully: \(text)")
+            appBootLog.debugWithContext("Text saved successfully: \(text)")
         } catch {
-            detailedLog(string: "Failed to save text: \(error.localizedDescription)")
+            appBootLog.debugWithContext("Failed to save text: \(error.localizedDescription)")
         }
         
         saveToSheet(timestamp: newEntry.timestamp!.formatted(), text: newEntry.content)
@@ -415,7 +411,7 @@ class SpeechRecognitionManager: ObservableObject {
     private func startSilenceTimer() {
         resetSilenceTimer()
         silenceTimer = Timer.scheduledTimer(withTimeInterval: silenceThreshold, repeats: false) { [weak self] _ in
-            self?.detailedLog(string: "timer fired")
+            appBootLog.debugWithContext("timer fired")
             self?.stopListening()  // Stop if no audio is detected within threshold
         }
     }

@@ -6,7 +6,46 @@ import Speech
 import GoogleSignIn
 import UIKit
 
-let appBootLog = Logger(subsystem: "com.yourcompany.yourapp", category: "Boot")
+extension Logger {
+    func infoWithContext(
+        _ message: String,
+        file: String = #fileID,
+        function: String = #function,
+        line: Int = #line
+    ) {
+        self.info("[\(file, privacy: .public):\(line)] \(message, privacy: .public) \(function, privacy: .public)")
+    }
+
+    func errorWithContext(
+        _ message: String,
+        file: String = #fileID,
+        function: String = #function,
+        line: Int = #line
+    ) {
+        self.error("[\(file, privacy: .public):\(line)] \(message, privacy: .public) \(function, privacy: .public)")
+    }
+
+    func debugWithContext(
+        _ message: String,
+        file: String = #fileID,
+        function: String = #function,
+        line: Int = #line
+    ) {
+        self.debug("[\(file, privacy: .public):\(line)] \(message, privacy: .public) \(function, privacy: .public)")
+    }
+}
+
+let appBootLog: Logger = {
+    let logger = Logger(subsystem: "com.yourcompany.yourapp", category: "Boot")
+    logger.infoWithContext("BOOT_MARKER_INITIALIZED — Logger created via closure and ready")
+    return logger
+}()
+
+/// Call once during app launch to emit an initial boot log marker.
+func logInitialBootMarker() {
+    appBootLog.errorWithContext("ERROR_BOOT_MARKER_123 — right after logger created")
+}
+
 
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -21,11 +60,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        appBootLog.error("BEFORE_ERROR_BOOT_MARKER_123 — didFinishLaunching (error-level test)")
+        logInitialBootMarker()
+        appBootLog.errorWithContext("BEFORE_ERROR_BOOT_MARKER_123 — didFinishLaunching (error-level test)")
         
-        appBootLog.info("INFO_BOOT_MARKER_123 — didFinishLaunching (-level test)")
+        appBootLog.infoWithContext("INFO_BOOT_MARKER_123 — didFinishLaunching (-level test)")
         
-        appBootLog.error("AFTER_ERROR_BOOT_MARKER_123 — didFinishLaunching (error-level test)")
+        appBootLog.errorWithContext("AFTER_ERROR_BOOT_MARKER_123 — didFinishLaunching (error-level test)")
         
         
         print("AppDelegate didFinishLaunchingWithOptions called")
@@ -179,6 +219,11 @@ struct SecondView: View {
         }
     }
 }
+
+
+
+
+
 
 
 
