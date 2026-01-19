@@ -23,6 +23,17 @@ class SpeechRecognitionManager: ObservableObject {
     private var audioFileURL: URL?
     private var audioFileHandle: FileHandle?
     
+    private func makeAudioFileURL() -> URL? {
+        do {
+            let docs = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            let filename = "rawAudio-\(Int(Date().timeIntervalSince1970)).pcm"
+            return docs.appendingPathComponent(filename)
+        } catch {
+            appBootLog.errorWithContext("Failed to get Documents directory: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
     // this is the text that we add together until we get a stop word
     
     private var  accumulatedText: String = ""
