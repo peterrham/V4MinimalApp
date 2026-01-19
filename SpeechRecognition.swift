@@ -19,6 +19,10 @@ class SpeechRecognitionManager: ObservableObject {
     private var recognitionTask: SFSpeechRecognitionTask?
     private let context: NSManagedObjectContext
     
+    // Persistent audio file storage
+    private var audioFileURL: URL?
+    private var audioFileHandle: FileHandle?
+    
     // this is the text that we add together until we get a stop word
     
     private var  accumulatedText: String = ""
