@@ -60,6 +60,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        writeTestFileToDocuments()
+        listDocumentsDirectory()
+        logFilesIntegrationPlistKeys()
         logInitialBootMarker()
         appBootLog.errorWithContext("BEFORE_ERROR_BOOT_MARKER_123 — didFinishLaunching (error-level test)")
         
@@ -79,6 +82,54 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
     
+    private func writeTestFileToDocuments() {
+        do {
+            let docs = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            let url = docs.appendingPathComponent("test.txt")
+            let contents = "hello from app launch at: \(Date())"
+            try contents.write(to: url, atomically: true, encoding: .utf8)
+            appBootLog.infoWithContext("Wrote test file to: \(url.path)")
+        } catch {
+            appBootLog.errorWithContext("Failed writing test file: \(error.localizedDescription)")
+        }
+    }
+    
+    private func listDocumentsDirectory() {
+        do {
+            let docs = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            let contents = try FileManager.default.contentsOfDirectory(at: docs, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
+            appBootLog.infoWithContext("Documents directory: \(docs.path)")
+            if contents.isEmpty {
+                appBootLog.infoWithContext("Documents is empty")
+            } else {
+                for url in contents {
+                    appBootLog.infoWithContext(" - \(url.lastPathComponent)")
+                }
+            }
+        } catch {
+            appBootLog.errorWithContext("Failed to list Documents: \(error.localizedDescription)")
+        }
+    }
+    
+    private func logFilesIntegrationPlistKeys() {
+        let fileSharing = Bundle.main.object(forInfoDictionaryKey: "UIFileSharingEnabled") as? Bool ?? false
+        appBootLog.infoWithContext("UIFileSharingEnabled = \(fileSharing)")
+
+        let supportsInPlace = Bundle.main.object(forInfoDictionaryKey: "LSSupportsOpeningDocumentsInPlace") as? Bool ?? false
+        appBootLog.infoWithContext("LSSupportsOpeningDocumentsInPlace = \(supportsInPlace)")
+
+        if let docTypes = Bundle.main.object(forInfoDictionaryKey: "CFBundleDocumentTypes") as? [[String: Any]] {
+            appBootLog.infoWithContext("CFBundleDocumentTypes count = \(docTypes.count)")
+            for (index, item) in docTypes.enumerated() {
+                let name = item["CFBundleTypeName"] as? String ?? "(no name)"
+                let role = item["CFBundleTypeRole"] as? String ?? "(no role)"
+                let utis = item["LSItemContentTypes"] as? [String] ?? []
+                appBootLog.infoWithContext("  [\(index)] name=\(name), role=\(role), UTIs=\(utis)")
+            }
+        } else {
+            appBootLog.infoWithContext("CFBundleDocumentTypes not set")
+        }
+    }
 }
 
 
@@ -219,6 +270,8 @@ struct SecondView: View {
         }
     }
 }
+
+
 
 
 

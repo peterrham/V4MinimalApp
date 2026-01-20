@@ -2,6 +2,7 @@ import SwiftUI
 import CoreData
 import AVFoundation
 import Speech
+import Foundation
 
 /*
 func logWithTimestamp(_ string: String) {
@@ -22,7 +23,21 @@ class SpeechRecognitionManager: ObservableObject {
     // Persistent audio file storage
     private var audioFileURL: URL?
     private var audioFileHandle: FileHandle?
+
+    private var wavFileURL: URL?
+    private var wavAudioFile: AVAudioFile?
     
+    // Google Drive incremental upload support
+    private var driveUploader = GoogleDriveUploader()
+    private var driveChunkBuffer = Data()
+    private let driveChunkSizeBytes: Int = 512 * 1024 // 512 KB for incremental testing
+    private var driveBaseFilename: String = "rawAudio-\(Int(Date().timeIntervalSince1970))"
+    private var lastDriveFlushTime: Date = Date()
+    private let driveFlushInterval: TimeInterval = 5.0 // seconds
+    
+    // Verbose logging control for audio tap
+    private let enableAudioTapVerboseLogging: Bool = false
+
     private func makeAudioFileURL() -> URL? {
         do {
             let docs = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
@@ -322,14 +337,66 @@ class SpeechRecognitionManager: ObservableObject {
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         
         
-        inputNode.installTap(onBus: 0, bufferSize: 1024 * 1024, format: recordingFormat) { [weak self] buffer, when in
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: recordingFormat) { [weak self] buffer, when in
             self?.handleAudioTap(buffer: buffer, when: when)
+            if let wavFile = self?.wavAudioFile {
+                // Downmix to mono by using channel 0 only if needed
+                let inputBuffer = buffer
+                do {
+                    try wavFile.write(from: inputBuffer)
+                } catch {
+                    appBootLog.errorWithContext("Failed to write to WAV file: \(error.localizedDescription)")
+                }
+            }
         }
         
         // Start audio engine
         audioEngine.prepare()
         do {
             try audioEngine.start()
+            // Open/create audio file for appending raw PCM
+            if audioFileHandle == nil {
+                audioFileURL = makeAudioFileURL()
+                if let url = audioFileURL {
+                    FileManager.default.createFile(atPath: url.path, contents: nil, attributes: nil)
+                    do {
+                        audioFileHandle = try FileHandle(forWritingTo: url)
+                        appBootLog.infoWithContext("Opened audio file for writing at: \(url.path)")
+                        
+                        // Create/open WAV file for iOS-friendly playback
+                        do {
+                            let docs = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+                            let wavURL = docs.appendingPathComponent("rawAudio-\(Int(Date().timeIntervalSince1970)).wav")
+                            self.wavFileURL = wavURL
+                            // Build WAV (Linear PCM Float32) settings matching the input sample rate, mono
+                            let sampleRate = recordingFormat.sampleRate
+                            let wavSettings: [String: Any] = [
+                                AVFormatIDKey: kAudioFormatLinearPCM,
+                                AVSampleRateKey: sampleRate,
+                                AVNumberOfChannelsKey: 1, // mono; we're writing channel 0
+                                AVLinearPCMBitDepthKey: 32,
+                                AVLinearPCMIsFloatKey: true,
+                                AVLinearPCMIsBigEndianKey: false,
+                                AVLinearPCMIsNonInterleaved: false
+                            ]
+                            self.wavAudioFile = try AVAudioFile(forWriting: wavURL, settings: wavSettings, commonFormat: .pcmFormatFloat32, interleaved: true)
+                            appBootLog.infoWithContext("Opened WAV file for writing at: \(wavURL.path)")
+                        } catch {
+                            appBootLog.errorWithContext("Failed to open WAV file: \(error.localizedDescription)")
+                        }
+                        
+                    } catch {
+                        appBootLog.errorWithContext("Failed to open audio file handle: \(error.localizedDescription)")
+                    }
+                } else {
+                    appBootLog.errorWithContext("Could not create audio file URL")
+                }
+            }
+            // Reset Drive chunking state
+            self.driveChunkBuffer.removeAll(keepingCapacity: true)
+            self.driveBaseFilename = "rawAudio-\(Int(Date().timeIntervalSince1970))"
+            self.lastDriveFlushTime = Date()
+            appBootLog.infoWithContext("[Drive] Initialized chunking: base=\(self.driveBaseFilename)")
         } catch {
             appBootLog.debugWithContext("Audio engine could not start: \(error)")
         }
@@ -340,12 +407,26 @@ class SpeechRecognitionManager: ObservableObject {
     private func handleAudioTap(buffer: AVAudioPCMBuffer, when: AVAudioTime) {
         self.recognitionRequest?.append(buffer)
 
+        if let fileHandle = self.audioFileHandle, let channelData = buffer.floatChannelData {
+            let frames = Int(buffer.frameLength)
+            let bytesPerSample = MemoryLayout<Float>.size // 4 bytes for Float32
+            let ptr = channelData[0]
+            let data = Data(bytes: ptr, count: frames * bytesPerSample)
+            do {
+                try fileHandle.write(contentsOf: data)
+            } catch {
+                appBootLog.errorWithContext("Failed writing PCM buffer: \(error.localizedDescription)")
+            }
+        } else {
+            appBootLog.errorWithContext("No fileHandle or channelData available for writing")
+        }
+
         // this logging is too frequent
         if (false) {
             appBootLog.info("INFO_BOOT_MARKER_123_AUDIO —  audio buffer")
         }
 
-        if (true) {
+        if enableAudioTapVerboseLogging {
             appBootLog.infoWithContext("Buffer format: \(buffer.format)")
             appBootLog.infoWithContext("Common format: \(buffer.format.commonFormat.rawValue)")
 
@@ -380,6 +461,77 @@ class SpeechRecognitionManager: ObservableObject {
 
             appBootLog.infoWithContext("got buffer afterwards")
         }
+        
+        // Append to Drive chunk buffer (Float32 PCM from channel 0)
+        if let floatChannelData = buffer.floatChannelData {
+            let frames = Int(buffer.frameLength)
+            let bytesPerSample = MemoryLayout<Float>.size
+            let ptr = floatChannelData[0]
+            let data = Data(bytes: ptr, count: frames * bytesPerSample)
+            driveChunkBuffer.append(data)
+            if enableAudioTapVerboseLogging {
+                appBootLog.debugWithContext("[Drive] Buffered bytes: \(data.count), total in chunk: \(driveChunkBuffer.count)")
+            }
+        }
+
+        // Time/size-based flush to Drive as WAV chunks for incremental testing
+        let now = Date()
+        if driveChunkBuffer.count >= driveChunkSizeBytes || now.timeIntervalSince(lastDriveFlushTime) >= driveFlushInterval {
+            flushDriveChunkAsWAV(sampleRate: buffer.format.sampleRate)
+            lastDriveFlushTime = now
+        }
+    }
+    
+    // Build a minimal WAV header for Float32 mono and upload current chunk to Google Drive
+    private func flushDriveChunkAsWAV(sampleRate: Double) {
+        guard !driveChunkBuffer.isEmpty else { return }
+        let wavData = buildFloat32MonoWAV(sampleRate: sampleRate, pcmFloatData: driveChunkBuffer)
+        let filenameBase = driveBaseFilename
+        appBootLog.infoWithContext("[Drive] Flushing chunk to Drive: bytes=\(wavData.count)")
+        driveUploader.uploadDataChunk(data: wavData, mimeType: "audio/wav", baseFilename: filenameBase) { result in
+            switch result {
+            case .success(let name):
+                appBootLog.infoWithContext("[Drive] Uploaded chunk ok: name=\(name)")
+            case .failure(let error):
+                appBootLog.errorWithContext("[Drive] Upload failed: \(error.localizedDescription)")
+            }
+        }
+        driveChunkBuffer.removeAll(keepingCapacity: true)
+    }
+
+    // Construct a simple WAV header for Float32 mono, little-endian
+    private func buildFloat32MonoWAV(sampleRate: Double, pcmFloatData: Data) -> Data {
+        let bytesPerSample: UInt16 = 4
+        let numChannels: UInt16 = 1
+        let sampleRateUInt32: UInt32 = UInt32(sampleRate)
+        let byteRate: UInt32 = UInt32(bytesPerSample) * UInt32(numChannels) * sampleRateUInt32
+        let blockAlign: UInt16 = UInt16(bytesPerSample) * numChannels
+        let subchunk2Size: UInt32 = UInt32(pcmFloatData.count)
+        let chunkSize: UInt32 = 36 + subchunk2Size
+
+        var header = Data()
+        header.append("RIFF".data(using: .ascii)!)
+        header.append(withUnsafeBytes(of: chunkSize.littleEndian, { Data($0) }))
+        header.append("WAVE".data(using: .ascii)!)
+        header.append("fmt ".data(using: .ascii)!)
+        header.append(withUnsafeBytes(of: UInt32(16).littleEndian, { Data($0) })) // Subchunk1Size
+        header.append(withUnsafeBytes(of: UInt16(3).littleEndian, { Data($0) }))  // AudioFormat = 3 (IEEE float)
+        header.append(withUnsafeBytes(of: numChannels.littleEndian, { Data($0) }))
+        header.append(withUnsafeBytes(of: sampleRateUInt32.littleEndian, { Data($0) }))
+        header.append(withUnsafeBytes(of: byteRate.littleEndian, { Data($0) }))
+        header.append(withUnsafeBytes(of: blockAlign.littleEndian, { Data($0) }))
+        let bitsPerSample: UInt16 = 32
+        header.append(withUnsafeBytes(of: bitsPerSample.littleEndian, { Data($0) }))
+        header.append("data".data(using: .ascii)!)
+        header.append(withUnsafeBytes(of: subchunk2Size.littleEndian, { Data($0) }))
+
+        // Debug: dump first 44 bytes of the WAV header we just built
+        Self.dumpWAVHeader(data: header)
+
+        var wav = Data(capacity: header.count + pcmFloatData.count)
+        wav.append(header)
+        wav.append(pcmFloatData)
+        return wav
     }
     
     private func clearRecognitionTask() {
@@ -400,6 +552,17 @@ class SpeechRecognitionManager: ObservableObject {
         recognitionRequest?.endAudio()  // Signal end of audio to finalize recognition
         audioEngine.stop()              // Stop the audio engine to free resources
         audioEngine.inputNode.removeTap(onBus: 0)  // Remove the tap to stop capturing audio
+        
+        audioFileHandle?.synchronizeFile()
+        audioFileHandle?.closeFile()
+        audioFileHandle = nil
+        
+        // Close WAV file (AVAudioFile closes on deinit)
+        wavAudioFile = nil
+        wavFileURL = nil
+        
+        // Flush any remaining Drive data
+        flushDriveChunkAsWAV(sampleRate: audioEngine.inputNode.outputFormat(forBus: 0).sampleRate)
         
         clearRecognitionTask()
         resetSilenceTimer()
@@ -435,5 +598,35 @@ class SpeechRecognitionManager: ObservableObject {
         silenceTimer?.invalidate()
         silenceTimer = nil
     }
-}
+    
+    private static func dumpWAVHeader(data: Data) {
+        guard data.count >= 44 else {
+            appBootLog.errorWithContext("[WAV] Header too small: \(data.count) bytes")
+            return
+        }
+        func str(_ range: Range<Int>) -> String { String(data: data[range], encoding: .ascii) ?? "" }
+        func le16(_ range: Range<Int>) -> UInt16 { data[range].withUnsafeBytes { $0.load(as: UInt16.self).littleEndian } }
+        func le32(_ range: Range<Int>) -> UInt32 { data[range].withUnsafeBytes { $0.load(as: UInt32.self).littleEndian } }
 
+        let chunkID = str(0..<4)
+        let chunkSize = le32(4..<8)
+        let format = str(8..<12)
+        let subchunk1ID = str(12..<16)
+        let subchunk1Size = le32(16..<20)
+        let audioFormat = le16(20..<22)
+        let numChannels = le16(22..<24)
+        let sampleRate = le32(24..<28)
+        let byteRate = le32(28..<32)
+        let blockAlign = le16(32..<34)
+        let bitsPerSample = le16(34..<36)
+        let subchunk2ID = str(36..<40)
+        let subchunk2Size = le32(40..<44)
+
+        appBootLog.infoWithContext("[WAV] Header dump:")
+        appBootLog.infoWithContext("  chunkID=\(chunkID) chunkSize=\(chunkSize) format=\(format)")
+        appBootLog.infoWithContext("  fmt subchunk1ID=\(subchunk1ID) size=\(subchunk1Size) audioFormat=\(audioFormat)")
+        appBootLog.infoWithContext("  numChannels=\(numChannels) sampleRate=\(sampleRate) byteRate=\(byteRate)")
+        appBootLog.infoWithContext("  blockAlign=\(blockAlign) bitsPerSample=\(bitsPerSample)")
+        appBootLog.infoWithContext("  data subchunk2ID=\(subchunk2ID) size=\(subchunk2Size)")
+    }
+}

@@ -16,6 +16,7 @@
 		BE8B14B22CE3DBBA00714DB0 /* AppendExtention.swift in Resources */ = {isa = PBXBuildFile; fileRef = BE8B14B12CE3DBBA00714DB0 /* AppendExtention.swift */; };
 		BE8B15682CE5273700714DB0 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8B15672CE5273700714DB0 /* AppState.swift */; };
 		BE8B156A2CE5979200714DB0 /* MainApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8B15692CE5979200714DB0 /* MainApp.swift */; };
+		BEAF835B2F1F2EBB001837B7 /* GoogleDriveUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +27,7 @@
 		BE8B15672CE5273700714DB0 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		BE8B15692CE5979200714DB0 /* MainApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainApp.swift; sourceTree = "<group>"; };
 		BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognition.swift; sourceTree = "<group>"; };
+		BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveUploader.swift; sourceTree = "<group>"; };
 		BEEEFAA42CD2C9120072891A /* NewMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewMain.swift; sourceTree = "<group>"; };
 		BEEEFAAA2CD2DC350072891A /* VoiceDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = VoiceDataModel.xcdatamodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -98,6 +100,7 @@
 				BE20F1102CDC2D17004F3007 /* Frameworks */,
 				BEEEFA902CD292BA0072891A /* Products */,
 				BE8B14B12CE3DBBA00714DB0 /* AppendExtention.swift */,
+				BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -190,6 +193,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BE54A2892CDDA81E00C6B639 /* SpeechRecognitionExtension.swift in Sources */,
+				BEAF835B2F1F2EBB001837B7 /* GoogleDriveUploader.swift in Sources */,
 				BE54A28B2CDDA81E00C6B639 /* SpeechRecognition.swift in Sources */,
 				BE8B156A2CE5979200714DB0 /* MainApp.swift in Sources */,
 				BE8B15682CE5273700714DB0 /* AppState.swift in Sources */,
@@ -214,6 +218,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = V4MinimalApp/Info.plist;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Need microphone for speech recogntion";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Use voice to enter items";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -248,6 +253,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = V4MinimalApp/Info.plist;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Need microphone for speech recogntion";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Use voice to enter items";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
