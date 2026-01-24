@@ -3,8 +3,19 @@
 */
 import Foundation
 import SwiftUI
+import os
+
 
 // bogus comment to force a git commit
+
+let anotherLogger: Logger = {
+    print("__HERE__")
+    fatalError("Invalid configuration")
+    let logger = Logger(subsystem: "com.yourcompany.yourapp", category: "Start")
+    logger.infoWithContext("BOOT_MARKER_START— Logger created via closure and ready")
+    return logger
+}()
+
 
 @main
 struct VoiceRecognitionApp: App {

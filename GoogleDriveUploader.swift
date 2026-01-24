@@ -57,6 +57,11 @@ final class GoogleDriveUploader {
     var chunkCounter: Int = 0
     // Cache for target folder
     var targetFolderId: String?
+    
+    // Added root folder cache and name
+    private var appRootFolderId: String?
+    private let appRootFolderName = "MyAppRoot"
+    
     private let launchFolderName: String
 
     init() {
@@ -74,6 +79,127 @@ final class GoogleDriveUploader {
     
     func currentAccessToken() -> String? {
         return AuthManager.shared.getAccessToken()
+    }
+    
+    // Public helper to ensure the root and session subfolder exist and cache IDs
+    func ensureDrivePathReady(completion: @escaping (Result<String, Error>) -> Void) {
+        guard let token = currentAccessToken() else {
+            completion(.failure(UploadError.invalidToken)); return
+        }
+        // Reuse the same helper logic as in upload path
+        func ensureAppSessionFolder(token: String, completion: @escaping (Result<String, Error>) -> Void) {
+            let finishWithSession: (String) -> Void = { rootId in
+                self.ensureFolderId(named: self.launchFolderName, token: token, parentId: rootId) { result in
+                    switch result {
+                    case .success(let sessionId):
+                        completion(.success(sessionId))
+                    case .failure(let err):
+                        completion(.failure(err))
+                    }
+                }
+            }
+            if let cachedRoot = self.appRootFolderId {
+                finishWithSession(cachedRoot)
+            } else {
+                self.ensureFolderId(named: self.appRootFolderName, token: token, parentId: nil) { result in
+                    switch result {
+                    case .success(let rootId):
+                        self.appRootFolderId = rootId
+                        finishWithSession(rootId)
+                    case .failure(let err):
+                        completion(.failure(err))
+                    }
+                }
+            }
+        }
+        ensureAppSessionFolder(token: token) { result in
+            switch result {
+            case .success(let sessionId):
+                self.targetFolderId = sessionId
+                appBootLog.infoWithContext("[Drive] ensureDrivePathReady ok: root=\(self.appRootFolderName) session=\(self.launchFolderName) id=\(sessionId)")
+                completion(.success(sessionId))
+            case .failure(let err):
+                appBootLog.errorWithContext("[Drive] ensureDrivePathReady failed: \(err.localizedDescription)")
+                completion(.failure(err))
+            }
+        }
+    }
+}
+
+extension GoogleDriveUploader {
+    private func findFolderId(named name: String, token: String, parentId: String?, completion: @escaping (Result<String?, Error>) -> Void) {
+        var q = "name='\(name)' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+        if let parentId = parentId {
+            q += " and '\(parentId)' in parents"
+        }
+        var comps = URLComponents(string: "https://www.googleapis.com/drive/v3/files")!
+        comps.queryItems = [
+            URLQueryItem(name: "q", value: q),
+            URLQueryItem(name: "fields", value: "files(id,name)")
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.httpMethod = "GET"
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        let task = URLSession.shared.dataTask(with: req) { data, resp, err in
+            if let err = err { completion(.failure(err)); return }
+            guard let data = data else { completion(.success(nil)); return }
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let files = json["files"] as? [[String: Any]],
+                   let first = files.first,
+                   let id = first["id"] as? String {
+                    completion(.success(id))
+                } else {
+                    completion(.success(nil))
+                }
+            } catch { completion(.failure(error)) }
+        }
+        task.resume()
+    }
+
+    private func createFolder(named name: String, token: String, parentId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+        guard let url = URL(string: "https://www.googleapis.com/drive/v3/files") else {
+            completion(.failure(UploadError.requestFailed("Invalid URL"))); return
+        }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        var body: [String: Any] = [
+            "name": name,
+            "mimeType": "application/vnd.google-apps.folder"
+        ]
+        if let parentId = parentId {
+            body["parents"] = [parentId]
+        }
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        let task = URLSession.shared.dataTask(with: req) { data, resp, err in
+            if let err = err { completion(.failure(err)); return }
+            guard let data = data else { completion(.failure(UploadError.noData)); return }
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let id = json["id"] as? String {
+                    completion(.success(id))
+                } else {
+                    completion(.failure(UploadError.requestFailed("No id in folder create response")))
+                }
+            } catch { completion(.failure(error)) }
+        }
+        task.resume()
+    }
+
+    private func ensureFolderId(named name: String, token: String, parentId: String?, completion: @escaping (Result<String, Error>) -> Void) {
+        findFolderId(named: name, token: token, parentId: parentId) { result in
+            switch result {
+            case .failure(let err): completion(.failure(err))
+            case .success(let maybeId):
+                if let id = maybeId {
+                    completion(.success(id))
+                } else {
+                    self.createFolder(named: name, token: token, parentId: parentId, completion: completion)
+                }
+            }
+        }
     }
 }
 
@@ -230,7 +356,7 @@ extension GoogleDriveUploader {
         if let cachedId = targetFolderId {
             ensureAndUpload(cachedId)
         } else {
-            ensureFolderId(named: launchFolderName, token: token) { result in
+            ensureFolderId(named: launchFolderName, token: token, parentId: nil) { result in
                 switch result {
                 case .failure(let err):
                     appBootLog.errorWithContext("[Drive] Folder ensure failed: \(err.localizedDescription)")
@@ -246,75 +372,6 @@ extension GoogleDriveUploader {
 }
 
 extension GoogleDriveUploader {
-    private func findFolderId(named name: String, token: String, completion: @escaping (Result<String?, Error>) -> Void) {
-        let q = "name='\(name)' and mimeType='application/vnd.google-apps.folder' and trashed=false"
-        var comps = URLComponents(string: "https://www.googleapis.com/drive/v3/files")!
-        comps.queryItems = [
-            URLQueryItem(name: "q", value: q),
-            URLQueryItem(name: "fields", value: "files(id,name)")
-        ]
-        var req = URLRequest(url: comps.url!)
-        req.httpMethod = "GET"
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let task = URLSession.shared.dataTask(with: req) { data, resp, err in
-            if let err = err { completion(.failure(err)); return }
-            guard let data = data else { completion(.success(nil)); return }
-            do {
-                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let files = json["files"] as? [[String: Any]],
-                   let first = files.first,
-                   let id = first["id"] as? String {
-                    completion(.success(id))
-                } else {
-                    completion(.success(nil))
-                }
-            } catch { completion(.failure(error)) }
-        }
-        task.resume()
-    }
-
-    private func createFolder(named name: String, token: String, completion: @escaping (Result<String, Error>) -> Void) {
-        guard let url = URL(string: "https://www.googleapis.com/drive/v3/files") else {
-            completion(.failure(UploadError.requestFailed("Invalid URL"))); return
-        }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body: [String: Any] = [
-            "name": name,
-            "mimeType": "application/vnd.google-apps.folder"
-        ]
-        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        let task = URLSession.shared.dataTask(with: req) { data, resp, err in
-            if let err = err { completion(.failure(err)); return }
-            guard let data = data else { completion(.failure(UploadError.noData)); return }
-            do {
-                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let id = json["id"] as? String {
-                    completion(.success(id))
-                } else {
-                    completion(.failure(UploadError.requestFailed("No id in folder create response")))
-                }
-            } catch { completion(.failure(error)) }
-        }
-        task.resume()
-    }
-
-    private func ensureFolderId(named name: String, token: String, completion: @escaping (Result<String, Error>) -> Void) {
-        findFolderId(named: name, token: token) { result in
-            switch result {
-            case .failure(let err): completion(.failure(err))
-            case .success(let maybeId):
-                if let id = maybeId {
-                    completion(.success(id))
-                } else {
-                    self.createFolder(named: name, token: token, completion: completion)
-                }
-            }
-        }
-    }
-
     private func multipartUpload(data: Data, mimeType: String, filename: String, parentId: String?, token: String, completion: @escaping (Result<[String: Any], Error>) -> Void) {
         let boundary = "Boundary-\(UUID().uuidString)"
         guard var comps = URLComponents(string: "https://www.googleapis.com/upload/drive/v3/files") else {

@@ -397,6 +397,15 @@ class SpeechRecognitionManager: ObservableObject {
             self.driveBaseFilename = "rawAudio-\(Int(Date().timeIntervalSince1970))"
             self.lastDriveFlushTime = Date()
             appBootLog.infoWithContext("[Drive] Initialized chunking: base=\(self.driveBaseFilename)")
+            
+            self.driveUploader.ensureDrivePathReady { result in
+                switch result {
+                case .success(let folderId):
+                    appBootLog.infoWithContext("[Drive] Ready: using session folder id=\(folderId)")
+                case .failure(let err):
+                    appBootLog.errorWithContext("[Drive] ensureDrivePathReady failed: \(err.localizedDescription)")
+                }
+            }
         } catch {
             appBootLog.debugWithContext("Audio engine could not start: \(error)")
         }
@@ -630,3 +639,4 @@ class SpeechRecognitionManager: ObservableObject {
         appBootLog.infoWithContext("  data subchunk2ID=\(subchunk2ID) size=\(subchunk2Size)")
     }
 }
+
