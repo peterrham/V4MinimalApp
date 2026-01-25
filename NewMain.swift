@@ -53,7 +53,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var appState: AppState?
     
     func application(_ application: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-        print("AppDelegate received URL: \(url.absoluteString)")
+        appBootLog.infoWithContext("AppDelegate received URL: \(url.absoluteString)")
         // Handle URL here
         return true
     }
@@ -71,7 +71,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         appBootLog.errorWithContext("AFTER_ERROR_BOOT_MARKER_123 — didFinishLaunching (error-level test)")
         
         
-        print("AppDelegate didFinishLaunchingWithOptions called")
+        appBootLog.infoWithContext("AppDelegate didFinishLaunchingWithOptions called")
         
         // initialize singleton
         
@@ -148,7 +148,7 @@ class DynamicPersistenceController {
             let results = try context.fetch(fetchRequest)
             return results
         } catch {
-            print("Failed to fetch RecognizedTextEntities: \(error)")
+            appBootLog.errorWithContext("Failed to fetch RecognizedTextEntities: \(error)")
             return nil
         }
     }
@@ -192,7 +192,7 @@ class DynamicPersistenceController {
             if let databaseURL = description.url {
                 sqlLitePathURL = databaseURL
                 let pathString : String = sqlLitePathURL!.absoluteString
-                print("Core Data SQLite database path: \n cd \"\(pathString)\"")
+                appBootLog.infoWithContext("Core Data SQLite database path: \n cd \"\(pathString)\"")
             }
         }
     }
@@ -232,13 +232,13 @@ struct DocumentExporter: UIViewControllerRepresentable {
     
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         // Initialize the document picker for exporting the file
-        print("inside makeView")
+        appBootLog.debugWithContext("inside makeView")
         let documentPicker = UIDocumentPickerViewController(forExporting: [fileURL])
         return documentPicker
     }
     
     func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {
-        print("inside updateUIView")
+        appBootLog.debugWithContext("inside updateUIView")
     }
 }
 

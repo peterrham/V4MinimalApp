@@ -10,14 +10,14 @@ import CoreData
 
 
 func debugPrint(str: String){
-    print(str)
+    appBootLog.debugWithContext(str)
 }
 
 func logWithTimestamp(_ message: String) {
     let dateFormatter = DateFormatter()
     dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
     let timestamp = dateFormatter.string(from: Date())
-    print("[\(timestamp)] \(message)")
+    appBootLog.infoWithContext("[\(timestamp)] \(message)")
     NSLog("[\(timestamp)] \(message)")
 }
 
@@ -33,15 +33,15 @@ func prettyPrintSortedJSONFromInfoDictionary() {
                 withJSONObject: recursivelySortDictionary(jsonDict),
                 options: .prettyPrinted),
                let sortedJSONString = String(data: sortedJSONData, encoding: .utf8) {
-                print(sortedJSONString)  // Output the sorted and formatted JSON string
+                appBootLog.debugWithContext(sortedJSONString)  // Output the sorted and formatted JSON string
             } else {
-                print("Failed to create sorted JSON string.")
+                appBootLog.errorWithContext("Failed to create sorted JSON string.")
             }
         } else {
-            print("Failed to parse Info.plist as JSON.")
+            appBootLog.errorWithContext("Failed to parse Info.plist as JSON.")
         }
     } else {
-        print("No Info.plist found.")
+        appBootLog.errorWithContext("No Info.plist found.")
     }
 }
 
@@ -77,13 +77,13 @@ func prettyPrintSortedInfoDictionaryRecursively() {
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: sortedDictionary, options: .prettyPrinted)
             if let jsonString = String(data: jsonData, encoding: .utf8) {
-                print(jsonString)  // Output the formatted JSON string
+                appBootLog.debugWithContext(jsonString)  // Output the formatted JSON string
             }
         } catch {
-            print("Failed to convert Info.plist to JSON: \(error.localizedDescription)")
+            appBootLog.errorWithContext("Failed to convert Info.plist to JSON: \(error.localizedDescription)")
         }
     } else {
-        print("No Info.plist found.")
+        appBootLog.errorWithContext("No Info.plist found.")
     }
 }
 
@@ -93,33 +93,33 @@ func prettyPrintInfoDictionary() {
         // Try to serialize it into JSON data with pretty-printing
         if let jsonData = try? JSONSerialization.data(withJSONObject: infoDictionary, options: .prettyPrinted),
            let jsonString = String(data: jsonData, encoding: .utf8) {
-            print(jsonString)  // Output the formatted JSON string
+            appBootLog.debugWithContext(jsonString)  // Output the formatted JSON string
         } else {
-            print("Failed to convert Info.plist to JSON.")
+            appBootLog.errorWithContext("Failed to convert Info.plist to JSON.")
         }
     } else {
-        print("No Info.plist found.")
+        appBootLog.errorWithContext("No Info.plist found.")
     }
 }
 
 func logEnvironmentObjects(_ objects: Any...) {
     for object in objects {
-        print("Environment Object: \(object)")
+        appBootLog.debugWithContext("Environment Object: \(object)")
     }
 }
 
 
 func printEnvironmentObjectDetails(_ object: Any) {
     let mirror = Mirror(reflecting: object)
-    print(object)
-    print(mirror)
+    appBootLog.debugWithContext("\(object)")
+    appBootLog.debugWithContext("\(mirror)")
     for child in mirror.children {
-        print(child)
+        appBootLog.debugWithContext("\(child)")
         printEnvironmentObjectDetails(child)
         if let propertyName = child.label {
-            print("\(propertyName): \(child.value)")
+            appBootLog.debugWithContext("\(propertyName): \(child.value)")
         } else {
-            print("empty: \(child.value)")
+            appBootLog.debugWithContext("empty: \(child.value)")
         }
     }
 }
@@ -129,18 +129,18 @@ func checkURLSchemes() {
     if let urlTypes = Bundle.main.infoDictionary?["CFBundleURLTypes"] as? [[String: Any]] {
         for urlType in urlTypes {
             if let urlSchemes = urlType["CFBundleURLSchemes"] as? [String] {
-                print("URL Schemes found: \(urlSchemes)")
+                appBootLog.infoWithContext("URL Schemes found: \(urlSchemes)")
                 
                 let expectedScheme = "com.googleusercontent.apps.748381179204-pmnlavrbccrsc9v17qtqepjum0rd1kok.apps.googleusercontent.com" // Replace with your scheme
                 if urlSchemes.contains(expectedScheme) {
-                    print("Expected URL scheme '\(expectedScheme)' is correctly registered.")
+                    appBootLog.infoWithContext("Expected URL scheme '\(expectedScheme)' is correctly registered.")
                 } else {
-                    print("Expected URL scheme '\(expectedScheme)' is NOT registered.")
+                    appBootLog.errorWithContext("Expected URL scheme '\(expectedScheme)' is NOT registered.")
                 }
             }
         }
     } else {
-        print("No URL schemes found in Info.plist.")
+        appBootLog.errorWithContext("No URL schemes found in Info.plist.")
     }
 }
 
@@ -216,10 +216,10 @@ func exportDatabase() -> URL? {
     
     do {
         try fileManager.copyItem(at: dbURL!, to: exportURL)
-        print("copied the file")
+        appBootLog.infoWithContext("copied the file")
         return exportURL
     } catch {
-        print("Error exporting database: \(error)")
+        appBootLog.errorWithContext("Error exporting database: \(error)")
         return nil
     }
 }

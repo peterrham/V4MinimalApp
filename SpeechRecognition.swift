@@ -13,6 +13,7 @@ func logWithTimestamp(_ string: String) {
 
 // MARK: - Speech Recognition Manager
 
+@MainActor
 class SpeechRecognitionManager: ObservableObject {
     private var audioEngine = AVAudioEngine()
     private var speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))

@@ -31,14 +31,14 @@ class AuthManager {
         // Restore previous Google Sign-In session if available
         GIDSignIn.sharedInstance.restorePreviousSignIn { user, error in
             if let error = error {
-                print("No previous Google Sign-In session: \(error.localizedDescription)")
+                appBootLog.errorWithContext("No previous Google Sign-In session: \(error.localizedDescription)")
             } else if let user = user {
-                print("Restored Google Sign-In session for user: \(user.profile?.name ?? "Unknown")")
+                appBootLog.infoWithContext("Restored Google Sign-In session for user: \(user.profile?.name ?? "Unknown")")
                 // Handle restored session (e.g., notify view model)
                 
-                print("Restored Token String: \(GIDSignIn.sharedInstance.currentUser!.accessToken.tokenString)")
+                appBootLog.infoWithContext("Restored Token String: \(GIDSignIn.sharedInstance.currentUser!.accessToken.tokenString)")
             } else {
-                print("No previous Google Sign-In session found.")
+                appBootLog.infoWithContext("No previous Google Sign-In session found.")
             }
         }
     }

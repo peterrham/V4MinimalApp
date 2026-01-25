@@ -33,10 +33,10 @@ struct ExportToCSVView: View {
                 if let csvFileURL = exportModel.csvFileURL {
                     CSVActivityView(activityItems: [csvFileURL])
                         .onAppear {
-                            print("CSVActivityView presented with file URL: \(csvFileURL)")
+                            appBootLog.debugWithContext("CSVActivityView presented with file URL: \(csvFileURL)")
                         }
                         .onDisappear {
-                            print("CSVActivityView dismissed")
+                            appBootLog.debugWithContext("CSVActivityView dismissed")
                         }
                 }
             }
@@ -48,12 +48,12 @@ struct ExportToCSVView: View {
     private func exportToCSV() {
         logWithTimestamp("exportToCSV function called")
         
-        print("view")
-        print(viewContext)
+        appBootLog.debugWithContext("view")
+        appBootLog.debugWithContext("\(viewContext)")
         
-        print("enivonments")
+        appBootLog.debugWithContext("enivonments")
         logEnvironmentObjects(viewContext)
-        print("details")
+        appBootLog.debugWithContext("details")
         printEnvironmentObjectDetails(viewContext)
         
         let headers = "Content,Timestamp\n"
@@ -84,14 +84,14 @@ struct ExportToCSVView: View {
 
         
         do {
-            print("Attempting to write CSV file to temporary directory")
+            appBootLog.infoWithContext("Attempting to write CSV file to temporary directory")
             try csvText.write(to: tempFileURL, atomically: true, encoding: .utf8)
             exportModel.csvFileURL = tempFileURL
-            print("CSV file successfully created at: \(exportModel.csvFileURL!.path)")
+            appBootLog.infoWithContext("CSV file successfully created at: \(exportModel.csvFileURL!.path)")
             
             exportModel.isShowingActivityView = true
         } catch {
-            print("Error writing CSV file: \(error)")
+            appBootLog.errorWithContext("Error writing CSV file: \(error)")
         }
     }
 }
