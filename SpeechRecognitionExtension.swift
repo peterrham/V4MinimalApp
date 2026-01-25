@@ -14,11 +14,11 @@ extension SpeechRecognitionManager {
             DispatchQueue.main.async {
                 switch status {
                 case .authorized:
-                    print("Speech recognition authorized")
+                    appBootLog.infoWithContext("Speech recognition authorized")
                 case .denied, .restricted, .notDetermined:
-                    print("Speech recognition not authorized")
+                    appBootLog.infoWithContext("Speech recognition not authorized")
                 @unknown default:
-                    print("Unknown authorization status")
+                    appBootLog.infoWithContext("Unknown authorization status")
                 }
             }
         }
@@ -26,9 +26,9 @@ extension SpeechRecognitionManager {
         AVAudioSession.sharedInstance().requestRecordPermission { granted in
             DispatchQueue.main.async {
                 if granted {
-                    print("Microphone access granted")
+                    appBootLog.infoWithContext("Microphone access granted")
                 } else {
-                    print("Microphone access denied")
+                    appBootLog.infoWithContext("Microphone access denied")
                 }
             }
         }
