@@ -22,7 +22,7 @@ class AppendLog {
     
     func append(text: String)
     {
-        print("append()")
+        appBootLog.debugWithContext("append()")
         
        let accessToken = AuthManager.shared.getAccessToken()!
         

@@ -48,10 +48,10 @@ struct GoogleSheetsClient {
                 }
             }
         } else {
-            print("No records found or an error occurred.")
+            appBootLog.errorWithContext("No records found or an error occurred.")
         }
        
-        print(csvText)
+        appBootLog.debugWithContext(csvText)
         
         // TODO, next step is to actually append the data to a google sheet using the append method
         
@@ -94,23 +94,23 @@ struct GoogleSheetsClient {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: body, options: [])
         } catch {
-            print("Error serializing JSON:", error)
+            appBootLog.errorWithContext("Error serializing JSON: \(error)")
             return
         }
         
         // Perform the network request
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("Request error:", error)
+                appBootLog.errorWithContext("Request error: \(error)")
                 return
             }
             
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                print("Unexpected response:", response ?? "No response")
+                appBootLog.errorWithContext("Unexpected response: \(response?.description ?? "No response")")
                 return
             }
             
-            print("Data successfully appended to Google Sheets.")
+            appBootLog.infoWithContext("Data successfully appended to Google Sheets.")
         }
         
         task.resume()
