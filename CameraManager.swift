@@ -8,6 +8,7 @@
 import AVFoundation
 import SwiftUI
 import UIKit
+import Photos
 
 @MainActor
 class CameraManager: NSObject, ObservableObject {
@@ -392,13 +393,70 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
             return
         }
         
+        guard let image = UIImage(data: imageData) else {
+            Task { @MainActor in
+                self.error = .captureError("Could not create image")
+            }
+            return
+        }
+        
         Task { @MainActor in
-            // Here you would process the captured photo
-            // For now, just log success
             appBootLog.infoWithContext("Photo captured: \(imageData.count) bytes")
+            
+            // Save to Photo Library
+            await self.savePhotoToLibrary(image)
+            
+            // Notify that photo was captured
+            NotificationCenter.default.post(
+                name: NSNotification.Name("PhotoCaptureComplete"),
+                object: nil,
+                userInfo: ["image": image]
+            )
             
             // TODO: Process image with AI/ML for item detection
             // This is where you'd integrate with Vision framework or ML models
+        }
+    }
+    
+    private func savePhotoToLibrary(_ image: UIImage) async {
+        // Check authorization
+        let status = PHPhotoLibrary.authorizationStatus(for: .addOnly)
+        
+        var authorized = false
+        
+        switch status {
+        case .notDetermined:
+            // Request permission
+            let newStatus = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
+            authorized = (newStatus == .authorized)
+            
+        case .authorized, .limited:
+            authorized = true
+            
+        case .restricted, .denied:
+            self.error = .captureError("Photo library access denied. Enable in Settings.")
+            return
+            
+        @unknown default:
+            return
+        }
+        
+        guard authorized else {
+            self.error = .captureError("Photo library access denied")
+            return
+        }
+        
+        // Save to photos
+        do {
+            try await PHPhotoLibrary.shared().performChanges {
+                PHAssetChangeRequest.creationRequestForAsset(from: image)
+            }
+            
+            appBootLog.infoWithContext("✅ Photo saved to Photos Library")
+            
+        } catch {
+            appBootLog.errorWithContext("Failed to save photo: \(error.localizedDescription)")
+            self.error = .captureError("Failed to save photo: \(error.localizedDescription)")
         }
     }
 }

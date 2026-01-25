@@ -8,18 +8,24 @@
 import SwiftUI
 import os
 import AVFoundation
+import PhotosUI
 
 struct CameraScanView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var cameraManager = CameraManager()
-    @StateObject private var driveService = GoogleDriveService()
     
     @State private var isRecording = false
     @State private var detectedItems: [String] = []
     @State private var showUploadOptions = false
     @State private var recordedVideoURL: URL?
+    @State private var isUploading = false
+    @State private var uploadProgress: Double = 0
+    @State private var showPhotoPicker = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var showPhotoSavedAlert = false
     
     private let logger = Logger(subsystem: "com.yourcompany.yourapp", category: "CameraScanView")
+    private let driveUploader = GoogleDriveUploader()
     
     var body: some View {
         NavigationStack {
@@ -175,15 +181,18 @@ struct CameraScanView: View {
                         
                         // Control buttons
                         HStack(spacing: AppTheme.Spacing.xl) {
-                            // Gallery
-                            Button {
-                                // Show photo library
-                            } label: {
+                            // Gallery - Open Photo Library
+                            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                                 Image(systemName: "photo.on.rectangle")
                                     .font(.title2)
                                     .foregroundColor(.white)
                                     .frame(width: 60, height: 60)
                                     .background(Circle().fill(.ultraThinMaterial))
+                            }
+                            .onChange(of: selectedPhotoItem) { oldValue, newValue in
+                                Task {
+                                    await loadSelectedPhoto()
+                                }
                             }
                             
                             Spacer()
@@ -305,6 +314,16 @@ struct CameraScanView: View {
                         showUploadOptions = true
                     }
                 }
+                
+                // Listen for photo capture completion
+                NotificationCenter.default.addObserver(
+                    forName: NSNotification.Name("PhotoCaptureComplete"),
+                    object: nil,
+                    queue: .main
+                ) { notification in
+                    // Show success alert
+                    showPhotoSavedAlert = true
+                }
             }
             .onDisappear {
                 logger.info("CameraScanView disappeared - stopping session")
@@ -318,11 +337,16 @@ struct CameraScanView: View {
                     dismissButton: .default(Text("OK"))
                 )
             }
+            .alert("Photo Saved!", isPresented: $showPhotoSavedAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Your photo has been saved to the Photos app")
+            }
             .sheet(isPresented: $showUploadOptions) {
                 uploadOptionsSheet
             }
             .overlay {
-                if driveService.isUploading {
+                if isUploading {
                     uploadProgressOverlay
                 }
             }
@@ -437,7 +461,7 @@ struct CameraScanView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: AppTheme.Spacing.l) {
-                ProgressView(value: driveService.uploadProgress)
+                ProgressView(value: uploadProgress)
                     .progressViewStyle(.linear)
                     .tint(.white)
                     .frame(width: 200)
@@ -446,7 +470,7 @@ struct CameraScanView: View {
                     .foregroundColor(.white)
                     .font(.callout)
                 
-                Text("\(Int(driveService.uploadProgress * 100))%")
+                Text("\(Int(uploadProgress * 100))%")
                     .foregroundColor(.white.opacity(0.8))
                     .font(.caption)
                     .fontWeight(.semibold)
@@ -461,6 +485,31 @@ struct CameraScanView: View {
     
     // MARK: - Helper Methods
     
+    private func loadSelectedPhoto() async {
+        guard let item = selectedPhotoItem else { return }
+        
+        do {
+            if let data = try await item.loadTransferable(type: Data.self),
+               let image = UIImage(data: data) {
+                logger.info("Photo selected from library")
+                
+                // Process the selected photo (could add to detected items, etc.)
+                await MainActor.run {
+                    withAnimation {
+                        detectedItems.append("Item from Photo \(detectedItems.count + 1)")
+                    }
+                }
+                
+                // Optionally, you could analyze this photo with AI/ML here
+            }
+        } catch {
+            logger.error("Failed to load photo: \(error.localizedDescription)")
+        }
+        
+        // Reset selection
+        selectedPhotoItem = nil
+    }
+    
     private func formatDuration(_ duration: TimeInterval) -> String {
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
@@ -472,32 +521,49 @@ struct CameraScanView: View {
         
         showUploadOptions = false
         
-        do {
-            // First check authentication
-            if !driveService.isAuthenticated {
-                await driveService.authenticate()
-                
-                // If still not authenticated, show error
-                if !driveService.isAuthenticated {
-                    logger.error("Failed to authenticate with Google Drive")
-                    return
+        // Read video data
+        guard let videoData = try? Data(contentsOf: videoURL) else {
+            logger.error("Failed to read video file")
+            return
+        }
+        
+        await MainActor.run {
+            isUploading = true
+            uploadProgress = 0.1
+        }
+        
+        // Generate filename
+        let timestamp = GoogleDriveUploader.iso8601FilenameTimestamp()
+        let filename = "inventory_scan_\(timestamp).mov"
+        
+        // Use existing GoogleDriveUploader with completion handler
+        await withCheckedContinuation { continuation in
+            driveUploader.uploadDataChunk(
+                data: videoData,
+                mimeType: "video/quicktime",
+                baseFilename: filename
+            ) { result in
+                Task { @MainActor in
+                    isUploading = false
+                    
+                    switch result {
+                    case .success(let fileName):
+                        self.logger.info("✅ Video uploaded to Google Drive successfully: \(fileName)")
+                        
+                        // Clean up local file
+                        try? FileManager.default.removeItem(at: videoURL)
+                        self.recordedVideoURL = nil
+                        
+                    case .failure(let error):
+                        self.logger.error("Failed to upload video: \(error.localizedDescription)")
+                        
+                        // Show error in camera manager
+                        self.cameraManager.error = .captureError(error.localizedDescription)
+                    }
+                    
+                    continuation.resume()
                 }
             }
-            
-            // Upload the video
-            try await driveService.uploadVideoResumable(
-                fileURL: videoURL,
-                fileName: "inventory_scan_\(Date().timeIntervalSince1970).mov"
-            )
-            
-            logger.info("✅ Video uploaded to Google Drive successfully")
-            
-            // Clean up local file
-            try? FileManager.default.removeItem(at: videoURL)
-            recordedVideoURL = nil
-            
-        } catch {
-            logger.error("Failed to upload video: \(error.localizedDescription)")
         }
     }
     
