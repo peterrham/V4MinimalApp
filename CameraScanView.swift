@@ -22,7 +22,6 @@ struct CameraScanView: View {
     @State private var uploadProgress: Double = 0
     @State private var showPhotoPicker = false
     @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var showPhotoSavedAlert = false
     @State private var enableStreamingUpload = false
     
     private let logger = Logger(subsystem: "com.yourcompany.yourapp", category: "CameraScanView")
@@ -466,8 +465,8 @@ struct CameraScanView: View {
                     object: nil,
                     queue: .main
                 ) { notification in
-                    // Show success alert
-                    showPhotoSavedAlert = true
+                    // Photo saved - camera shutter sound provides feedback
+                    // No alert needed
                 }
                 
                 // Listen for streaming upload completion
@@ -510,11 +509,6 @@ struct CameraScanView: View {
                     message: Text(error.localizedDescription),
                     dismissButton: .default(Text("OK"))
                 )
-            }
-            .alert("Photo Saved!", isPresented: $showPhotoSavedAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text("Your photo has been saved to the Photos app")
             }
             .sheet(isPresented: $showUploadOptions) {
                 uploadOptionsSheet
