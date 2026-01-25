@@ -43,7 +43,7 @@ let appBootLog: Logger = {
 
 /// Call once during app launch to emit an initial boot log marker.
 func logInitialBootMarker() {
-    appBootLog.errorWithContext("ERROR_BOOT_MARKER_123 — right after logger created")
+    appBootLog.infoWithContext("ERROR_BOOT_MARKER_123 — right after logger created")
 }
 
 
@@ -64,11 +64,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         listDocumentsDirectory()
         logFilesIntegrationPlistKeys()
         logInitialBootMarker()
-        appBootLog.errorWithContext("BEFORE_ERROR_BOOT_MARKER_123 — didFinishLaunching (error-level test)")
+        appBootLog.infoWithContext("BEFORE_ERROR_BOOT_MARKER_123 — didFinishLaunching (error-level test)")
         
         appBootLog.infoWithContext("INFO_BOOT_MARKER_123 — didFinishLaunching (-level test)")
         
-        appBootLog.errorWithContext("AFTER_ERROR_BOOT_MARKER_123 — didFinishLaunching (error-level test)")
+        appBootLog.infoWithContext("AFTER_ERROR_BOOT_MARKER_123 — didFinishLaunching (error-level test)")
         
         
         appBootLog.infoWithContext("AppDelegate didFinishLaunchingWithOptions called")
