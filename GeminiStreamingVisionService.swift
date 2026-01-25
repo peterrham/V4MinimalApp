@@ -114,8 +114,15 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
             
             let base64Image = imageData.base64EncodedString()
             
-            // Create request with optimized prompt for object detection
-            let prompt = "List all distinct objects you see in this image. Give ONE brief phrase per object (3-5 words max). Format as a simple list separated by commas. Focus on physical items, not descriptions."
+            // Create request with optimized prompt for home inventory detection
+            let prompt = """
+            List physical items suitable for home inventory. Be specific with brand/type when visible (e.g., "DirecTV remote", "Samsung TV", "MacBook Pro").
+
+            INCLUDE: furniture, electronics, appliances, decor, tools, clothing, books, kitchenware, valuables.
+            EXCLUDE: shadows, light, reflections, textures, floors, walls, ceilings, abstract descriptions.
+
+            Format: comma-separated list, 2-4 words per item. Only list items you can clearly identify.
+            """
             
             let request = try createRequest(base64Image: base64Image, prompt: prompt)
             

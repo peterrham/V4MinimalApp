@@ -24,6 +24,7 @@ struct CameraScanView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var enableStreamingUpload = false
     @State private var showLiveDetection = false
+    @State private var showInstructionOverlay = true
 
     private let logger = Logger(subsystem: "com.yourcompany.yourapp", category: "CameraScanView")
     private let driveUploader = GoogleDriveUploader()
@@ -370,26 +371,31 @@ struct CameraScanView: View {
                     }
                 }
                 
-                // Instructions overlay
-                if detectedItems.isEmpty && !cameraManager.isRecording {
+                // Instructions overlay - auto-dismisses after 4 seconds, or tap to dismiss
+                if detectedItems.isEmpty && !cameraManager.isRecording && showInstructionOverlay {
                     VStack {
                         Spacer()
-                        
+
                         VStack(spacing: AppTheme.Spacing.m) {
                             Image(systemName: "viewfinder")
                                 .font(.system(size: 50))
                                 .foregroundStyle(.white.opacity(0.9))
-                            
+
                             Text("Point camera at items")
                                 .font(.title3)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.white)
-                            
+
                             Text("AI will identify and catalog them automatically")
                                 .font(.callout)
                                 .foregroundColor(.white.opacity(0.8))
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 40)
+
+                            Text("Tap to dismiss")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.5))
+                                .padding(.top, 4)
                         }
                         .padding(AppTheme.Spacing.xl)
                         .background(
@@ -397,11 +403,25 @@ struct CameraScanView: View {
                                 .fill(.ultraThinMaterial)
                         )
                         .padding(AppTheme.Spacing.l)
-                        
+                        .onTapGesture {
+                            withAnimation(.easeOut(duration: 0.3)) {
+                                showInstructionOverlay = false
+                            }
+                        }
+                        .onAppear {
+                            // Auto-dismiss after 4 seconds
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                                withAnimation(.easeOut(duration: 0.5)) {
+                                    showInstructionOverlay = false
+                                }
+                            }
+                        }
+
                         Spacer()
                         Spacer()
                         Spacer()
                     }
+                    .transition(.opacity)
                 }
                 
                 // Streaming upload indicator - Enhanced with more details
