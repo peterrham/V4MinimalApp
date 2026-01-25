@@ -23,5 +23,7 @@
 	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Needed to scan inventory.</string>
 </dict>
 </plist>

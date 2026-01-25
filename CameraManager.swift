@@ -1,0 +1,318 @@
+//
+//  CameraManager.swift
+//  V4MinimalApp
+//
+//  Camera Management with AVFoundation
+//
+
+import AVFoundation
+import SwiftUI
+import UIKit
+
+@MainActor
+class CameraManager: NSObject, ObservableObject {
+    @Published var isAuthorized = false
+    @Published var isCameraUnavailable = false
+    @Published var error: CameraError?
+    @Published var isSessionRunning = false
+    
+    let session = AVCaptureSession()
+    private var videoOutput = AVCaptureVideoDataOutput()
+    private var photoOutput = AVCapturePhotoOutput()
+    
+    private var deviceInput: AVCaptureDeviceInput?
+    private var currentDevice: AVCaptureDevice?
+    private var isSessionConfigured = false
+    
+    // Flash control
+    @Published var isFlashOn = false
+    
+    override init() {
+        super.init()
+        Task {
+            await checkAuthorization()
+        }
+    }
+    
+    deinit {
+        if session.isRunning {
+            session.stopRunning()
+        }
+    }
+    
+    // MARK: - Authorization
+    
+    func checkAuthorization() async {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            isAuthorized = true
+            await setupCaptureSession()
+        case .notDetermined:
+            // Request permission
+            let granted = await AVCaptureDevice.requestAccess(for: .video)
+            if granted {
+                isAuthorized = true
+                await setupCaptureSession()
+            } else {
+                isAuthorized = false
+            }
+        case .denied, .restricted:
+            isAuthorized = false
+            error = .permissionDenied
+        @unknown default:
+            isAuthorized = false
+        }
+    }
+    
+    // MARK: - Camera Setup
+    
+    private func setupCaptureSession() async {
+        guard !isSessionConfigured else { 
+            appBootLog.debugWithContext("Session already configured")
+            return 
+        }
+        
+        appBootLog.infoWithContext("Setting up camera session...")
+        
+        // Setup video input
+        do {
+            guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+                appBootLog.errorWithContext("No camera device found")
+                await MainActor.run {
+                    isCameraUnavailable = true
+                }
+                return
+            }
+            
+            currentDevice = videoDevice
+            let videoInput = try AVCaptureDeviceInput(device: videoDevice)
+            
+            session.beginConfiguration()
+            session.sessionPreset = .photo
+            
+            if session.canAddInput(videoInput) {
+                session.addInput(videoInput)
+                deviceInput = videoInput
+                appBootLog.infoWithContext("Camera input added")
+            } else {
+                appBootLog.errorWithContext("Cannot add camera input")
+                await MainActor.run {
+                    error = .cannotAddInput
+                }
+                session.commitConfiguration()
+                return
+            }
+            
+            // Setup photo output
+            if session.canAddOutput(photoOutput) {
+                session.addOutput(photoOutput)
+                photoOutput.isHighResolutionCaptureEnabled = true
+                photoOutput.maxPhotoQualityPrioritization = .quality
+                appBootLog.infoWithContext("Photo output added")
+            } else {
+                appBootLog.errorWithContext("Cannot add photo output")
+            }
+            
+            // Setup video output for frame processing
+            videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "camera.frame.processing"))
+            videoOutput.alwaysDiscardsLateVideoFrames = true
+            
+            if session.canAddOutput(videoOutput) {
+                session.addOutput(videoOutput)
+                appBootLog.infoWithContext("Video output added")
+            } else {
+                appBootLog.errorWithContext("Cannot add video output")
+            }
+            
+            session.commitConfiguration()
+            isSessionConfigured = true
+            appBootLog.infoWithContext("Camera session configured successfully")
+            
+            // Automatically start the session after configuration
+            await startSessionInternal()
+            
+        } catch {
+            appBootLog.errorWithContext("Camera setup error: \(error.localizedDescription)")
+            await MainActor.run {
+                self.error = .cannotAddInput
+            }
+        }
+    }
+    
+    // MARK: - Session Control
+    
+    private func startSessionInternal() async {
+        guard !session.isRunning else {
+            appBootLog.debugWithContext("Session already running")
+            await MainActor.run {
+                isSessionRunning = true
+            }
+            return
+        }
+        
+        appBootLog.infoWithContext("Starting camera session...")
+        
+        // Start on background thread
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                guard let self = self else {
+                    continuation.resume()
+                    return
+                }
+                
+                self.session.startRunning()
+                
+                Task { @MainActor in
+                    self.isSessionRunning = true
+                    appBootLog.infoWithContext("✅ Camera session started and running")
+                }
+                
+                continuation.resume()
+            }
+        }
+    }
+    
+    func startSession() {
+        Task {
+            guard isAuthorized else {
+                appBootLog.errorWithContext("Cannot start session: not authorized")
+                return
+            }
+            
+            guard isSessionConfigured else {
+                appBootLog.errorWithContext("Cannot start session: not configured yet")
+                return
+            }
+            
+            await startSessionInternal()
+        }
+    }
+    
+    func stopSession() {
+        guard session.isRunning else { 
+            appBootLog.debugWithContext("Session not running")
+            Task { @MainActor in
+                isSessionRunning = false
+            }
+            return 
+        }
+        
+        appBootLog.infoWithContext("Stopping camera session...")
+        
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            self.session.stopRunning()
+            
+            Task { @MainActor in
+                self.isSessionRunning = false
+                appBootLog.infoWithContext("Camera session stopped")
+            }
+        }
+    }
+    
+    // MARK: - Photo Capture
+    
+    func capturePhoto() {
+        appBootLog.infoWithContext("Capture photo requested. Session running: \(session.isRunning), Configured: \(isSessionConfigured)")
+        
+        guard isSessionConfigured else {
+            appBootLog.errorWithContext("Cannot capture: session not configured")
+            error = .captureError("Camera session not configured")
+            return
+        }
+        
+        guard session.isRunning else {
+            appBootLog.errorWithContext("Cannot capture: session not running")
+            error = .captureError("Camera session not running. Please wait for camera to initialize.")
+            return
+        }
+        
+        let settings = AVCapturePhotoSettings()
+        
+        // Configure flash
+        if let device = currentDevice, device.hasFlash {
+            settings.flashMode = isFlashOn ? .on : .off
+        }
+        
+        appBootLog.infoWithContext("Initiating photo capture...")
+        
+        // Capture photo on background thread
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            self.photoOutput.capturePhoto(with: settings, delegate: self)
+            appBootLog.infoWithContext("Photo capture command sent")
+        }
+    }
+    
+    // MARK: - Flash Control
+    
+    func toggleFlash() {
+        guard let device = currentDevice, device.hasFlash else { return }
+        isFlashOn.toggle()
+    }
+    
+    func setFlash(_ enabled: Bool) {
+        guard let device = currentDevice, device.hasFlash else { return }
+        isFlashOn = enabled
+    }
+}
+
+// MARK: - AVCapturePhotoCaptureDelegate
+
+extension CameraManager: AVCapturePhotoCaptureDelegate {
+    nonisolated func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        if let error = error {
+            Task { @MainActor in
+                self.error = .captureError(error.localizedDescription)
+            }
+            return
+        }
+        
+        guard let imageData = photo.fileDataRepresentation() else {
+            Task { @MainActor in
+                self.error = .captureError("No image data")
+            }
+            return
+        }
+        
+        Task { @MainActor in
+            // Here you would process the captured photo
+            // For now, just log success
+            appBootLog.infoWithContext("Photo captured: \(imageData.count) bytes")
+            
+            // TODO: Process image with AI/ML for item detection
+            // This is where you'd integrate with Vision framework or ML models
+        }
+    }
+}
+
+// MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
+
+extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
+    nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        // This is called for every frame
+        // You can process frames here for real-time object detection
+        // For now, we'll leave it empty
+    }
+}
+
+// MARK: - Camera Errors
+
+enum CameraError: Error, Identifiable {
+    case permissionDenied
+    case cannotAddInput
+    case captureError(String)
+    
+    var id: String { localizedDescription }
+    
+    var localizedDescription: String {
+        switch self {
+        case .permissionDenied:
+            return "Camera access denied. Please enable in Settings."
+        case .cannotAddInput:
+            return "Cannot access camera input."
+        case .captureError(let message):
+            return "Capture error: \(message)"
+        }
+    }
+}

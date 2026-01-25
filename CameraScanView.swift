@@ -6,36 +6,79 @@
 //
 
 import SwiftUI
+import os
+import AVFoundation
 
 struct CameraScanView: View {
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var cameraManager = CameraManager()
+    
     @State private var isRecording = false
     @State private var detectedItems: [String] = []
-    @State private var isFlashOn = false
+    
+    private let logger = Logger(subsystem: "com.yourcompany.yourapp", category: "CameraScanView")
     
     var body: some View {
         NavigationStack {
             ZStack {
-                // Camera Preview (will be replaced with actual camera)
-                Rectangle()
-                    .fill(.black)
-                    .overlay {
-                        VStack {
-                            Image(systemName: "camera.metering.unknown")
-                                .font(.system(size: 100))
-                                .foregroundStyle(.white.opacity(0.3))
-                            
-                            Text("Camera Preview")
-                                .foregroundStyle(.white.opacity(0.5))
-                                .font(.title3)
-                            
-                            Text("Connect CameraManager in Phase 3")
-                                .foregroundStyle(.white.opacity(0.3))
-                                .font(.caption)
-                                .padding(.top, 4)
+                // Camera Preview
+                if cameraManager.isAuthorized && cameraManager.isSessionRunning {
+                    CameraPreview(session: cameraManager.session)
+                        .ignoresSafeArea()
+                } else if !cameraManager.isAuthorized {
+                    // Permission denied view
+                    Rectangle()
+                        .fill(.black)
+                        .overlay {
+                            VStack(spacing: 20) {
+                                Image(systemName: "camera.fill.badge.ellipsis")
+                                    .font(.system(size: 60))
+                                    .foregroundStyle(.white.opacity(0.5))
+                                
+                                Text("Camera Access Required")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                
+                                Text("Please enable camera access in Settings to scan items")
+                                    .font(.callout)
+                                    .foregroundColor(.white.opacity(0.7))
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 40)
+                                
+                                Button {
+                                    if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                                        UIApplication.shared.open(settingsURL)
+                                    }
+                                } label: {
+                                    Text("Open Settings")
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 24)
+                                        .padding(.vertical, 12)
+                                        .background(Capsule().fill(.blue))
+                                }
+                                .padding(.top, 8)
+                            }
                         }
-                    }
-                    .ignoresSafeArea()
+                        .ignoresSafeArea()
+                } else {
+                    // Loading view
+                    Rectangle()
+                        .fill(.black)
+                        .overlay {
+                            VStack(spacing: 16) {
+                                ProgressView()
+                                    .tint(.white)
+                                    .scaleEffect(1.5)
+                                
+                                Text("Initializing Camera...")
+                                    .foregroundStyle(.white.opacity(0.8))
+                                    .font(.callout)
+                            }
+                        }
+                        .ignoresSafeArea()
+                }
                 
                 // Top Controls
                 VStack {
@@ -71,12 +114,12 @@ struct CameraScanView: View {
                         Spacer()
                         
                         Button {
-                            isFlashOn.toggle()
+                            cameraManager.toggleFlash()
                         } label: {
-                            Image(systemName: isFlashOn ? "bolt.fill" : "bolt.slash.fill")
+                            Image(systemName: cameraManager.isFlashOn ? "bolt.fill" : "bolt.slash.fill")
                                 .font(.title3)
                                 .fontWeight(.semibold)
-                                .foregroundColor(isFlashOn ? .yellow : .white)
+                                .foregroundColor(cameraManager.isFlashOn ? .yellow : .white)
                                 .frame(width: 44, height: 44)
                                 .background(Circle().fill(.ultraThinMaterial))
                         }
@@ -127,9 +170,11 @@ struct CameraScanView: View {
                             
                             // Capture button
                             Button {
-                                // Capture photo
+                                logger.info("Capture button tapped")
+                                cameraManager.capturePhoto()
+                                
+                                // Simulate detection for now
                                 withAnimation {
-                                    // Simulate detection
                                     detectedItems.append("Sample Item \(detectedItems.count + 1)")
                                 }
                             } label: {
@@ -143,6 +188,7 @@ struct CameraScanView: View {
                                         .frame(width: 70, height: 70)
                                 }
                             }
+                            .disabled(!cameraManager.isSessionRunning)
                             
                             Spacer()
                             
@@ -204,6 +250,21 @@ struct CameraScanView: View {
                 }
             }
             .navigationBarHidden(true)
+            .onAppear {
+                logger.info("CameraScanView appeared")
+                // Camera manager will auto-start session after configuration
+            }
+            .onDisappear {
+                logger.info("CameraScanView disappeared - stopping session")
+                cameraManager.stopSession()
+            }
+            .alert(item: $cameraManager.error) { error in
+                Alert(
+                    title: Text("Camera Error"),
+                    message: Text(error.localizedDescription),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
         }
     }
 }

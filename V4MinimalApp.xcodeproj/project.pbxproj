@@ -29,6 +29,9 @@
 		BE8C22A72F25E8D100E32ACB /* CameraScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22A62F25E8D100E32ACB /* CameraScanView.swift */; };
 		BE8C22A92F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22A82F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md */; };
 		BE8C22AB2F25E99500E32ACB /* QUICK_START_GUIDE.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22AA2F25E99500E32ACB /* QUICK_START_GUIDE.swift */; };
+		BE8C22AD2F25F18300E32ACB /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22AC2F25F18300E32ACB /* CameraManager.swift */; };
+		BE8C22AF2F25F18900E32ACB /* CameraPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22AE2F25F18900E32ACB /* CameraPreview.swift */; };
+		BE8C22B12F25F1C600E32ACB /* CAMERA_SETUP.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22B02F25F1C600E32ACB /* CAMERA_SETUP.md */; };
 		BEAF835B2F1F2EBB001837B7 /* GoogleDriveUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */; };
 		BECA718B2F22FE0C00FB1F99 /* EarlyInit.c in Sources */ = {isa = PBXBuildFile; fileRef = BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */; };
 /* End PBXBuildFile section */
@@ -53,6 +56,9 @@
 		BE8C22A62F25E8D100E32ACB /* CameraScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraScanView.swift; sourceTree = "<group>"; };
 		BE8C22A82F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = IMPLEMENTATION_ROADMAP.md; sourceTree = "<group>"; };
 		BE8C22AA2F25E99500E32ACB /* QUICK_START_GUIDE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QUICK_START_GUIDE.swift; sourceTree = "<group>"; };
+		BE8C22AC2F25F18300E32ACB /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
+		BE8C22AE2F25F18900E32ACB /* CameraPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreview.swift; sourceTree = "<group>"; };
+		BE8C22B02F25F1C600E32ACB /* CAMERA_SETUP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CAMERA_SETUP.md; sourceTree = "<group>"; };
 		BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognition.swift; sourceTree = "<group>"; };
 		BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveUploader.swift; sourceTree = "<group>"; };
 		BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = EarlyInit.c; sourceTree = "<group>"; };
@@ -143,6 +149,9 @@
 				BE8C22A62F25E8D100E32ACB /* CameraScanView.swift */,
 				BE8C22A82F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md */,
 				BE8C22AA2F25E99500E32ACB /* QUICK_START_GUIDE.swift */,
+				BE8C22AC2F25F18300E32ACB /* CameraManager.swift */,
+				BE8C22AE2F25F18900E32ACB /* CameraPreview.swift */,
+				BE8C22B02F25F1C600E32ACB /* CAMERA_SETUP.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -224,6 +233,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BE8C22A92F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md in Resources */,
+				BE8C22B12F25F1C600E32ACB /* CAMERA_SETUP.md in Resources */,
 				BE8B14B22CE3DBBA00714DB0 /* AppendExtention.swift in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -242,9 +252,11 @@
 				BE8C22992F25E78500E32ACB /* MainTabView.swift in Sources */,
 				BE8C229B2F25E80400E32ACB /* ImplementationPlan.swift in Sources */,
 				BE8C229F2F25E84B00E32ACB /* HomeView.swift in Sources */,
+				BE8C22AF2F25F18900E32ACB /* CameraPreview.swift in Sources */,
 				BE8C229D2F25E82400E32ACB /* Models.swift in Sources */,
 				BE8C22A52F25E8B400E32ACB /* SettingsView.swift in Sources */,
 				BE54A2892CDDA81E00C6B639 /* SpeechRecognitionExtension.swift in Sources */,
+				BE8C22AD2F25F18300E32ACB /* CameraManager.swift in Sources */,
 				BEAF835B2F1F2EBB001837B7 /* GoogleDriveUploader.swift in Sources */,
 				BE8C22A12F25E87200E32ACB /* InventoryListView.swift in Sources */,
 				BE54A28B2CDDA81E00C6B639 /* SpeechRecognition.swift in Sources */,
@@ -387,6 +399,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
+				NEW_SETTING = "";
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
@@ -444,6 +457,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				NEW_SETTING = "";
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
