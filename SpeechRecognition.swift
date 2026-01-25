@@ -30,10 +30,12 @@ class SpeechRecognitionManager: ObservableObject {
     // Google Drive incremental upload support
     private var driveUploader = GoogleDriveUploader()
     private var driveChunkBuffer = Data()
-    private let driveChunkSizeBytes: Int = 512 * 1024 // 512 KB for incremental testing
+    // Increased to produce much longer Google Drive audio file uploads (streaming style)
+    private let driveChunkSizeBytes: Int = 5 * 1024 * 1024 // 5 MB for longer audio chunks
+    // Increased to produce much longer Google Drive audio file uploads (streaming style)
+    private let driveFlushInterval: TimeInterval = 30.0 // seconds (longer duration per upload)
     private var driveBaseFilename: String = "rawAudio-\(Int(Date().timeIntervalSince1970))"
     private var lastDriveFlushTime: Date = Date()
-    private let driveFlushInterval: TimeInterval = 5.0 // seconds
     
     // Verbose logging control for audio tap
     private let enableAudioTapVerboseLogging: Bool = false
@@ -66,6 +68,17 @@ class SpeechRecognitionManager: ObservableObject {
     private let silenceThreshold: TimeInterval = 12.0  // Adjust as needed
     
     
+    
+    /**
+     Initializes SpeechRecognitionManager.
+     
+     - Parameters:
+       - context: Core Data managed object context.
+     
+     Note: Removed scenePhase observer from initializer. To flush audio on app background/inactive,
+     call `flushPendingAudioToDrive(sampleRate:)` from your view's `.onChange(of: scenePhase)` closure,
+     passing the appropriate sample rate.
+     */
     init(context: NSManagedObjectContext) {
         
         appBootLog.infoWithContext("App launched: SpeechRecognitionManager initialized")
@@ -508,6 +521,23 @@ class SpeechRecognitionManager: ObservableObject {
         driveChunkBuffer.removeAll(keepingCapacity: true)
     }
 
+    /**
+     Public method to flush any pending audio chunks to Google Drive as WAV.
+     
+     Call this from your app's view or coordinator when the app transitions to background or inactive state,
+     if you do not use the `scenePhase` binding initializer.
+
+     // Example (in your View):
+     // .onChange(of: scenePhase) { newPhase in
+     //     if newPhase == .background || newPhase == .inactive {
+     //         speechManager.flushPendingAudioToDrive(sampleRate: speechManager.audioEngine.inputNode.outputFormat(forBus: 0).sampleRate)
+     //     }
+     // }
+     */
+    public func flushPendingAudioToDrive(sampleRate: Double) {
+        flushDriveChunkAsWAV(sampleRate: sampleRate)
+    }
+
     // Construct a simple WAV header for Float32 mono, little-endian
     private func buildFloat32MonoWAV(sampleRate: Double, pcmFloatData: Data) -> Data {
         let bytesPerSample: UInt16 = 4
@@ -639,4 +669,6 @@ class SpeechRecognitionManager: ObservableObject {
         appBootLog.infoWithContext("  data subchunk2ID=\(subchunk2ID) size=\(subchunk2Size)")
     }
 }
+
+import Combine
 
