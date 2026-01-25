@@ -140,6 +140,9 @@ struct CameraScanView: View {
                         
                         Spacer()
                         
+                        // Upload Queue Badge
+                        UploadQueueBadge(queue: VideoUploadQueue.shared)
+                        
                         Button {
                             cameraManager.toggleFlash()
                         } label: {

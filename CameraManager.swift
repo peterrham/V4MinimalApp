@@ -369,6 +369,9 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
             appBootLog.infoWithContext("📱 Saving video to Photos Library...")
             await self.saveVideoToLibrary(outputFileURL)
             
+            // Add to upload queue
+            VideoUploadQueue.shared.addVideo(outputFileURL)
+            
             // Notify that recording is complete and ready for upload
             NotificationCenter.default.post(
                 name: NSNotification.Name("VideoRecordingComplete"),

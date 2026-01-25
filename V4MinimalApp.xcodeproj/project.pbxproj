@@ -12,6 +12,11 @@
 		BE3DD69A2F26138D002C9706 /* VIDEO_AUTO_SAVE_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6992F26138D002C9706 /* VIDEO_AUTO_SAVE_SUMMARY.md */; };
 		BE3DD69C2F26139B002C9706 /* QUICK_START_AUTO_SAVE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD69B2F26139B002C9706 /* QUICK_START_AUTO_SAVE.md */; };
 		BE3DD69E2F2613C9002C9706 /* VIDEO_FLOW_DIAGRAM.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD69D2F2613C9002C9706 /* VIDEO_FLOW_DIAGRAM.md */; };
+		BE3DD6A02F2616BE002C9706 /* VideoUploadQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3DD69F2F2616BE002C9706 /* VideoUploadQueue.swift */; };
+		BE3DD6A22F2616DF002C9706 /* VideoUploadQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3DD6A12F2616DF002C9706 /* VideoUploadQueueView.swift */; };
+		BE3DD6A42F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6A32F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md */; };
+		BE3DD6A62F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6A52F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md */; };
+		BE3DD6A82F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6A72F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md */; };
 		BE54A2872CDDA6D200C6B639 /* NewMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEEFAA42CD2C9120072891A /* NewMain.swift */; };
 		BE54A2892CDDA81E00C6B639 /* SpeechRecognitionExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */; };
 		BE54A28B2CDDA81E00C6B639 /* SpeechRecognition.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */; };
@@ -62,6 +67,11 @@
 		BE3DD6992F26138D002C9706 /* VIDEO_AUTO_SAVE_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = VIDEO_AUTO_SAVE_SUMMARY.md; sourceTree = "<group>"; };
 		BE3DD69B2F26139B002C9706 /* QUICK_START_AUTO_SAVE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QUICK_START_AUTO_SAVE.md; sourceTree = "<group>"; };
 		BE3DD69D2F2613C9002C9706 /* VIDEO_FLOW_DIAGRAM.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = VIDEO_FLOW_DIAGRAM.md; sourceTree = "<group>"; };
+		BE3DD69F2F2616BE002C9706 /* VideoUploadQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoUploadQueue.swift; sourceTree = "<group>"; };
+		BE3DD6A12F2616DF002C9706 /* VideoUploadQueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoUploadQueueView.swift; sourceTree = "<group>"; };
+		BE3DD6A32F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = VIDEO_UPLOAD_QUEUE_GUIDE.md; sourceTree = "<group>"; };
+		BE3DD6A52F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = VIDEO_UPLOAD_QUEUE_SUMMARY.md; sourceTree = "<group>"; };
+		BE3DD6A72F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = UPLOAD_QUEUE_ARCHITECTURE.md; sourceTree = "<group>"; };
 		BE54A2172CDDA27F00C6B639 /* V4MinimalApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = V4MinimalApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE6204AD2CD97169001823E5 /* ExportToCSVView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportToCSVView.swift; sourceTree = "<group>"; };
 		BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionExtension.swift; sourceTree = "<group>"; };
@@ -212,6 +222,11 @@
 				BE3DD6992F26138D002C9706 /* VIDEO_AUTO_SAVE_SUMMARY.md */,
 				BE3DD69B2F26139B002C9706 /* QUICK_START_AUTO_SAVE.md */,
 				BE3DD69D2F2613C9002C9706 /* VIDEO_FLOW_DIAGRAM.md */,
+				BE3DD69F2F2616BE002C9706 /* VideoUploadQueue.swift */,
+				BE3DD6A12F2616DF002C9706 /* VideoUploadQueueView.swift */,
+				BE3DD6A32F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md */,
+				BE3DD6A52F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md */,
+				BE3DD6A72F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -294,6 +309,7 @@
 			files = (
 				BE8C22CB2F260B3E00E32ACB /* STREAMING_UPLOAD_USAGE_GUIDE.md in Resources */,
 				BE8C22C52F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md in Resources */,
+				BE3DD6A82F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md in Resources */,
 				BE8C22BB2F25F73100E32ACB /* VIDEO_RECORDING_SUMMARY.md in Resources */,
 				BE3DD69C2F26139B002C9706 /* QUICK_START_AUTO_SAVE.md in Resources */,
 				BE8C22CF2F260B9300E32ACB /* STREAMING_QUICK_REFERENCE.md in Resources */,
@@ -304,6 +320,8 @@
 				BE3DD6962F261350002C9706 /* PHOTOS_LIBRARY_SETUP.md in Resources */,
 				BE8C22CD2F260B6E00E32ACB /* STREAMING_IMPROVEMENTS_SUMMARY.md in Resources */,
 				BE8C22B12F25F1C600E32ACB /* CAMERA_SETUP.md in Resources */,
+				BE3DD6A62F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md in Resources */,
+				BE3DD6A42F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md in Resources */,
 				BE3DD69E2F2613C9002C9706 /* VIDEO_FLOW_DIAGRAM.md in Resources */,
 				BE8C22C92F2605BD00E32ACB /* UI_GUIDE_STREAMING.md in Resources */,
 				BE8B14B22CE3DBBA00714DB0 /* AppendExtention.swift in Resources */,
@@ -328,6 +346,7 @@
 				BE8C22BD2F25F74E00E32ACB /* LocalVideoStorage.swift in Sources */,
 				BE8C22A32F25E89600E32ACB /* ItemDetailView.swift in Sources */,
 				BECE6BD12F260EA5009344A1 /* GoogleCloudStorageUploader.swift in Sources */,
+				BE3DD6A02F2616BE002C9706 /* VideoUploadQueue.swift in Sources */,
 				BE8C22992F25E78500E32ACB /* MainTabView.swift in Sources */,
 				BE8C229B2F25E80400E32ACB /* ImplementationPlan.swift in Sources */,
 				BE8C229F2F25E84B00E32ACB /* HomeView.swift in Sources */,
@@ -343,6 +362,7 @@
 				BE8B156A2CE5979200714DB0 /* MainApp.swift in Sources */,
 				BE8B15682CE5273700714DB0 /* AppState.swift in Sources */,
 				BE54A28D2CDDA81E00C6B639 /* ExportToCSVView.swift in Sources */,
+				BE3DD6A22F2616DF002C9706 /* VideoUploadQueueView.swift in Sources */,
 				BECA718B2F22FE0C00FB1F99 /* EarlyInit.c in Sources */,
 				BE54A2872CDDA6D200C6B639 /* NewMain.swift in Sources */,
 				BE8C22952F25D76800E32ACB /* Theme.swift in Sources */,
