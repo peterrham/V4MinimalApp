@@ -2,6 +2,32 @@
 
 > **Read this file at the start of each session to restore context.**
 
+## Granted Permissions
+
+These are permissions the user has granted. Expect these to work without re-prompting:
+
+### Bash Commands
+- `xcodebuild` - Build iOS projects
+- `xcrun devicectl` - Device management (install, launch, list devices)
+- `xcrun simctl` - Simulator management
+- `git` - All git operations (status, add, commit, diff, log, push)
+- `pip3 install` - Install Python packages (may need venv)
+- `codesign` - Check app signatures and entitlements
+- `idevicesyslog`, `idevice_id` - Device log tools (limited functionality)
+- `/usr/bin/log` - System log commands
+- `osascript` - AppleScript execution
+- `python3` - Run Python scripts
+
+### File Operations
+- Read/Write/Edit files in `/Users/peterham/Documents/V4MinimalApp/`
+- Read system files for inspection (e.g., checking entitlements)
+
+### Other
+- Opening apps via `open -a` (e.g., Simulator, Console)
+- Background task execution
+
+---
+
 ## Project Summary
 
 **V4MinimalApp** - iOS Home Inventory app with AI-powered object detection using Google Gemini Vision API.
