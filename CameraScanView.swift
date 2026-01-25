@@ -12,9 +12,12 @@ import AVFoundation
 struct CameraScanView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var cameraManager = CameraManager()
+    @StateObject private var driveService = GoogleDriveService()
     
     @State private var isRecording = false
     @State private var detectedItems: [String] = []
+    @State private var showUploadOptions = false
+    @State private var recordedVideoURL: URL?
     
     private let logger = Logger(subsystem: "com.yourcompany.yourapp", category: "CameraScanView")
     
@@ -96,8 +99,25 @@ struct CameraScanView: View {
                         
                         Spacer()
                         
+                        // Recording indicator
+                        if cameraManager.isRecording {
+                            HStack(spacing: 6) {
+                                Circle()
+                                    .fill(.red)
+                                    .frame(width: 8, height: 8)
+                                
+                                Text(formatDuration(cameraManager.recordingDuration))
+                                    .font(.system(.body, design: .monospaced))
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Capsule().fill(.black.opacity(0.6)))
+                        }
+                        
                         // Item counter badge
-                        if !detectedItems.isEmpty {
+                        else if !detectedItems.isEmpty {
                             HStack(spacing: 6) {
                                 Image(systemName: "cube.box.fill")
                                     .font(.caption)
@@ -168,14 +188,19 @@ struct CameraScanView: View {
                             
                             Spacer()
                             
-                            // Capture button
+                            // Capture/Record button
                             Button {
-                                logger.info("Capture button tapped")
-                                cameraManager.capturePhoto()
-                                
-                                // Simulate detection for now
-                                withAnimation {
-                                    detectedItems.append("Sample Item \(detectedItems.count + 1)")
+                                if cameraManager.isRecording {
+                                    // Stop recording
+                                    cameraManager.stopRecording()
+                                } else {
+                                    logger.info("Capture button tapped")
+                                    cameraManager.capturePhoto()
+                                    
+                                    // Simulate detection for now
+                                    withAnimation {
+                                        detectedItems.append("Sample Item \(detectedItems.count + 1)")
+                                    }
                                 }
                             } label: {
                                 ZStack {
@@ -183,32 +208,47 @@ struct CameraScanView: View {
                                         .stroke(.white, lineWidth: 4)
                                         .frame(width: 80, height: 80)
                                     
-                                    Circle()
-                                        .fill(.white)
-                                        .frame(width: 70, height: 70)
+                                    if cameraManager.isRecording {
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(.red)
+                                            .frame(width: 40, height: 40)
+                                    } else {
+                                        Circle()
+                                            .fill(.white)
+                                            .frame(width: 70, height: 70)
+                                    }
                                 }
                             }
                             .disabled(!cameraManager.isSessionRunning)
                             
                             Spacer()
                             
-                            // Voice button
+                            // Record/Voice button
                             Button {
-                                isRecording.toggle()
+                                if cameraManager.isRecording {
+                                    cameraManager.stopRecording()
+                                } else {
+                                    cameraManager.startRecording()
+                                }
                             } label: {
-                                Image(systemName: isRecording ? "mic.fill" : "mic")
-                                    .font(.title2)
-                                    .foregroundColor(isRecording ? .red : .white)
-                                    .frame(width: 60, height: 60)
-                                    .background {
-                                        if isRecording {
-                                            Circle().fill(Color.white)
-                                        } else {
-                                            Circle().fill(.ultraThinMaterial)
-                                        }
+                                ZStack {
+                                    if cameraManager.isRecording {
+                                        Circle()
+                                            .fill(.white)
+                                            .frame(width: 60, height: 60)
+                                    } else {
+                                        Circle()
+                                            .fill(.ultraThinMaterial)
+                                            .frame(width: 60, height: 60)
                                     }
+                                    
+                                    Image(systemName: cameraManager.isRecording ? "stop.circle.fill" : "video.fill")
+                                        .font(.title2)
+                                        .foregroundColor(cameraManager.isRecording ? .red : .white)
+                                }
                             }
-                            .symbolEffect(.pulse, isActive: isRecording)
+                            .symbolEffect(.pulse, isActive: cameraManager.isRecording)
+                            .disabled(!cameraManager.isSessionRunning)
                         }
                         .padding(.horizontal, AppTheme.Spacing.xl)
                         .padding(.bottom, AppTheme.Spacing.xl)
@@ -253,10 +293,23 @@ struct CameraScanView: View {
             .onAppear {
                 logger.info("CameraScanView appeared")
                 // Camera manager will auto-start session after configuration
+                
+                // Listen for video recording completion
+                NotificationCenter.default.addObserver(
+                    forName: NSNotification.Name("VideoRecordingComplete"),
+                    object: nil,
+                    queue: .main
+                ) { notification in
+                    if let url = notification.userInfo?["url"] as? URL {
+                        recordedVideoURL = url
+                        showUploadOptions = true
+                    }
+                }
             }
             .onDisappear {
                 logger.info("CameraScanView disappeared - stopping session")
                 cameraManager.stopSession()
+                NotificationCenter.default.removeObserver(self)
             }
             .alert(item: $cameraManager.error) { error in
                 Alert(
@@ -265,10 +318,224 @@ struct CameraScanView: View {
                     dismissButton: .default(Text("OK"))
                 )
             }
+            .sheet(isPresented: $showUploadOptions) {
+                uploadOptionsSheet
+            }
+            .overlay {
+                if driveService.isUploading {
+                    uploadProgressOverlay
+                }
+            }
+        }
+    }
+    
+    // MARK: - Helper Views
+    
+    private var uploadOptionsSheet: some View {
+        NavigationStack {
+            VStack(spacing: AppTheme.Spacing.l) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 60))
+                    .foregroundStyle(.green)
+                    .padding(.top, AppTheme.Spacing.xl)
+                
+                Text("Video Recorded!")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                
+                Text("Your video has been saved successfully")
+                    .font(.callout)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                
+                Divider()
+                    .padding(.vertical)
+                
+                VStack(spacing: AppTheme.Spacing.m) {
+                    Button {
+                        Task {
+                            await uploadToGoogleDrive()
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "cloud.fill")
+                            Text("Upload to Google Drive")
+                            Spacer()
+                            Image(systemName: "arrow.right")
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: AppTheme.cornerRadius)
+                                .fill(Color.blue)
+                        )
+                        .foregroundColor(.white)
+                    }
+                    
+                    Button {
+                        Task {
+                            await saveToPhotos()
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "photo.on.rectangle")
+                            Text("Save to Photos")
+                            Spacer()
+                            Image(systemName: "arrow.right")
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: AppTheme.cornerRadius)
+                                .fill(Color.green)
+                        )
+                        .foregroundColor(.white)
+                    }
+                    
+                    Button {
+                        if let url = recordedVideoURL {
+                            shareVideo(url: url)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Share Video")
+                            Spacer()
+                            Image(systemName: "arrow.right")
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: AppTheme.cornerRadius)
+                                .fill(Color.gray.opacity(0.2))
+                        )
+                        .foregroundColor(.primary)
+                    }
+                    
+                    Button {
+                        showUploadOptions = false
+                    } label: {
+                        Text("Done")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: AppTheme.cornerRadius)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                            .foregroundColor(.primary)
+                    }
+                }
+                .padding(.horizontal)
+                
+                Spacer()
+            }
+            .navigationTitle("Recording Complete")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+    
+    private var uploadProgressOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+            
+            VStack(spacing: AppTheme.Spacing.l) {
+                ProgressView(value: driveService.uploadProgress)
+                    .progressViewStyle(.linear)
+                    .tint(.white)
+                    .frame(width: 200)
+                
+                Text("Uploading to Google Drive...")
+                    .foregroundColor(.white)
+                    .font(.callout)
+                
+                Text("\(Int(driveService.uploadProgress * 100))%")
+                    .foregroundColor(.white.opacity(0.8))
+                    .font(.caption)
+                    .fontWeight(.semibold)
+            }
+            .padding(AppTheme.Spacing.xl)
+            .background(
+                RoundedRectangle(cornerRadius: AppTheme.cornerRadius)
+                    .fill(.ultraThickMaterial)
+            )
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func formatDuration(_ duration: TimeInterval) -> String {
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+    
+    private func uploadToGoogleDrive() async {
+        guard let videoURL = recordedVideoURL else { return }
+        
+        showUploadOptions = false
+        
+        do {
+            // First check authentication
+            if !driveService.isAuthenticated {
+                await driveService.authenticate()
+                
+                // If still not authenticated, show error
+                if !driveService.isAuthenticated {
+                    logger.error("Failed to authenticate with Google Drive")
+                    return
+                }
+            }
+            
+            // Upload the video
+            try await driveService.uploadVideoResumable(
+                fileURL: videoURL,
+                fileName: "inventory_scan_\(Date().timeIntervalSince1970).mov"
+            )
+            
+            logger.info("✅ Video uploaded to Google Drive successfully")
+            
+            // Clean up local file
+            try? FileManager.default.removeItem(at: videoURL)
+            recordedVideoURL = nil
+            
+        } catch {
+            logger.error("Failed to upload video: \(error.localizedDescription)")
+        }
+    }
+    
+    private func saveToPhotos() async {
+        guard let videoURL = recordedVideoURL else { return }
+        
+        showUploadOptions = false
+        
+        do {
+            try await LocalVideoStorage.saveToPhotos(videoURL)
+            logger.info("✅ Video saved to Photos successfully")
+            recordedVideoURL = nil
+        } catch {
+            logger.error("Failed to save to Photos: \(error.localizedDescription)")
+            
+            // Show error alert
+            if let cameraError = error as? LocalVideoStorage.StorageError {
+                cameraManager.error = .captureError(cameraError.localizedDescription)
+            }
+        }
+    }
+    
+    private func shareVideo(url: URL) {
+        let activityVC = UIActivityViewController(
+            activityItems: [url],
+            applicationActivities: nil
+        )
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootViewController = windowScene.windows.first?.rootViewController {
+            rootViewController.present(activityVC, animated: true)
         }
     }
 }
 
+// MARK: - Preview
+
 #Preview {
     CameraScanView()
 }
+

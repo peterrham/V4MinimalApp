@@ -19,13 +19,22 @@ class CameraManager: NSObject, ObservableObject {
     let session = AVCaptureSession()
     private var videoOutput = AVCaptureVideoDataOutput()
     private var photoOutput = AVCapturePhotoOutput()
+    private var movieOutput = AVCaptureMovieFileOutput()
     
     private var deviceInput: AVCaptureDeviceInput?
     private var currentDevice: AVCaptureDevice?
+    private var audioInput: AVCaptureDeviceInput?
     private var isSessionConfigured = false
     
     // Flash control
     @Published var isFlashOn = false
+    
+    // Video recording
+    @Published var isRecording = false
+    @Published var recordingDuration: TimeInterval = 0
+    private var recordingTimer: Timer?
+    private var recordingStartTime: Date?
+    var currentVideoURL: URL?
     
     override init() {
         super.init()
@@ -35,6 +44,7 @@ class CameraManager: NSObject, ObservableObject {
     }
     
     deinit {
+        recordingTimer?.invalidate()
         if session.isRunning {
             session.stopRunning()
         }
@@ -111,6 +121,28 @@ class CameraManager: NSObject, ObservableObject {
                 appBootLog.infoWithContext("Photo output added")
             } else {
                 appBootLog.errorWithContext("Cannot add photo output")
+            }
+            
+            // Setup movie output for video recording
+            if session.canAddOutput(movieOutput) {
+                session.addOutput(movieOutput)
+                appBootLog.infoWithContext("Movie output added")
+            } else {
+                appBootLog.errorWithContext("Cannot add movie output")
+            }
+            
+            // Setup audio input for video recording
+            if let audioDevice = AVCaptureDevice.default(for: .audio) {
+                do {
+                    let audioDeviceInput = try AVCaptureDeviceInput(device: audioDevice)
+                    if session.canAddInput(audioDeviceInput) {
+                        session.addInput(audioDeviceInput)
+                        self.audioInput = audioDeviceInput
+                        appBootLog.infoWithContext("Audio input added")
+                    }
+                } catch {
+                    appBootLog.errorWithContext("Could not add audio input: \(error.localizedDescription)")
+                }
             }
             
             // Setup video output for frame processing
@@ -254,6 +286,91 @@ class CameraManager: NSObject, ObservableObject {
     func setFlash(_ enabled: Bool) {
         guard let device = currentDevice, device.hasFlash else { return }
         isFlashOn = enabled
+    }
+    
+    // MARK: - Video Recording
+    
+    func startRecording() {
+        guard !isRecording else { return }
+        guard session.isRunning else {
+            error = .captureError("Camera session not running")
+            return
+        }
+        
+        // Create temporary file URL
+        let tempDirectory = FileManager.default.temporaryDirectory
+        let fileName = "recording_\(Date().timeIntervalSince1970).mov"
+        let fileURL = tempDirectory.appendingPathComponent(fileName)
+        
+        // Remove any existing file at this location
+        try? FileManager.default.removeItem(at: fileURL)
+        
+        currentVideoURL = fileURL
+        
+        appBootLog.infoWithContext("Starting video recording to: \(fileURL.path)")
+        
+        // Start recording
+        movieOutput.startRecording(to: fileURL, recordingDelegate: self)
+        
+        isRecording = true
+        recordingStartTime = Date()
+        
+        // Start timer to update duration
+        recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self = self, let startTime = self.recordingStartTime else { return }
+            Task { @MainActor in
+                self.recordingDuration = Date().timeIntervalSince(startTime)
+            }
+        }
+    }
+    
+    func stopRecording() {
+        guard isRecording else { return }
+        
+        appBootLog.infoWithContext("Stopping video recording")
+        
+        movieOutput.stopRecording()
+        
+        // Timer will be invalidated in the delegate callback
+    }
+    
+    private func cleanupRecording() {
+        recordingTimer?.invalidate()
+        recordingTimer = nil
+        recordingStartTime = nil
+        isRecording = false
+        recordingDuration = 0
+    }
+}
+
+// MARK: - AVCaptureFileOutputRecordingDelegate
+
+extension CameraManager: AVCaptureFileOutputRecordingDelegate {
+    nonisolated func fileOutput(_ output: AVCaptureFileOutput, didStartRecordingTo fileURL: URL, from connections: [AVCaptureConnection]) {
+        Task { @MainActor in
+            appBootLog.infoWithContext("✅ Recording started successfully")
+        }
+    }
+    
+    nonisolated func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
+        Task { @MainActor in
+            self.cleanupRecording()
+            
+            if let error = error {
+                appBootLog.errorWithContext("Recording error: \(error.localizedDescription)")
+                self.error = .captureError("Recording failed: \(error.localizedDescription)")
+                return
+            }
+            
+            appBootLog.infoWithContext("✅ Recording saved to: \(outputFileURL.path)")
+            
+            // Notify that recording is complete and ready for upload
+            NotificationCenter.default.post(
+                name: NSNotification.Name("VideoRecordingComplete"),
+                object: nil,
+                userInfo: ["url": outputFileURL]
+            )
+        }
     }
 }
 
