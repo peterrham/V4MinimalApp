@@ -29,7 +29,10 @@ struct VoiceRecognitionApp: App {
         
         _ = AppHelper.shared
         
-        appDelegate.appState = appState
+        // Note: @StateObject should not be accessed in the App struct's initializer
+        // because the SwiftUI view hierarchy is not ready yet.
+        // Doing so triggers a SwiftUI runtime warning.
+        // appDelegate.appState = appState
         
         if false {
             if let recognizedTextEntities = DynamicPersistenceController.shared.fetchRecognizedTextEntities() {
