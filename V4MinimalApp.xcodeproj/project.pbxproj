@@ -19,6 +19,16 @@
 		BE8C22932F25D55600E32ACB /* Styles.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22922F25D55600E32ACB /* Styles.swift */; };
 		BE8C22952F25D76800E32ACB /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22942F25D76800E32ACB /* Theme.swift */; };
 		BE8C22972F25D76900E32ACB /* SecondaryButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22962F25D76900E32ACB /* SecondaryButtonStyle.swift */; };
+		BE8C22992F25E78500E32ACB /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22982F25E78500E32ACB /* MainTabView.swift */; };
+		BE8C229B2F25E80400E32ACB /* ImplementationPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C229A2F25E80400E32ACB /* ImplementationPlan.swift */; };
+		BE8C229D2F25E82400E32ACB /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C229C2F25E82400E32ACB /* Models.swift */; };
+		BE8C229F2F25E84B00E32ACB /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C229E2F25E84B00E32ACB /* HomeView.swift */; };
+		BE8C22A12F25E87200E32ACB /* InventoryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22A02F25E87200E32ACB /* InventoryListView.swift */; };
+		BE8C22A32F25E89600E32ACB /* ItemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22A22F25E89600E32ACB /* ItemDetailView.swift */; };
+		BE8C22A52F25E8B400E32ACB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22A42F25E8B400E32ACB /* SettingsView.swift */; };
+		BE8C22A72F25E8D100E32ACB /* CameraScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22A62F25E8D100E32ACB /* CameraScanView.swift */; };
+		BE8C22A92F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22A82F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md */; };
+		BE8C22AB2F25E99500E32ACB /* QUICK_START_GUIDE.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22AA2F25E99500E32ACB /* QUICK_START_GUIDE.swift */; };
 		BEAF835B2F1F2EBB001837B7 /* GoogleDriveUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */; };
 		BECA718B2F22FE0C00FB1F99 /* EarlyInit.c in Sources */ = {isa = PBXBuildFile; fileRef = BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */; };
 /* End PBXBuildFile section */
@@ -33,6 +43,16 @@
 		BE8C22922F25D55600E32ACB /* Styles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Styles.swift; sourceTree = "<group>"; };
 		BE8C22942F25D76800E32ACB /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		BE8C22962F25D76900E32ACB /* SecondaryButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryButtonStyle.swift; sourceTree = "<group>"; };
+		BE8C22982F25E78500E32ACB /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		BE8C229A2F25E80400E32ACB /* ImplementationPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImplementationPlan.swift; sourceTree = "<group>"; };
+		BE8C229C2F25E82400E32ACB /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		BE8C229E2F25E84B00E32ACB /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		BE8C22A02F25E87200E32ACB /* InventoryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryListView.swift; sourceTree = "<group>"; };
+		BE8C22A22F25E89600E32ACB /* ItemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailView.swift; sourceTree = "<group>"; };
+		BE8C22A42F25E8B400E32ACB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		BE8C22A62F25E8D100E32ACB /* CameraScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraScanView.swift; sourceTree = "<group>"; };
+		BE8C22A82F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = IMPLEMENTATION_ROADMAP.md; sourceTree = "<group>"; };
+		BE8C22AA2F25E99500E32ACB /* QUICK_START_GUIDE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QUICK_START_GUIDE.swift; sourceTree = "<group>"; };
 		BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognition.swift; sourceTree = "<group>"; };
 		BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveUploader.swift; sourceTree = "<group>"; };
 		BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = EarlyInit.c; sourceTree = "<group>"; };
@@ -113,6 +133,16 @@
 				BE8C22922F25D55600E32ACB /* Styles.swift */,
 				BE8C22942F25D76800E32ACB /* Theme.swift */,
 				BE8C22962F25D76900E32ACB /* SecondaryButtonStyle.swift */,
+				BE8C22982F25E78500E32ACB /* MainTabView.swift */,
+				BE8C229A2F25E80400E32ACB /* ImplementationPlan.swift */,
+				BE8C229C2F25E82400E32ACB /* Models.swift */,
+				BE8C229E2F25E84B00E32ACB /* HomeView.swift */,
+				BE8C22A02F25E87200E32ACB /* InventoryListView.swift */,
+				BE8C22A22F25E89600E32ACB /* ItemDetailView.swift */,
+				BE8C22A42F25E8B400E32ACB /* SettingsView.swift */,
+				BE8C22A62F25E8D100E32ACB /* CameraScanView.swift */,
+				BE8C22A82F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md */,
+				BE8C22AA2F25E99500E32ACB /* QUICK_START_GUIDE.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -193,6 +223,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BE8C22A92F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md in Resources */,
 				BE8B14B22CE3DBBA00714DB0 /* AppendExtention.swift in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -205,8 +236,17 @@
 			buildActionMask = 2147483647;
 			files = (
 				BE8C22932F25D55600E32ACB /* Styles.swift in Sources */,
+				BE8C22AB2F25E99500E32ACB /* QUICK_START_GUIDE.swift in Sources */,
+				BE8C22A72F25E8D100E32ACB /* CameraScanView.swift in Sources */,
+				BE8C22A32F25E89600E32ACB /* ItemDetailView.swift in Sources */,
+				BE8C22992F25E78500E32ACB /* MainTabView.swift in Sources */,
+				BE8C229B2F25E80400E32ACB /* ImplementationPlan.swift in Sources */,
+				BE8C229F2F25E84B00E32ACB /* HomeView.swift in Sources */,
+				BE8C229D2F25E82400E32ACB /* Models.swift in Sources */,
+				BE8C22A52F25E8B400E32ACB /* SettingsView.swift in Sources */,
 				BE54A2892CDDA81E00C6B639 /* SpeechRecognitionExtension.swift in Sources */,
 				BEAF835B2F1F2EBB001837B7 /* GoogleDriveUploader.swift in Sources */,
+				BE8C22A12F25E87200E32ACB /* InventoryListView.swift in Sources */,
 				BE54A28B2CDDA81E00C6B639 /* SpeechRecognition.swift in Sources */,
 				BE8B156A2CE5979200714DB0 /* MainApp.swift in Sources */,
 				BE8B15682CE5273700714DB0 /* AppState.swift in Sources */,

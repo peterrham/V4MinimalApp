@@ -52,10 +52,13 @@ struct VoiceRecognitionApp: App {
     
     var body: some Scene {
         WindowGroup {
-            
             if appState.isAuthenticated {
-                ContentView()
+                MainTabView()
                     .environment(\.managedObjectContext, DynamicPersistenceController.shared.container.viewContext)
+                    .onOpenURL { url in
+                        // Handle Google Sign-In URL callbacks
+                        // GIDSignIn.sharedInstance.handle(url)
+                    }
             } else {
                 GoogleSignInView()
             }
