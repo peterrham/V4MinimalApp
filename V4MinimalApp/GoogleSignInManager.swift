@@ -3,10 +3,14 @@ import GoogleSignIn
 
 class GoogleSignInManager: ObservableObject {
     @Published var user: GIDGoogleUser? = nil
+    var proactiveRefreshLeeway: TimeInterval = 60 // seconds before expiry to refresh proactively
+    
     private let signInConfig: GIDConfiguration
     
     private var refreshTimer: Timer?
-    private let proactiveRefreshLeeway: TimeInterval = 60 // seconds before expiry to refresh proactively
+    
+    private var useFixedTestInterval: Bool = false
+    private var fixedTestIntervalSeconds: TimeInterval = 30
     
     private func logUserState(prefix: String) {
         if let u = GIDSignIn.sharedInstance.currentUser {
@@ -26,11 +30,34 @@ class GoogleSignInManager: ObservableObject {
             appBootLog.infoWithContext("[GSI] scheduleProactiveRefresh: no user or expiration; not scheduling")
             return
         }
-        let interval = max(5, exp.timeIntervalSinceNow - proactiveRefreshLeeway)
-        appBootLog.infoWithContext("[GSI] scheduleProactiveRefresh in \(interval) seconds (exp=\(exp))")
+        let computed = max(5, exp.timeIntervalSinceNow - proactiveRefreshLeeway)
+        let interval = useFixedTestInterval ? fixedTestIntervalSeconds : computed
+        appBootLog.infoWithContext("[GSI] scheduleProactiveRefresh in \(interval) seconds (exp=\(exp), fixed=\(useFixedTestInterval))")
         refreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
-            self?.refreshAccessToken(reason: "proactive-timer") { _ in }
+            self?.refreshAccessToken(reason: self?.useFixedTestInterval == true ? "proactive-timer-fixed" : "proactive-timer") { _ in }
         }
+    }
+    
+    /// Adjust the proactive refresh leeway (seconds before expiry) and reschedule the timer
+    func setProactiveRefreshLeeway(_ seconds: TimeInterval, reason: String = "debug") {
+        proactiveRefreshLeeway = seconds
+        appBootLog.infoWithContext("[GSI] setProactiveRefreshLeeway: now \(seconds)s (reason=\(reason))")
+        scheduleProactiveRefresh()
+    }
+    
+    /// Enable a fixed proactive refresh interval (for testing) and reschedule
+    func enableFixedRefreshInterval(seconds: TimeInterval) {
+        useFixedTestInterval = true
+        fixedTestIntervalSeconds = seconds
+        appBootLog.infoWithContext("[GSI] enableFixedRefreshInterval: \(seconds)s")
+        scheduleProactiveRefresh()
+    }
+
+    /// Disable fixed interval mode and return to expiry-based scheduling
+    func disableFixedRefreshInterval() {
+        useFixedTestInterval = false
+        appBootLog.infoWithContext("[GSI] disableFixedRefreshInterval; returning to expiry-based scheduling")
+        scheduleProactiveRefresh()
     }
     
     func refreshAccessToken(reason: String = "manual", completion: @escaping (Result<String, Error>) -> Void) {

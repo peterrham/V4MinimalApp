@@ -32,6 +32,16 @@ struct DebugView: View {
                 }
             }
             .buttonStyle(PrimaryButtonStyle())
+            
+            Button("Enable 30s Proactive Refresh (Test Mode)") {
+                googleSignInManager.enableFixedRefreshInterval(seconds: 30)
+            }
+            .buttonStyle(PrimaryButtonStyle())
+
+            Button("Disable Fixed Refresh") {
+                googleSignInManager.disableFixedRefreshInterval()
+            }
+            .buttonStyle(PrimaryButtonStyle())
                           
             NavigationLink(destination: GoogleSignInView()) {
                 Text("GoogleSignInView")
@@ -77,3 +87,4 @@ struct DebugView: View {
         }
     }
 }
+
