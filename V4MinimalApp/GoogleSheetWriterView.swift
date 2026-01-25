@@ -57,7 +57,7 @@ struct GoogleSheetWriterView: View {
             let requestBody = try JSONSerialization.data(withJSONObject: sheetRequestBody, options: [])
             request.httpBody = requestBody
         } catch {
-            print("Failed to serialize JSON request body:", error)
+            appBootLog.errorWithContext("Failed to serialize JSON request body: \(error)")
             return
         }
         

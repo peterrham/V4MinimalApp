@@ -84,15 +84,15 @@ struct GoogleSheetsAPI {
             
             if let httpResponse = response as? HTTPURLResponse {
                    let statusCode = httpResponse.statusCode
-                   print("HTTP Status Code: \(statusCode)")
+                   appBootLog.debugWithContext("HTTP Status Code: \(statusCode)")
                    
                    if (200...299).contains(statusCode) {
-                       print("Success")
+                       appBootLog.debugWithContext("Success")
                    } else {
-                       print("Failed with status code: \(statusCode)")
+                       appBootLog.errorWithContext("Failed with status code: \(statusCode)")
                    }
                } else {
-                   print("Unable to cast response to HTTPURLResponse")
+                   appBootLog.errorWithContext("Unable to cast response to HTTPURLResponse")
                }
             
             if let error = error {

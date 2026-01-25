@@ -48,7 +48,7 @@ struct TextFileSharerView: View {
 
     // Function to get the text file URL and prepare it for sharing
     func prepareFileForSharing() {
-        print("inside prepareFileForSharing")
+        appBootLog.debugWithContext("inside prepareFileForSharing")
         // Access the Documents directory to retrieve the file URL
         let fileManager = FileManager.default
         do {
@@ -59,11 +59,11 @@ struct TextFileSharerView: View {
             if fileManager.fileExists(atPath: fileURL!.path) {
                 isShowingActivityView = true
             } else {
-                print("File not found at: \(fileURL!.path)")
+                appBootLog.errorWithContext("File not found at: \(fileURL!.path)")
                 fileURL = nil
             }
         } catch {
-            print("Error accessing Documents directory: \(error)")
+            appBootLog.errorWithContext("Error accessing Documents directory: \(error)")
             fileURL = nil
         }
     }

@@ -62,9 +62,9 @@ struct TextFileCreatorView: View {
             // Update state to indicate file creation was successful
             fileCreated = true
             filePath = fileURL.path
-            print("File created at: \(filePath)")
+            appBootLog.infoWithContext("File created at: \(filePath)")
         } catch {
-            print("Error creating file: \(error)")
+            appBootLog.errorWithContext("Error creating file: \(error)")
             fileCreated = false
         }
     }

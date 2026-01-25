@@ -44,7 +44,7 @@ struct DeleteAllRecognizedTextView: View {
         do {
             try viewContext.save()
         } catch {
-            print("Error saving context after deletion: \(error)")
+            appBootLog.errorWithContext("Error saving context after deletion: \(error)")
         }
     }
 }

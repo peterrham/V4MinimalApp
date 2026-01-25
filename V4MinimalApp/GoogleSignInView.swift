@@ -31,7 +31,7 @@ struct GoogleSignInView: View {
         .buttonStyle(PrimaryButtonStyle())
         
         Button("Append") {
-           print("Append")
+           appBootLog.debugWithContext("Append")
             AppendLog().append(text: "abc")
         }
         .buttonStyle(PrimaryButtonStyle())
