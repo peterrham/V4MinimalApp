@@ -122,57 +122,53 @@ struct ContentView: View {
                     }
                 }
                 
-                Text("Incremental Speech:")
-                    .font(.headline)
-                Text(speechManager.incrementalText)
-                // Text("bogus")
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
-                Text("Finalized Speech:")
+                Card {
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.s) {
+                        Text("Incremental Speech:")
+                            .font(.headline)
+                        Text(speechManager.incrementalText)
+                            .font(.body)
+                    }
+                }
+
+                Card {
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.s) {
+                        Text("Finalized Speech:")
+                            .font(.headline)
+                        Text(speechManager.finalText)
+                            .font(.body)
+                    }
+                }
                 
-                    .font(.headline)
-                Text(speechManager.finalText)
-                //Text("MORE bogus")
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
-                
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(recognizedTexts.indices, id: \.self) { index in
-                            let text = recognizedTexts[index]
-                            // Text("abcd")
-                            // Text(text.content ?? "")
-                            // Text(DateFormatter().string(from: text.timestamp ?? Date()))
-                            Text("\(index): \(shortDateFormatter.string(from: text.timestamp!)): \(text.content!)")
-                                .onAppear {
-                                    // appBootLog.infoWithContext("timestamp: \(String(describing: text.timestamp))")
-                                    
-                                }
-                                .padding()
-                                .background(Color(.secondarySystemBackground))
-                                .cornerRadius(10)
+                Card {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 10) {
+                            ForEach(recognizedTexts.indices, id: \.self) { index in
+                                let text = recognizedTexts[index]
+                                Text("\(index): \(shortDateFormatter.string(from: text.timestamp!)): \(text.content!)")
+                                    .onAppear {}
+                                    .padding()
+                                    .background(Color(.tertiarySystemBackground))
+                                    .cornerRadius(8)
+                            }
                         }
                     }
                 }
-                .padding()
-                .overlay(
-                    GeometryReader { geometry in
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: 6)
-                            .cornerRadius(3)
-                            .padding(.trailing, 4)
-                            .offset(x: geometry.size.width - 10) // Position on the right side
-                    },
-                    alignment: .trailing
-                )
             }
-            .padding(.horizontal)
+            .padding()
             .frame(maxWidth: 480)
+            .navigationTitle("Audio")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        // Placeholder refresh action
+                        appBootLog.infoWithContext("Audio toolbar refresh tapped")
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                }
+            }
         }
     }
 }

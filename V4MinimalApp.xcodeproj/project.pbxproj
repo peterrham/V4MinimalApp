@@ -17,6 +17,8 @@
 		BE8B15682CE5273700714DB0 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8B15672CE5273700714DB0 /* AppState.swift */; };
 		BE8B156A2CE5979200714DB0 /* MainApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8B15692CE5979200714DB0 /* MainApp.swift */; };
 		BE8C22932F25D55600E32ACB /* Styles.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22922F25D55600E32ACB /* Styles.swift */; };
+		BE8C22952F25D76800E32ACB /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22942F25D76800E32ACB /* Theme.swift */; };
+		BE8C22972F25D76900E32ACB /* SecondaryButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22962F25D76900E32ACB /* SecondaryButtonStyle.swift */; };
 		BEAF835B2F1F2EBB001837B7 /* GoogleDriveUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */; };
 		BECA718B2F22FE0C00FB1F99 /* EarlyInit.c in Sources */ = {isa = PBXBuildFile; fileRef = BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */; };
 /* End PBXBuildFile section */
@@ -29,6 +31,8 @@
 		BE8B15672CE5273700714DB0 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		BE8B15692CE5979200714DB0 /* MainApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainApp.swift; sourceTree = "<group>"; };
 		BE8C22922F25D55600E32ACB /* Styles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Styles.swift; sourceTree = "<group>"; };
+		BE8C22942F25D76800E32ACB /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		BE8C22962F25D76900E32ACB /* SecondaryButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryButtonStyle.swift; sourceTree = "<group>"; };
 		BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognition.swift; sourceTree = "<group>"; };
 		BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveUploader.swift; sourceTree = "<group>"; };
 		BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = EarlyInit.c; sourceTree = "<group>"; };
@@ -107,6 +111,8 @@
 				BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */,
 				BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */,
 				BE8C22922F25D55600E32ACB /* Styles.swift */,
+				BE8C22942F25D76800E32ACB /* Theme.swift */,
+				BE8C22962F25D76900E32ACB /* SecondaryButtonStyle.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -207,6 +213,8 @@
 				BE54A28D2CDDA81E00C6B639 /* ExportToCSVView.swift in Sources */,
 				BECA718B2F22FE0C00FB1F99 /* EarlyInit.c in Sources */,
 				BE54A2872CDDA6D200C6B639 /* NewMain.swift in Sources */,
+				BE8C22952F25D76800E32ACB /* Theme.swift in Sources */,
+				BE8C22972F25D76900E32ACB /* SecondaryButtonStyle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
