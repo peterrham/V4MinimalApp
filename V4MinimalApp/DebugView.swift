@@ -7,6 +7,30 @@
 
 import SwiftUI
 
+struct UnifiedButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.headline)
+            .foregroundColor(.white)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
+            .background(configuration.isPressed ? Color.accentColor.opacity(0.7) : Color.accentColor)
+            .cornerRadius(10)
+    }
+}
+
+extension View {
+    func unifiedNavLabel() -> some View {
+        self
+            .font(.headline)
+            .foregroundColor(.white)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
+            .background(Color.accentColor)
+            .cornerRadius(10)
+    }
+}
+
 struct DebugView: View {
     
     @State private var isShowingShareSheet = false
@@ -15,11 +39,11 @@ struct DebugView: View {
     
     var body: some View {
         
-        VStack(spacing: 20) {
+        VStack(spacing: 12) {
             
             Button("Print To Log") {
                 appBootLog.debugWithContext("printing to log")
-            }.buttonStyle(PrimaryButtonStyle())
+            }.buttonStyle(UnifiedButtonStyle())
             
             Button("Force Refresh Token") {
                 googleSignInManager.refreshAccessToken(reason: "debug-force-button") { result in
@@ -31,27 +55,27 @@ struct DebugView: View {
                     }
                 }
             }
-            .buttonStyle(PrimaryButtonStyle())
+            .buttonStyle(UnifiedButtonStyle())
             
             Button("Enable 30s Proactive Refresh (Test Mode)") {
                 googleSignInManager.enableFixedRefreshInterval(seconds: 30)
             }
-            .buttonStyle(PrimaryButtonStyle())
+            .buttonStyle(UnifiedButtonStyle())
 
             Button("Disable Fixed Refresh") {
                 googleSignInManager.disableFixedRefreshInterval()
             }
-            .buttonStyle(PrimaryButtonStyle())
+            .buttonStyle(UnifiedButtonStyle())
                           
             NavigationLink(destination: GoogleSignInView()) {
                 Text("GoogleSignInView")
-                    .buttonStyle(PrimaryButtonStyle())
+                    .unifiedNavLabel()
             }
             
             Button("Copy sqlite") {
                 isShowingShareSheet = true
             }
-            .buttonStyle(PrimaryButtonStyle())
+            .buttonStyle(UnifiedButtonStyle())
             // Present the document picker
             .sheet(isPresented:  $isShowingShareSheet) {
                 // Present the share sheet
@@ -62,29 +86,31 @@ struct DebugView: View {
             // NavigationLink(destination: GoogleSheetWriterView()) {
             NavigationLink(destination: GoogleAuthenticateViaSafariView()) {
                 Text("Write Google Sheet")
-                    .buttonStyle(PrimaryButtonStyle())
+                    .unifiedNavLabel()
             }
             NavigationLink(destination: DeleteAllRecognizedTextView()) {
                 Text("DeleteAllRecognizedTextView")
-                    .buttonStyle(PrimaryButtonStyle())
+                    .unifiedNavLabel()
             }
             NavigationLink(destination: ExportToCSVView()) {
                 Text("ExportToCSVView")
-                    .buttonStyle(PrimaryButtonStyle())
+                    .unifiedNavLabel()
             }
             NavigationLink(destination: TextFileSharerView()) {
                 Text("TextFileSharerView")
-                    .buttonStyle(PrimaryButtonStyle())
+                    .unifiedNavLabel()
             }
             NavigationLink(destination: TextFileCreatorView()) {
                 Text("TextFileCreatorView")
-                    .buttonStyle(PrimaryButtonStyle())
+                    .unifiedNavLabel()
             }
             NavigationLink(destination: SecondView()) {
                 Text("Go to Second Page")
-                    .buttonStyle(PrimaryButtonStyle())
+                    .unifiedNavLabel()
             }
         }
+        .padding(.horizontal)
+        .frame(maxWidth: 480)
     }
 }
 
