@@ -223,10 +223,14 @@ extension CameraManager {
             appBootLog.infoWithContext("   Total size: \(fileSize) bytes")
             appBootLog.infoWithContext("   Total uploaded: \(uploader.bytesUploaded) bytes")
             
-            // Delete local file since it's been uploaded
+            // Save to Photos Library before deleting
+            appBootLog.infoWithContext("📱 Saving video to Photos Library...")
+            await saveVideoToLibrary(fileURL)
+            
+            // Delete local file since it's been uploaded and saved to Photos
             do {
                 try FileManager.default.removeItem(at: fileURL)
-                appBootLog.infoWithContext("🗑️ Local recording file deleted (uploaded to Drive)")
+                appBootLog.infoWithContext("🗑️ Local recording file deleted (uploaded to Drive & saved to Photos)")
                 
                 await MainActor.run {
                     currentVideoURL = nil

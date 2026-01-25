@@ -524,6 +524,7 @@ struct CameraScanView: View {
                     uploadProgressOverlay
                 }
             }
+            .videoSavedToast() // Add toast notification for video saves
         }
     }
     

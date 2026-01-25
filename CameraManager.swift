@@ -365,6 +365,10 @@ extension CameraManager: AVCaptureFileOutputRecordingDelegate {
             
             appBootLog.infoWithContext("✅ Recording saved to: \(outputFileURL.path)")
             
+            // Save to Photos Library
+            appBootLog.infoWithContext("📱 Saving video to Photos Library...")
+            await self.saveVideoToLibrary(outputFileURL)
+            
             // Notify that recording is complete and ready for upload
             NotificationCenter.default.post(
                 name: NSNotification.Name("VideoRecordingComplete"),
@@ -457,6 +461,79 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
         } catch {
             appBootLog.errorWithContext("Failed to save photo: \(error.localizedDescription)")
             self.error = .captureError("Failed to save photo: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - Save Video to Library
+    
+    func saveVideoToLibrary(_ videoURL: URL) async {
+        // Check authorization
+        let status = PHPhotoLibrary.authorizationStatus(for: .addOnly)
+        
+        var authorized = false
+        
+        switch status {
+        case .notDetermined:
+            // Request permission
+            appBootLog.infoWithContext("Requesting photo library permission...")
+            let newStatus = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
+            authorized = (newStatus == .authorized)
+            appBootLog.infoWithContext("Permission result: \(newStatus == .authorized ? "granted" : "denied")")
+            
+        case .authorized, .limited:
+            authorized = true
+            
+        case .restricted, .denied:
+            appBootLog.warningWithContext("⚠️ Photo library access denied")
+            self.error = .captureError("Photo library access denied. Enable in Settings.")
+            return
+            
+        @unknown default:
+            return
+        }
+        
+        guard authorized else {
+            self.error = .captureError("Photo library access denied")
+            return
+        }
+        
+        // Verify file exists
+        guard FileManager.default.fileExists(atPath: videoURL.path) else {
+            appBootLog.errorWithContext("❌ Video file not found at: \(videoURL.path)")
+            self.error = .captureError("Video file not found")
+            return
+        }
+        
+        appBootLog.infoWithContext("📱 Saving video to Photos Library...")
+        appBootLog.debugWithContext("   File: \(videoURL.lastPathComponent)")
+        
+        // Save to photos
+        do {
+            var savedAssetIdentifier: String?
+            
+            try await PHPhotoLibrary.shared().performChanges {
+                let request = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: videoURL)
+                savedAssetIdentifier = request?.placeholderForCreatedAsset?.localIdentifier
+            }
+            
+            appBootLog.infoWithContext("✅ Video saved to Photos Library")
+            if let identifier = savedAssetIdentifier {
+                appBootLog.debugWithContext("   Asset ID: \(identifier)")
+            }
+            
+            // Post notification
+            NotificationCenter.default.post(
+                name: NSNotification.Name("VideoSavedToPhotos"),
+                object: nil,
+                userInfo: [
+                    "url": videoURL,
+                    "assetIdentifier": savedAssetIdentifier as Any
+                ]
+            )
+            
+        } catch {
+            appBootLog.errorWithContext("❌ Failed to save video to Photos: \(error.localizedDescription)")
+            self.error = .captureError("Failed to save video: \(error.localizedDescription)")
         }
     }
 }
