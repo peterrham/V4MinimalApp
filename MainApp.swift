@@ -9,7 +9,7 @@ import os
 // bogus comment to force a git commit
 
 let anotherLogger: Logger = {
-    print("__HERE__")
+    appBootLog.debugWithContext("__HERE__")
     fatalError("Invalid configuration")
     let logger = Logger(subsystem: "com.yourcompany.yourapp", category: "Start")
     logger.infoWithContext("BOOT_MARKER_START— Logger created via closure and ready")
@@ -40,11 +40,11 @@ struct VoiceRecognitionApp: App {
                     if
                         let content = entity.value(forKey: "content") as? String,
                         let timestamp = entity.value(forKey: "timestamp") as? Date {
-                        print("Content: \(content), Timestamp: \(timestamp)")
+                        appBootLog.debugWithContext("Content: \(content), Timestamp: \(timestamp)")
                     }
                 }
             } else {
-                print("No records found or an error occurred.")
+                appBootLog.errorWithContext("No records found or an error occurred.")
             }
         }
         
@@ -63,7 +63,7 @@ struct VoiceRecognitionApp: App {
     }
     
     func sayHelloWorld() {
-        print("Hello, World!")
+        appBootLog.debugWithContext("Hello, World!")
     }
     
     // 👋 You've now got a Hello World function! Time to celebrate. 🎉
