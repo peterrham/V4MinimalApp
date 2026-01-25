@@ -11,19 +11,27 @@ struct DebugView: View {
     
     @State private var isShowingShareSheet = false
     
-   // @StateObject private var googleSignInManager = GoogleSignInManager(clientID: "748381179204-hp1qqcpa5jr929nj0hs6sou0sb6df60a.apps.googleusercontent.com")
+    @StateObject private var googleSignInManager = GoogleSignInManager(clientID: "748381179204-hp1qqcpa5jr929nj0hs6sou0sb6df60a.apps.googleusercontent.com")
     
     var body: some View {
         
         VStack(spacing: 20) {
             
-            // GoogleSignInView
-            
-           // NavigationLink(destination: GoogleSignInView().environmentObject(googleSignInManager).environment(\.managedObjectContext, // DynamicPersistenceController.shared.container.viewContext)) {
-            
             Button("Print To Log") {
                 appBootLog.debugWithContext("printing to log")
             }.buttonStyle(PrimaryButtonStyle())
+            
+            Button("Force Refresh Token") {
+                googleSignInManager.refreshAccessToken(reason: "debug-force-button") { result in
+                    switch result {
+                    case .success(let token):
+                        appBootLog.infoWithContext("[Debug] Force refresh succeeded. token prefix=\(token.prefix(12))…")
+                    case .failure(let error):
+                        appBootLog.errorWithContext("[Debug] Force refresh failed: \(error.localizedDescription)")
+                    }
+                }
+            }
+            .buttonStyle(PrimaryButtonStyle())
                           
             NavigationLink(destination: GoogleSignInView()) {
                 Text("GoogleSignInView")
