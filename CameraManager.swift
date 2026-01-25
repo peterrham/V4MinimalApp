@@ -11,7 +11,7 @@ import UIKit
 import Photos
 
 @MainActor
-class CameraManager: NSObject, ObservableObject {
+class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     @Published var isAuthorized = false
     @Published var isCameraUnavailable = false
     @Published var error: CameraError?
@@ -349,6 +349,30 @@ class CameraManager: NSObject, ObservableObject {
     }
 }
 
+// MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
+
+extension CameraManager {
+    nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        // Get the callback handler
+        guard let handler = onFrameCaptured else { return }
+
+        // Convert CMSampleBuffer to UIImage
+        guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+
+        let ciImage = CIImage(cvPixelBuffer: imageBuffer)
+        let context = CIContext()
+
+        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
+
+        let image = UIImage(cgImage: cgImage)
+
+        // Call the handler on main thread
+        Task { @MainActor in
+            handler(image)
+        }
+    }
+}
+
 // MARK: - AVCaptureFileOutputRecordingDelegate
 
 extension CameraManager: AVCaptureFileOutputRecordingDelegate {
@@ -563,12 +587,21 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
         // Update with the result
         if let error = geminiService.error {
             photoIdentification = "Error: \(error)"
-            appBootLog.errorWithContext("❌ Gemini identification failed: \(error)")
+            appBootLog.errorWithContext("❌ Gemini identification failed")
+            appBootLog.errorWithContext("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            appBootLog.errorWithContext("   Error: \(error)")
+            appBootLog.errorWithContext("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            
+            // Also set camera error for UI display
+            self.error = .captureError("Photo identification failed: \(error)")
+            
         } else if !geminiService.latestIdentification.isEmpty {
             photoIdentification = geminiService.latestIdentification
-            appBootLog.infoWithContext("✅ Gemini identification: \(geminiService.latestIdentification)")
+            appBootLog.infoWithContext("✅ Gemini identification complete!")
+            appBootLog.infoWithContext("   Result: \(geminiService.latestIdentification)")
         } else {
             photoIdentification = ""
+            appBootLog.warningWithContext("⚠️ Gemini returned no identification")
         }
         
         isIdentifyingPhoto = false
@@ -578,16 +611,6 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
     func clearPhotoIdentification() {
         photoIdentification = ""
         lastCapturedImage = nil
-    }
-}
-
-// MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
-
-extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
-    nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // This is called for every frame
-        // You can process frames here for real-time object detection
-        // For now, we'll leave it empty
     }
 }
 

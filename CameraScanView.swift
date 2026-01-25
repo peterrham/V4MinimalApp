@@ -23,7 +23,8 @@ struct CameraScanView: View {
     @State private var showPhotoPicker = false
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var enableStreamingUpload = false
-    
+    @State private var showLiveDetection = false
+
     private let logger = Logger(subsystem: "com.yourcompany.yourapp", category: "CameraScanView")
     private let driveUploader = GoogleDriveUploader()
     @StateObject private var streamingUploader = StreamingVideoUploader()
@@ -140,9 +141,26 @@ struct CameraScanView: View {
                         
                         Spacer()
                         
+                        // Live Detection button
+                        Button {
+                            showLiveDetection = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "eye.fill")
+                                Text("LIVE")
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                            }
+                            .font(.caption)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .background(Capsule().fill(.red.opacity(0.8)))
+                        }
+
                         // Upload Queue Badge
                         UploadQueueBadge(queue: VideoUploadQueue.shared)
-                        
+
                         Button {
                             cameraManager.toggleFlash()
                         } label: {
@@ -573,6 +591,9 @@ struct CameraScanView: View {
                 }
             }
             .videoSavedToast() // Add toast notification for video saves
+            .fullScreenCover(isPresented: $showLiveDetection) {
+                LiveObjectDetectionView()
+            }
         }
     }
     

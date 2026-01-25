@@ -23,6 +23,8 @@
 	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
+	<key>GeminiAPIKey</key>
+	<string>AIzaSyDE74YdHITrsuVczNKSubtvE73zgdun1Wc</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Needed to scan inventory.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

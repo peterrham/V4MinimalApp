@@ -30,32 +30,104 @@ class GeminiVisionService: ObservableObject {
     // MARK: - Initialization
     
     init(apiKey: String = "") {
+        appBootLog.infoWithContext("🔧 Initializing GeminiVisionService...")
+        
         // Load API key from multiple sources (in order of priority)
         if !apiKey.isEmpty {
             // 1. Explicitly provided
             self.apiKey = apiKey
+            appBootLog.infoWithContext("✅ API key loaded from explicit parameter (length: \(apiKey.count) chars)")
         } else if let configKey = Self.loadFromConfig() {
             // 2. From Config.plist
             self.apiKey = configKey
-            appBootLog.debugWithContext("API key loaded from Config.plist")
+            appBootLog.infoWithContext("✅ API key loaded from Config.plist (length: \(configKey.count) chars)")
         } else if let infoPlistKey = Self.loadFromInfoPlist() {
             // 3. From Info.plist
             self.apiKey = infoPlistKey
-            appBootLog.debugWithContext("API key loaded from Info.plist")
+            appBootLog.infoWithContext("✅ API key loaded from Info.plist (length: \(infoPlistKey.count) chars)")
         } else if let envKey = ProcessInfo.processInfo.environment["GEMINI_API_KEY"] {
             // 4. From environment variable
             self.apiKey = envKey
-            appBootLog.debugWithContext("API key loaded from environment variable")
+            appBootLog.infoWithContext("✅ API key loaded from environment variable (length: \(envKey.count) chars)")
         } else {
             // No API key found
             self.apiKey = ""
+            appBootLog.errorWithContext("❌ API key not found in any configuration source")
         }
         
+        // Detailed logging for debugging
         if self.apiKey.isEmpty {
-            appBootLog.warningWithContext("⚠️ Gemini API key not configured")
-            appBootLog.warningWithContext("   Options: Info.plist, Config.plist, or GEMINI_API_KEY environment variable")
+            appBootLog.errorWithContext("❌❌❌ GEMINI API KEY NOT CONFIGURED ❌❌❌")
+            appBootLog.errorWithContext("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            appBootLog.errorWithContext("📋 Troubleshooting Checklist:")
+            appBootLog.errorWithContext("")
+            appBootLog.errorWithContext("1️⃣ Config.plist:")
+            if let configPath = Bundle.main.path(forResource: "Config", ofType: "plist") {
+                appBootLog.errorWithContext("   ✅ File exists at: \(configPath)")
+                if let config = NSDictionary(contentsOfFile: configPath) {
+                    appBootLog.errorWithContext("   📄 File is readable")
+                    if let key = config["GeminiAPIKey"] as? String {
+                        if key.isEmpty {
+                            appBootLog.errorWithContext("   ⚠️ GeminiAPIKey key exists but is EMPTY")
+                        } else {
+                            appBootLog.errorWithContext("   ⚠️ GeminiAPIKey exists with value (this shouldn't happen)")
+                        }
+                    } else {
+                        appBootLog.errorWithContext("   ❌ No 'GeminiAPIKey' key found in dictionary")
+                        appBootLog.errorWithContext("   📋 Available keys: \(config.allKeys)")
+                    }
+                } else {
+                    appBootLog.errorWithContext("   ❌ File exists but cannot be read as NSDictionary")
+                }
+            } else {
+                appBootLog.errorWithContext("   ❌ Config.plist not found in bundle")
+            }
+            
+            appBootLog.errorWithContext("")
+            appBootLog.errorWithContext("2️⃣ Info.plist:")
+            if let infoPlistKey = Bundle.main.object(forInfoDictionaryKey: "GeminiAPIKey") {
+                if let keyString = infoPlistKey as? String {
+                    if keyString.isEmpty {
+                        appBootLog.errorWithContext("   ⚠️ GeminiAPIKey exists but is EMPTY")
+                    } else {
+                        appBootLog.errorWithContext("   ⚠️ GeminiAPIKey exists (this shouldn't happen)")
+                    }
+                } else {
+                    appBootLog.errorWithContext("   ❌ GeminiAPIKey exists but is not a String (type: \(type(of: infoPlistKey)))")
+                }
+            } else {
+                appBootLog.errorWithContext("   ❌ No 'GeminiAPIKey' in Info.plist")
+            }
+            
+            appBootLog.errorWithContext("")
+            appBootLog.errorWithContext("3️⃣ Environment Variable:")
+            if let envKey = ProcessInfo.processInfo.environment["GEMINI_API_KEY"] {
+                if envKey.isEmpty {
+                    appBootLog.errorWithContext("   ⚠️ GEMINI_API_KEY exists but is EMPTY")
+                } else {
+                    appBootLog.errorWithContext("   ⚠️ GEMINI_API_KEY exists (this shouldn't happen)")
+                }
+            } else {
+                appBootLog.errorWithContext("   ❌ GEMINI_API_KEY environment variable not set")
+            }
+            
+            appBootLog.errorWithContext("")
+            appBootLog.errorWithContext("🔧 How to Fix:")
+            appBootLog.errorWithContext("   • Quick Start: Add to Info.plist with key 'GeminiAPIKey'")
+            appBootLog.errorWithContext("   • Recommended: Create Config.plist (see GEMINI_SETUP.md)")
+            appBootLog.errorWithContext("   • Development: Set GEMINI_API_KEY in scheme environment")
+            appBootLog.errorWithContext("")
+            appBootLog.errorWithContext("📖 See GEMINI_SETUP.md for detailed instructions")
+            appBootLog.errorWithContext("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         } else {
-            appBootLog.infoWithContext("✅ Gemini API key loaded successfully")
+            appBootLog.infoWithContext("✅ Gemini API key configured successfully")
+            // Validate key format (Gemini keys start with "AIza")
+            if self.apiKey.hasPrefix("AIza") {
+                appBootLog.infoWithContext("   ✓ Key format looks valid (starts with 'AIza')")
+            } else {
+                appBootLog.warningWithContext("   ⚠️ Key format may be invalid (should start with 'AIza')")
+                appBootLog.warningWithContext("   Key prefix: '\(String(self.apiKey.prefix(4)))...'")
+            }
         }
     }
     
@@ -87,7 +159,25 @@ class GeminiVisionService: ObservableObject {
     func identifyImage(_ image: UIImage, customPrompt: String? = nil) async {
         guard !apiKey.isEmpty else {
             error = "API key not configured"
-            appBootLog.errorWithContext("❌ Cannot identify image: API key not configured")
+            appBootLog.errorWithContext("❌❌❌ CANNOT IDENTIFY IMAGE: API KEY NOT CONFIGURED ❌❌❌")
+            appBootLog.errorWithContext("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            appBootLog.errorWithContext("🔍 Attempted photo identification without API key")
+            appBootLog.errorWithContext("")
+            appBootLog.errorWithContext("⚠️ This error occurs when:")
+            appBootLog.errorWithContext("   • No API key is configured in Info.plist, Config.plist, or environment")
+            appBootLog.errorWithContext("   • API key is empty or whitespace only")
+            appBootLog.errorWithContext("")
+            appBootLog.errorWithContext("📋 Configuration Status:")
+            appBootLog.errorWithContext("   API Key Length: \(apiKey.count) characters")
+            appBootLog.errorWithContext("")
+            appBootLog.errorWithContext("🔧 To Fix:")
+            appBootLog.errorWithContext("   1. Get API key from: https://makersuite.google.com/app/apikey")
+            appBootLog.errorWithContext("   2. Add to Info.plist with key 'GeminiAPIKey' (quick start)")
+            appBootLog.errorWithContext("      OR create Config.plist (recommended)")
+            appBootLog.errorWithContext("   3. Rebuild and run the app")
+            appBootLog.errorWithContext("")
+            appBootLog.errorWithContext("📖 See GEMINI_SETUP.md for complete setup instructions")
+            appBootLog.errorWithContext("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
             return
         }
         
@@ -97,54 +187,119 @@ class GeminiVisionService: ObservableObject {
         let prompt = customPrompt ?? "What is in this image? Provide a brief, clear identification of the main object or scene. Keep the response concise (1-2 sentences)."
         
         appBootLog.infoWithContext("🔍 Identifying image with Gemini Vision API...")
+        appBootLog.debugWithContext("   Image size: \(image.size.width)×\(image.size.height)")
         appBootLog.debugWithContext("   Prompt: \(prompt)")
         
         do {
             // Convert image to base64
             guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+                appBootLog.errorWithContext("❌ Failed to convert UIImage to JPEG data")
                 throw GeminiError.imageConversionFailed
             }
             
+            let imageSizeKB = Double(imageData.count) / 1024.0
+            appBootLog.debugWithContext("   Image data: \(String(format: "%.1f", imageSizeKB)) KB")
+            
             let base64Image = imageData.base64EncodedString()
+            appBootLog.debugWithContext("   Base64 encoded: \(base64Image.count) characters")
             
             // Create request
             let request = try createRequest(base64Image: base64Image, prompt: prompt)
+            appBootLog.debugWithContext("   Request URL: \(request.url?.absoluteString ?? "nil")")
+            appBootLog.debugWithContext("   Request method: \(request.httpMethod ?? "nil")")
             
             // Make API call
+            appBootLog.infoWithContext("📡 Sending request to Gemini API...")
             let (data, response) = try await URLSession.shared.data(for: request)
             
             // Check response
             guard let httpResponse = response as? HTTPURLResponse else {
+                appBootLog.errorWithContext("❌ Invalid HTTP response (not HTTPURLResponse)")
                 throw GeminiError.invalidResponse
             }
             
-            appBootLog.debugWithContext("API Response Status: \(httpResponse.statusCode)")
+            appBootLog.infoWithContext("📥 API Response received")
+            appBootLog.debugWithContext("   Status Code: \(httpResponse.statusCode)")
+            appBootLog.debugWithContext("   Response size: \(data.count) bytes")
             
             guard httpResponse.statusCode == 200 else {
                 let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
-                appBootLog.errorWithContext("❌ API Error: \(errorBody)")
+                appBootLog.errorWithContext("❌ API Error Response:")
+                appBootLog.errorWithContext("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                appBootLog.errorWithContext("   Status Code: \(httpResponse.statusCode)")
+                appBootLog.errorWithContext("   Error Body: \(errorBody)")
+                appBootLog.errorWithContext("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                
+                // Provide specific guidance based on status code
+                switch httpResponse.statusCode {
+                case 400:
+                    appBootLog.errorWithContext("💡 400 Bad Request - Check request format or API parameters")
+                case 401:
+                    appBootLog.errorWithContext("💡 401 Unauthorized - API key may be invalid")
+                case 403:
+                    appBootLog.errorWithContext("💡 403 Forbidden - API key may be invalid or expired")
+                    appBootLog.errorWithContext("   → Verify your key at: https://makersuite.google.com/app/apikey")
+                case 429:
+                    appBootLog.errorWithContext("💡 429 Rate Limited - Too many requests")
+                    appBootLog.errorWithContext("   → Free tier: 15 requests/minute")
+                    appBootLog.errorWithContext("   → Wait and try again")
+                case 500...599:
+                    appBootLog.errorWithContext("💡 \(httpResponse.statusCode) Server Error - Gemini service issue")
+                    appBootLog.errorWithContext("   → Try again in a few moments")
+                default:
+                    appBootLog.errorWithContext("💡 Unknown error code: \(httpResponse.statusCode)")
+                }
+                
                 throw GeminiError.apiError(statusCode: httpResponse.statusCode, message: errorBody)
             }
             
             // Parse response
+            appBootLog.debugWithContext("🔍 Parsing response...")
             let geminiResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
             
             // Extract text from response
             if let candidate = geminiResponse.candidates.first,
                let content = candidate.content.parts.first {
                 latestIdentification = content.text
-                appBootLog.infoWithContext("✅ Image identified: \(content.text)")
+                appBootLog.infoWithContext("✅ Image identified successfully!")
+                appBootLog.debugWithContext("   Result: \(content.text)")
+                
+                // Log safety ratings if present
+                if let safetyRatings = candidate.safetyRatings {
+                    appBootLog.debugWithContext("   Safety ratings: \(safetyRatings.count) categories checked")
+                }
             } else {
                 latestIdentification = "No identification available"
-                appBootLog.warningWithContext("⚠️ No identification in response")
+                appBootLog.warningWithContext("⚠️ Response received but no identification text found")
+                appBootLog.debugWithContext("   Candidates count: \(geminiResponse.candidates.count)")
             }
             
         } catch let error as GeminiError {
             self.error = error.localizedDescription
             appBootLog.errorWithContext("❌ Gemini error: \(error.localizedDescription)")
+        } catch let decodingError as DecodingError {
+            self.error = "Failed to parse API response"
+            appBootLog.errorWithContext("❌ JSON Decoding error: \(decodingError)")
+            switch decodingError {
+            case .keyNotFound(let key, let context):
+                appBootLog.errorWithContext("   Missing key: \(key.stringValue)")
+                appBootLog.errorWithContext("   Context: \(context.debugDescription)")
+            case .typeMismatch(let type, let context):
+                appBootLog.errorWithContext("   Type mismatch: expected \(type)")
+                appBootLog.errorWithContext("   Context: \(context.debugDescription)")
+            case .valueNotFound(let type, let context):
+                appBootLog.errorWithContext("   Value not found: \(type)")
+                appBootLog.errorWithContext("   Context: \(context.debugDescription)")
+            case .dataCorrupted(let context):
+                appBootLog.errorWithContext("   Data corrupted")
+                appBootLog.errorWithContext("   Context: \(context.debugDescription)")
+            @unknown default:
+                appBootLog.errorWithContext("   Unknown decoding error")
+            }
         } catch {
             self.error = error.localizedDescription
             appBootLog.errorWithContext("❌ Unexpected error: \(error.localizedDescription)")
+            appBootLog.errorWithContext("   Error type: \(type(of: error))")
         }
         
         isProcessing = false
