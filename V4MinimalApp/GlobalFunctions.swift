@@ -175,8 +175,7 @@ class RecognizedTextFetcher {
             let recognizedTexts = try viewContext.fetch(fetchRequest)
             return recognizedTexts
         } catch {
-            //appBootLog.errorWithContext("Failed to fetch recognized texts: \(error)")
-            appBootLog.errorWithContext("Failed to fetch recognized texts: \(error)")
+            // appBootLog.errorWithContext("Failed to fetch recognized texts: \(error)")
         }
         return []
     }
@@ -199,8 +198,7 @@ import CoreData
  let results = try context.fetch(fetchRequest)
  return results
  } catch {
- //appBootLog.errorWithContext("Failed to fetch RecognizedTextEntity: \(error)")
- appBootLog.errorWithContext("Failed to fetch RecognizedTextEntity: \(error)")
+ // appBootLog.errorWithContext("Failed to fetch RecognizedTextEntity: \(error)")
  }
  return []
  }
