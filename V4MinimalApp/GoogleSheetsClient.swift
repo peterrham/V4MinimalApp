@@ -38,7 +38,7 @@ struct GoogleSheetsClient {
             for entity in recognizedTextEntities {
                 if let content = entity.value(forKey: "content") as? String,
                    let timestamp = entity.value(forKey: "timestamp") as? Date {
-                    // print("Content: \(content), Timestamp: \(timestamp)")
+                    // appBootLog.debugWithContext("Content: \(content), Timestamp: \(timestamp)")
                     
                     let timestampStr = dateFormatter.string(from: entity.timestamp ?? Date())
                     let row = "\"\(content)\",\"\(timestampStr)\"\n"

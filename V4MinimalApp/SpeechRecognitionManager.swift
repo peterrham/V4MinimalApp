@@ -28,15 +28,15 @@ class SpeechRecognitionManager: ObservableObject {
             DispatchQueue.main.async {
                 switch status {
                 case .authorized:
-                    print("Speech recognition authorized.")
+                    appBootLog.infoWithContext("Speech recognition authorized.")
                 case .denied:
-                    print("Speech recognition permission denied.")
+                    appBootLog.infoWithContext("Speech recognition permission denied.")
                 case .restricted:
-                    print("Speech recognition restricted on this device.")
+                    appBootLog.infoWithContext("Speech recognition restricted on this device.")
                 case .notDetermined:
-                    print("Speech recognition not yet determined.")
+                    appBootLog.infoWithContext("Speech recognition not yet determined.")
                 @unknown default:
-                    print("Unknown authorization status.")
+                    appBootLog.infoWithContext("Unknown authorization status.")
                 }
             }
         }
@@ -52,14 +52,14 @@ class SpeechRecognitionManager: ObservableObject {
             try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
         } catch {
-            print("Failed to set up audio session: \(error)")
+            appBootLog.errorWithContext("Failed to set up audio session: \(error)")
             return
         }
         
         // Create a new recognition request
         request = SFSpeechAudioBufferRecognitionRequest()
         guard let request = request else {
-            print("Unable to create recognition request.")
+            appBootLog.errorWithContext("Unable to create recognition request.")
             return
         }
         request.shouldReportPartialResults = true
@@ -68,7 +68,7 @@ class SpeechRecognitionManager: ObservableObject {
         recognitionTask = speechRecognizer?.recognitionTask(with: request) { result, error in
             if let result = result {
                 DispatchQueue.main.async {
-                    print(result.bestTranscription.formattedString)
+                    appBootLog.debugWithContext(result.bestTranscription.formattedString)
                     self.recognizedText = result.bestTranscription.formattedString
                 }
             }
@@ -92,7 +92,7 @@ class SpeechRecognitionManager: ObservableObject {
             audioEngine.prepare()
             try audioEngine.start()
         } catch {
-            print("Audio engine could not start: \(error)")
+            appBootLog.errorWithContext("Audio engine could not start: \(error)")
         }
     }
     

@@ -9,7 +9,7 @@ import Foundation
 import CoreData
 
 
-func debugPrint(str: String){
+func appDebugPrint(_ str: String) {
     appBootLog.debugWithContext(str)
 }
 
@@ -175,9 +175,10 @@ class RecognizedTextFetcher {
             let recognizedTexts = try viewContext.fetch(fetchRequest)
             return recognizedTexts
         } catch {
-            print("Failed to fetch recognized texts: \(error)")
-            return []
+            //appBootLog.errorWithContext("Failed to fetch recognized texts: \(error)")
+            appBootLog.errorWithContext("Failed to fetch recognized texts: \(error)")
         }
+        return []
     }
 }
 
@@ -198,9 +199,10 @@ import CoreData
  let results = try context.fetch(fetchRequest)
  return results
  } catch {
- print("Failed to fetch RecognizedTextEntity: \(error)")
- return []
+ //appBootLog.errorWithContext("Failed to fetch RecognizedTextEntity: \(error)")
+ appBootLog.errorWithContext("Failed to fetch RecognizedTextEntity: \(error)")
  }
+ return []
  }
  */
 

@@ -142,7 +142,7 @@ struct ContentView: View {
                             // Text(DateFormatter().string(from: text.timestamp ?? Date()))
                             Text("\(index): \(shortDateFormatter.string(from: text.timestamp!)): \(text.content!)")
                                 .onAppear {
-                                    // print("timestamp: \(text.timestamp!)")
+                                    // appBootLog.infoWithContext("timestamp: \(String(describing: text.timestamp))")
                                     
                                 }
                                 .padding()
@@ -168,3 +168,4 @@ struct ContentView: View {
         }
     }
 }
+
