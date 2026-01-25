@@ -5,12 +5,84 @@ class GoogleSignInManager: ObservableObject {
     @Published var user: GIDGoogleUser? = nil
     private let signInConfig: GIDConfiguration
     
+    private var refreshTimer: Timer?
+    private let proactiveRefreshLeeway: TimeInterval = 60 // seconds before expiry to refresh proactively
+    
+    private func logUserState(prefix: String) {
+        if let u = GIDSignIn.sharedInstance.currentUser {
+            let name = u.profile?.name ?? "<no name>"
+            let email = u.profile?.email ?? "<no email>"
+            let token = u.accessToken.tokenString
+            let expires = u.accessToken.expirationDate?.description ?? "<no date>"
+            appBootLog.infoWithContext("[GSI] \(prefix): user=\(name) email=\(email) token=\(token.prefix(12))… exp=\(expires)")
+        } else {
+            appBootLog.infoWithContext("[GSI] \(prefix): currentUser = nil")
+        }
+    }
+    
+    private func scheduleProactiveRefresh() {
+        refreshTimer?.invalidate()
+        guard let user = GIDSignIn.sharedInstance.currentUser, let exp = user.accessToken.expirationDate else {
+            appBootLog.infoWithContext("[GSI] scheduleProactiveRefresh: no user or expiration; not scheduling")
+            return
+        }
+        let interval = max(5, exp.timeIntervalSinceNow - proactiveRefreshLeeway)
+        appBootLog.infoWithContext("[GSI] scheduleProactiveRefresh in \(interval) seconds (exp=\(exp))")
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+            self?.refreshAccessToken(reason: "proactive-timer") { _ in }
+        }
+    }
+    
+    func refreshAccessToken(reason: String = "manual", completion: @escaping (Result<String, Error>) -> Void) {
+        guard let user = GIDSignIn.sharedInstance.currentUser else {
+            appBootLog.errorWithContext("[GSI] refreshAccessToken(\(reason)): no currentUser; cannot refresh")
+            completion(.failure(NSError(domain: "GoogleSignIn", code: -1, userInfo: [NSLocalizedDescriptionKey: "No current user"])));
+            return
+        }
+        logUserState(prefix: "refreshAccessToken start [\(reason)]")
+        user.refreshTokensIfNeeded { [weak self] refreshedUser, error in
+            if let error = error {
+                appBootLog.errorWithContext("[GSI] refreshTokensIfNeeded failed [\(reason)]: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+            guard let refreshed = refreshedUser else {
+                appBootLog.errorWithContext("[GSI] refreshTokensIfNeeded returned nil user [\(reason)]")
+                completion(.failure(NSError(domain: "GoogleSignIn", code: -2, userInfo: [NSLocalizedDescriptionKey: "Nil refreshed user"])));
+                return
+            }
+            self?.user = refreshed
+            let token = refreshed.accessToken.tokenString
+            let exp = refreshed.accessToken.expirationDate?.description ?? "<no date>"
+            appBootLog.infoWithContext("[GSI] refreshTokensIfNeeded ok [\(reason)]: new token prefix=\(token.prefix(12))… exp=\(exp)")
+            self?.scheduleProactiveRefresh()
+            completion(.success(token))
+        }
+    }
+    
+    func ensureFreshToken(completion: @escaping (Result<String, Error>) -> Void) {
+        guard let user = GIDSignIn.sharedInstance.currentUser else {
+            appBootLog.errorWithContext("[GSI] ensureFreshToken: no currentUser")
+            completion(.failure(NSError(domain: "GoogleSignIn", code: -3, userInfo: [NSLocalizedDescriptionKey: "No current user"])));
+            return
+        }
+        let exp = user.accessToken.expirationDate ?? Date.distantPast
+        if exp.timeIntervalSinceNow <= proactiveRefreshLeeway {
+            appBootLog.infoWithContext("[GSI] ensureFreshToken: token near/after expiry; refreshing now")
+            refreshAccessToken(reason: "ensureFreshToken") { result in completion(result) }
+        } else {
+            appBootLog.infoWithContext("[GSI] ensureFreshToken: token is fresh (valid for ~\(Int(exp.timeIntervalSinceNow))s)")
+            completion(.success(user.accessToken.tokenString))
+        }
+    }
+    
     public func tokenString() -> String {
-        let retval = GIDSignIn.sharedInstance.currentUser!.accessToken.tokenString
-        
-        logWithTimestamp("tokenString(): \(retval)")
-        
-        return retval
+        guard let token = GIDSignIn.sharedInstance.currentUser?.accessToken.tokenString else {
+            appBootLog.errorWithContext("[GSI] tokenString(): no current user/token")
+            return ""
+        }
+        logWithTimestamp("tokenString(): \(token)")
+        return token
     }
 
     @Published var spreadsheetID: String = ""
@@ -26,6 +98,9 @@ class GoogleSignInManager: ObservableObject {
         GIDSignIn.sharedInstance.configuration = self.signInConfig
         
         user = GIDSignIn.sharedInstance.currentUser
+        
+        logUserState(prefix: "init: post-restore state")
+        scheduleProactiveRefresh()
         
         if  user == nil {
             logWithTimestamp("user == nil")
@@ -158,6 +233,9 @@ class GoogleSignInManager: ObservableObject {
                 logWithTimestamp("Error disconnecting: \(error)")
             } else {
                 logWithTimestamp("Successfully disconnected. The user will need to reauthorize.")
+                self.refreshTimer?.invalidate()
+                self.refreshTimer = nil
+                appBootLog.infoWithContext("[GSI] Signed out/disconnected; cleared refresh timer")
             }
         }
     }
@@ -187,6 +265,8 @@ class GoogleSignInManager: ObservableObject {
             }
             
             self?.user = user
+            self?.logUserState(prefix: "signIn success")
+            self?.scheduleProactiveRefresh()
             logWithTimestamp("Signed in successfully! User: \(user.profile?.name ?? "No Name")")
             
             // Retrieve the access token
@@ -209,6 +289,9 @@ class GoogleSignInManager: ObservableObject {
     func signOut() {
         GIDSignIn.sharedInstance.signOut()
         user = nil
+        refreshTimer?.invalidate()
+        refreshTimer = nil
+        appBootLog.infoWithContext("[GSI] Signed out/disconnected; cleared refresh timer")
         logWithTimestamp("Signed out")
     }
     
