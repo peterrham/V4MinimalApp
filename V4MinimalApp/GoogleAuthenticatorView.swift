@@ -57,20 +57,106 @@ struct WebView: UIViewRepresentable {
 struct GoogleAuthenticatorView: View {
     @State private var authorizationCode: String?
     @State private var accessToken: String?
+    @State private var showError: Bool = false
+    @State private var errorMessage: String = ""
 
     var body: some View {
-        VStack {
-            if let accessToken = accessToken {
-                Text("Access Token: \(accessToken)")
-            } else if authorizationCode == nil {
-                WebView(url: getAuthorizationURL()) { code in
-                    self.authorizationCode = code
-                    requestAccessToken(authorizationCode: code) { token in
-                        self.accessToken = token
+        NavigationStack {
+            ZStack {
+                if let accessToken = accessToken {
+                    // Success State
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 70))
+                                .foregroundStyle(.green.gradient)
+                                .padding(.top, 40)
+                            
+                            Text("Authentication Successful")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            
+                            Text("You've been successfully authenticated")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                            
+                            GroupBox {
+                                ScrollView {
+                                    Text(accessToken)
+                                        .font(.system(.caption, design: .monospaced))
+                                        .textSelection(.enabled)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(8)
+                                }
+                                .frame(height: 120)
+                            } label: {
+                                Label("Access Token", systemImage: "key.fill")
+                                    .font(.headline)
+                            }
+                            .padding(.horizontal)
+                            .padding(.top, 20)
+                            
+                            Spacer()
+                        }
+                    }
+                } else if authorizationCode == nil {
+                    // WebView for Authentication
+                    VStack(spacing: 0) {
+                        // Top Bar
+                        VStack(spacing: 8) {
+                            Image(systemName: "shield.lefthalf.filled")
+                                .font(.title2)
+                                .foregroundStyle(.blue)
+                            
+                            Text("Secure Authentication")
+                                .font(.headline)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(.regularMaterial)
+                        
+                        // WebView
+                        WebView(url: getAuthorizationURL()) { code in
+                            self.authorizationCode = code
+                            requestAccessToken(authorizationCode: code) { token in
+                                if let token = token {
+                                    withAnimation {
+                                        self.accessToken = token
+                                    }
+                                } else {
+                                    self.errorMessage = "Failed to retrieve access token"
+                                    self.showError = true
+                                    self.authorizationCode = nil
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Loading State
+                    VStack(spacing: 20) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                            .padding(.bottom, 8)
+                        
+                        Text("Authenticating...")
+                            .font(.headline)
+                        
+                        Text("Please wait while we verify your credentials")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
                     }
                 }
-            } else {
-                ProgressView("Authenticating...")
+            }
+            .navigationTitle("Google OAuth")
+            .navigationBarTitleDisplayMode(.inline)
+            .alert("Authentication Error", isPresented: $showError) {
+                Button("OK") { }
+            } message: {
+                Text(errorMessage)
             }
         }
     }
