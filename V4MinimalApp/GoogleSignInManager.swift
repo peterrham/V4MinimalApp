@@ -17,7 +17,7 @@ class GoogleSignInManager: ObservableObject {
     
     init(clientID: String) {
         
-        print("GoogleSignInManager() init")
+        logWithTimestamp("GoogleSignInManager() init")
         
         
         // Initialize GIDConfiguration with your client ID
@@ -28,10 +28,10 @@ class GoogleSignInManager: ObservableObject {
         user = GIDSignIn.sharedInstance.currentUser
         
         if  user == nil {
-            print("user == nil")
-            print("user: \(user)")
+            logWithTimestamp("user == nil")
+            logWithTimestamp("user: \(String(describing: user))")
         } else {
-            print("Existing Token String: \(GIDSignIn.sharedInstance.currentUser!.accessToken.tokenString)")
+            logWithTimestamp("Existing Token String: \(GIDSignIn.sharedInstance.currentUser!.accessToken.tokenString)")
         }
     }
     
@@ -49,10 +49,10 @@ class GoogleSignInManager: ObservableObject {
         apiClient.createSpreadsheet(title: "New Sheet") { result in
             switch result {
             case .success(let spreadsheetId):
-                print("Spreadsheet created with ID: \(spreadsheetId)")
+                logWithTimestamp("Spreadsheet created with ID: \(spreadsheetId)")
                 self.spreadsheetID = spreadsheetId
             case .failure(let error):
-                print("Error creating spreadsheet: \(error)")
+                logWithTimestamp("Error creating spreadsheet: \(error)")
             }
             
             semaphore.signal()  // Signal that async work is complete
@@ -71,9 +71,9 @@ class GoogleSignInManager: ObservableObject {
         apiClient.appendData(to: self.spreadsheetID, range: "Sheet1!A1", values: values) { result in
             switch result {
             case .success:
-                print("Data successfully appended.")
+                logWithTimestamp("Data successfully appended.")
             case .failure(let error):
-                print("Error appending data: \(error)")
+                logWithTimestamp("Error appending data: \(error)")
             }
         }
 
@@ -82,7 +82,7 @@ class GoogleSignInManager: ObservableObject {
     func createSpreadsheet() {
         
         guard let accessToken = self.user?.accessToken.tokenString else {
-            print("Access token is missing.")
+            logWithTimestamp("Access token is missing.")
             return
         }
             createGoogleSheet(accessToken: accessToken)
@@ -114,37 +114,37 @@ class GoogleSignInManager: ObservableObject {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
         } catch {
-            print("Error creating request body: \(error)")
+            logWithTimestamp("Error creating request body: \(error)")
             return
         }
         
         // Make the API call to create the spreadsheet
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("Error creating spreadsheet: \(error)")
+                logWithTimestamp("Error creating spreadsheet: \(error)")
                 return
             }
             
             guard let data = data else {
-                print("No data received from Sheets API")
+                logWithTimestamp("No data received from Sheets API")
                 return
             }
             
             // Parse the response
             do {
                 if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                    print("New Spreadsheet created: \(json)")
+                    logWithTimestamp("New Spreadsheet created: \(json)")
                     
                     if let localSpreadsheetId = json["spreadsheetId"] as? String {
-                            print("New Spreadsheet created with ID: \(localSpreadsheetId)")
+                            logWithTimestamp("New Spreadsheet created with ID: \(localSpreadsheetId)")
                         self.spreadsheetID = localSpreadsheetId
                             // You can now use `spreadsheetId` for further API calls
                         } else {
-                            print("Error: Could not find spreadsheetId in response.")
+                            logWithTimestamp("Error: Could not find spreadsheetId in response.")
                         }
                 }
             } catch {
-                print("Error parsing JSON response: \(error)")
+                logWithTimestamp("Error parsing JSON response: \(error)")
             }
         }
         
@@ -155,16 +155,16 @@ class GoogleSignInManager: ObservableObject {
     func disconnect() {
         GIDSignIn.sharedInstance.disconnect { error in
             if let error = error {
-                print("Error disconnecting: \(error)")
+                logWithTimestamp("Error disconnecting: \(error)")
             } else {
-                print("Successfully disconnected. The user will need to reauthorize.")
+                logWithTimestamp("Successfully disconnected. The user will need to reauthorize.")
             }
         }
     }
     
     func signIn() {
         guard let rootViewController = UIApplication.shared.windows.first?.rootViewController else {
-            print("Error: Unable to access root view controller.")
+            logWithTimestamp("Error: Unable to access root view controller.")
             return
         }
         
@@ -177,21 +177,21 @@ class GoogleSignInManager: ObservableObject {
             
             
             if let error = error {
-                print("Error signing in: \(error.localizedDescription)")
+                logWithTimestamp("Error signing in: \(error.localizedDescription)")
                 return
             }
             
             guard let user = result?.user else {
-                print("Error: Sign-in result is nil.")
+                logWithTimestamp("Error: Sign-in result is nil.")
                 return
             }
             
             self?.user = user
-            print("Signed in successfully! User: \(user.profile?.name ?? "No Name")")
+            logWithTimestamp("Signed in successfully! User: \(user.profile?.name ?? "No Name")")
             
             // Retrieve the access token
             if let accessToken = self?.user!.accessToken.tokenString {
-                print("Access Token: \(accessToken)")
+                logWithTimestamp("Access Token: \(accessToken)")
                 // You can use this access token with Google APIs, such as the People API
             }
             
@@ -201,7 +201,7 @@ class GoogleSignInManager: ObservableObject {
             }
             
             if let grantedScopes = self?.user!.grantedScopes {
-                print("Granted Scopes: \(grantedScopes)")
+                logWithTimestamp("Granted Scopes: \(grantedScopes)")
             }
         }
     }
@@ -209,18 +209,18 @@ class GoogleSignInManager: ObservableObject {
     func signOut() {
         GIDSignIn.sharedInstance.signOut()
         user = nil
-        print("Signed out")
+        logWithTimestamp("Signed out")
     }
     
     func validateIDToken(_ idToken: String) {
         guard let url = URL(string: "https://oauth2.googleapis.com/tokeninfo?id_token=\(idToken)") else {
-            print("Invalid URL")
+            logWithTimestamp("Invalid URL")
             return
         }
         
         let task = URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
-                print("Error validating token: \(error.localizedDescription)")
+                logWithTimestamp("Error validating token: \(error.localizedDescription)")
                 return
             }
             
@@ -228,11 +228,11 @@ class GoogleSignInManager: ObservableObject {
             
             do {
                 if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                    print("Token Validation Response: \(json)")
+                    logWithTimestamp("Token Validation Response: \(json)")
                     // Additional checks can be added, such as verifying audience ("aud") or expiration ("exp")
                 }
             } catch {
-                print("JSON parsing error: \(error.localizedDescription)")
+                logWithTimestamp("JSON parsing error: \(error.localizedDescription)")
             }
         }
         
@@ -241,12 +241,12 @@ class GoogleSignInManager: ObservableObject {
     
     func fetchAndPrintUserInfo() {
         guard let accessToken = self.user?.accessToken.tokenString else {
-            print("Access token is missing.")
+            logWithTimestamp("Access token is missing.")
             return
         }
         
         guard let url = URL(string: "https://openidconnect.googleapis.com/v1/userinfo") else {
-            print("Invalid URL")
+            logWithTimestamp("Invalid URL")
             return
         }
         
@@ -256,31 +256,31 @@ class GoogleSignInManager: ObservableObject {
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("Error fetching user info: \(error)")
+                logWithTimestamp("Error fetching user info: \(error)")
                 return
             }
             
             guard let data = data else {
-                print("No data received")
+                logWithTimestamp("No data received")
                 return
             }
             
             do {
                 if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
                     // Print each piece of user information to the console
-                    print("User Info: \(json)")
+                    logWithTimestamp("User Info: \(json)")
                     if let name = json["name"] as? String {
-                        print("Name: \(name)")
+                        logWithTimestamp("Name: \(name)")
                     }
                     if let email = json["email"] as? String {
-                        print("Email: \(email)")
+                        logWithTimestamp("Email: \(email)")
                     }
                     if let picture = json["picture"] as? String {
-                        print("Profile Picture URL: \(picture)")
+                        logWithTimestamp("Profile Picture URL: \(picture)")
                     }
                 }
             } catch {
-                print("Error parsing JSON: \(error)")
+                logWithTimestamp("Error parsing JSON: \(error)")
             }
         }
         
