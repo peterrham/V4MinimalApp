@@ -85,10 +85,14 @@ class StreamingVideoUploader: NSObject, ObservableObject {
     func uploadChunk(_ data: Data) async throws {
         guard let sessionURL = uploadSessionURL,
               let url = URL(string: sessionURL) else {
+            appBootLog.errorWithContext("❌ No active upload session")
             throw UploadError.uploadFailed("No active upload session")
         }
         
-        guard !data.isEmpty else { return }
+        guard !data.isEmpty else { 
+            appBootLog.warningWithContext("⚠️ Attempted to upload empty chunk, skipping")
+            return 
+        }
         
         let startByte = currentOffset
         let endByte = startByte + Int64(data.count) - 1
@@ -96,19 +100,29 @@ class StreamingVideoUploader: NSObject, ObservableObject {
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("video/quicktime", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 30 // 30 second timeout for uploads
         
         // Content-Range header: "bytes START-END/*" 
         // Use * for total size since we don't know final size during recording
-        request.setValue("bytes \(startByte)-\(endByte)/*", forHTTPHeaderField: "Content-Range")
+        let rangeHeader = "bytes \(startByte)-\(endByte)/*"
+        request.setValue(rangeHeader, forHTTPHeaderField: "Content-Range")
         request.httpBody = data
         
-        appBootLog.infoWithContext("📤 Uploading chunk: bytes \(startByte)-\(endByte) (\(data.count) bytes)")
+        appBootLog.infoWithContext("📤 Uploading chunk:")
+        appBootLog.debugWithContext("   Range: \(rangeHeader)")
+        appBootLog.debugWithContext("   Size: \(data.count) bytes (\(ByteCountFormatter.string(fromByteCount: Int64(data.count), countStyle: .file)))")
         
+        let uploadStart = Date()
         let (responseData, response) = try await URLSession.shared.data(for: request)
+        let uploadDuration = Date().timeIntervalSince(uploadStart)
         
         guard let httpResponse = response as? HTTPURLResponse else {
+            appBootLog.errorWithContext("❌ Invalid HTTP response")
             throw UploadError.invalidResponse
         }
+        
+        appBootLog.debugWithContext("   Response: HTTP \(httpResponse.statusCode)")
+        appBootLog.debugWithContext("   Duration: \(String(format: "%.2f", uploadDuration))s")
         
         // 308 = Resume Incomplete (chunk uploaded, continue)
         // 200/201 = Upload complete
@@ -117,10 +131,12 @@ class StreamingVideoUploader: NSObject, ObservableObject {
             currentOffset = endByte + 1
             bytesUploaded = currentOffset
             
-            appBootLog.infoWithContext("✅ Chunk uploaded successfully. Total: \(bytesUploaded) bytes")
+            let speed = Double(data.count) / uploadDuration / 1024.0 // KB/s
+            appBootLog.infoWithContext("✅ Chunk uploaded! Total: \(ByteCountFormatter.string(fromByteCount: bytesUploaded, countStyle: .file))")
+            appBootLog.debugWithContext("   Speed: \(String(format: "%.1f", speed)) KB/s")
             
         } else if httpResponse.statusCode == 200 || httpResponse.statusCode == 201 {
-            // Upload complete
+            // Upload complete (shouldn't happen during streaming, but handle it)
             currentOffset = endByte + 1
             bytesUploaded = currentOffset
             
@@ -135,7 +151,8 @@ class StreamingVideoUploader: NSObject, ObservableObject {
             
         } else {
             let errorMessage = String(data: responseData, encoding: .utf8) ?? "Unknown error"
-            appBootLog.errorWithContext("❌ Upload failed: \(httpResponse.statusCode) - \(errorMessage)")
+            appBootLog.errorWithContext("❌ Upload failed: HTTP \(httpResponse.statusCode)")
+            appBootLog.errorWithContext("   Error: \(errorMessage)")
             throw UploadError.uploadFailed("Status \(httpResponse.statusCode): \(errorMessage)")
         }
         
@@ -152,36 +169,98 @@ class StreamingVideoUploader: NSObject, ObservableObject {
             throw UploadError.uploadFailed("No active upload session")
         }
         
-        // Send final empty PUT with complete Content-Range
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        request.setValue("video/quicktime", forHTTPHeaderField: "Content-Type")
-        request.setValue("bytes */\(totalSize)", forHTTPHeaderField: "Content-Range")
-        request.httpBody = Data() // Empty body
+        appBootLog.infoWithContext("🏁 Finalizing upload...")
+        appBootLog.infoWithContext("   Total file size: \(totalSize) bytes")
+        appBootLog.infoWithContext("   Bytes uploaded so far: \(bytesUploaded) bytes")
+        appBootLog.infoWithContext("   Current offset: \(currentOffset)")
         
-        appBootLog.infoWithContext("🏁 Finalizing upload with total size: \(totalSize) bytes")
-        
-        let (responseData, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw UploadError.invalidResponse
+        // Check if we've uploaded everything
+        if currentOffset < totalSize {
+            let missing = totalSize - currentOffset
+            appBootLog.warningWithContext("⚠️ WARNING: Not all bytes uploaded! Missing \(missing) bytes")
         }
         
-        if httpResponse.statusCode == 200 || httpResponse.statusCode == 201 {
-            if let json = try? JSONSerialization.jsonObject(with: responseData) as? [String: Any],
-               let fileId = json["id"] as? String,
-               let fileName = json["name"] as? String {
-                appBootLog.infoWithContext("✅ Upload finalized! File ID: \(fileId), Name: \(fileName)")
+        // Create a custom URLSession with longer timeout
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 120 // 2 minutes for request
+        config.timeoutIntervalForResource = 300 // 5 minutes total
+        let session = URLSession(configuration: config)
+        
+        // Retry logic for finalization
+        let maxRetries = 3
+        var lastError: Error?
+        
+        for attempt in 1...maxRetries {
+            do {
+                appBootLog.infoWithContext("🔄 Finalization attempt \(attempt)/\(maxRetries)...")
+                
+                // Send final empty PUT with complete Content-Range
+                var request = URLRequest(url: url)
+                request.httpMethod = "PUT"
+                request.setValue("video/quicktime", forHTTPHeaderField: "Content-Type")
+                request.setValue("bytes */\(totalSize)", forHTTPHeaderField: "Content-Range")
+                request.httpBody = Data() // Empty body
+                
+                appBootLog.debugWithContext("   Sending finalization request with Content-Range: bytes */\(totalSize)")
+                
+                let startTime = Date()
+                let (responseData, response) = try await session.data(for: request)
+                let duration = Date().timeIntervalSince(startTime)
+                
+                appBootLog.debugWithContext("   Request took \(String(format: "%.2f", duration))s")
+                
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    appBootLog.errorWithContext("❌ Invalid HTTP response during finalization")
+                    throw UploadError.invalidResponse
+                }
+                
+                appBootLog.infoWithContext("📥 Finalization response: HTTP \(httpResponse.statusCode)")
+                
+                if httpResponse.statusCode == 200 || httpResponse.statusCode == 201 {
+                    if let json = try? JSONSerialization.jsonObject(with: responseData) as? [String: Any],
+                       let fileId = json["id"] as? String,
+                       let fileName = json["name"] as? String {
+                        appBootLog.infoWithContext("✅ Upload finalized! File ID: \(fileId), Name: \(fileName)")
+                        appBootLog.infoWithContext("   🔗 View in Drive: https://drive.google.com/file/d/\(fileId)/view")
+                    } else {
+                        appBootLog.infoWithContext("✅ Upload finalized! (No file metadata in response)")
+                    }
+                    
+                    isUploading = false
+                    uploadProgress = 1.0
+                    uploadSessionURL = nil
+                    
+                    return // Success!
+                    
+                } else if httpResponse.statusCode == 308 {
+                    // Still expecting more data - this shouldn't happen during finalization
+                    appBootLog.errorWithContext("❌ Got HTTP 308 during finalization - server still expects more data")
+                    if let rangeHeader = httpResponse.value(forHTTPHeaderField: "Range") {
+                        appBootLog.errorWithContext("   Server received: \(rangeHeader)")
+                    }
+                    throw UploadError.uploadFailed("Server still expects more data. Received: \(currentOffset), Expected: \(totalSize)")
+                } else {
+                    let errorMessage = String(data: responseData, encoding: .utf8) ?? "Unknown error"
+                    appBootLog.errorWithContext("❌ Finalization failed: HTTP \(httpResponse.statusCode)")
+                    appBootLog.errorWithContext("   Error response: \(errorMessage)")
+                    throw UploadError.uploadFailed("Finalization failed: \(httpResponse.statusCode) - \(errorMessage)")
+                }
+                
+            } catch {
+                lastError = error
+                appBootLog.errorWithContext("❌ Finalization attempt \(attempt) failed: \(error.localizedDescription)")
+                
+                if attempt < maxRetries {
+                    let delay = UInt64(attempt * 2) * 1_000_000_000 // Exponential backoff: 2s, 4s
+                    appBootLog.infoWithContext("⏳ Waiting \(attempt * 2)s before retry...")
+                    try? await Task.sleep(nanoseconds: delay)
+                }
             }
-            
-            isUploading = false
-            uploadProgress = 1.0
-            uploadSessionURL = nil
-            
-        } else {
-            let errorMessage = String(data: responseData, encoding: .utf8) ?? "Unknown error"
-            throw UploadError.uploadFailed("Finalization failed: \(httpResponse.statusCode) - \(errorMessage)")
         }
+        
+        // All retries failed
+        appBootLog.errorWithContext("❌ All finalization attempts failed")
+        throw lastError ?? UploadError.uploadFailed("Finalization failed after \(maxRetries) attempts")
     }
     
     // MARK: - Queue-based Chunk Processing

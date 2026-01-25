@@ -25,6 +25,15 @@ extension Logger {
         self.error("[\(file, privacy: .public):\(line)] \(message, privacy: .public) \(function, privacy: .public)")
     }
 
+    func warningWithContext(
+        _ message: String,
+        file: String = #fileID,
+        function: String = #function,
+        line: Int = #line
+    ) {
+        self.warning("[\(file, privacy: .public):\(line)] \(message, privacy: .public) \(function, privacy: .public)")
+    }
+
     func debugWithContext(
         _ message: String,
         file: String = #fileID,

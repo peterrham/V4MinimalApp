@@ -12,11 +12,17 @@ extension CameraManager {
     
     /// Start recording with streaming upload to Google Drive
     func startRecordingWithStreaming(uploader: StreamingVideoUploader) async throws {
-        guard !isRecording else { return }
+        guard !isRecording else { 
+            appBootLog.warningWithContext("⚠️ Already recording, ignoring request")
+            return 
+        }
         guard session.isRunning else {
+            appBootLog.errorWithContext("❌ Cannot start recording: Camera session not running")
             error = .captureError("Camera session not running")
             return
         }
+        
+        appBootLog.infoWithContext("🎬 Starting recording with streaming upload...")
         
         // Create temporary file URL
         let tempDirectory = FileManager.default.temporaryDirectory
@@ -25,25 +31,30 @@ extension CameraManager {
         
         // Remove any existing file
         try? FileManager.default.removeItem(at: fileURL)
+        appBootLog.debugWithContext("📁 Recording file: \(fileURL.lastPathComponent)")
         
         currentVideoURL = fileURL
         
-        // Start upload session
+        // Start upload session FIRST
         do {
-            _ = try await uploader.startUploadSession(fileName: "inventory_scan")
-            appBootLog.infoWithContext("✅ Streaming upload session started")
+            let sessionURL = try await uploader.startUploadSession(fileName: "inventory_scan")
+            appBootLog.infoWithContext("✅ Streaming upload session created")
+            appBootLog.debugWithContext("   Session URL: \(sessionURL)")
         } catch {
-            appBootLog.errorWithContext("Failed to start upload session: \(error.localizedDescription)")
+            appBootLog.errorWithContext("❌ Failed to start upload session: \(error.localizedDescription)")
             throw error
         }
         
         // Start recording
+        appBootLog.infoWithContext("🎥 Starting AVFoundation recording...")
         movieOutput.startRecording(to: fileURL, recordingDelegate: self)
         
         await MainActor.run {
             isRecording = true
             recordingStartTime = Date()
         }
+        
+        appBootLog.infoWithContext("✅ Recording started successfully")
         
         // Start monitoring file and uploading chunks
         Task {
@@ -62,90 +73,196 @@ extension CameraManager {
     /// Monitor the recording file and upload chunks as they're written
     private func monitorRecordingAndUpload(fileURL: URL, uploader: StreamingVideoUploader) async {
         var lastPosition: UInt64 = 0
-        let chunkSize: UInt64 = 256 * 1024 // 256 KB chunks
+        let chunkSize: UInt64 = 512 * 1024 // 512 KB chunks for better streaming performance
+        let pollInterval: UInt64 = 1_000_000_000 // 1 second - gives AVFoundation time to write
+        var consecutiveErrors = 0
+        let maxConsecutiveErrors = 5
+        
+        appBootLog.infoWithContext("📡 Starting file monitoring and streaming...")
+        appBootLog.debugWithContext("   Chunk size: \(chunkSize / 1024) KB")
+        appBootLog.debugWithContext("   Poll interval: \(pollInterval / 1_000_000_000)s")
+        
+        // Wait for file to be created by AVFoundation
+        var fileCreated = false
+        for attempt in 1...10 {
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                fileCreated = true
+                appBootLog.infoWithContext("✅ Recording file created (attempt \(attempt))")
+                break
+            }
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
+        }
+        
+        guard fileCreated else {
+            appBootLog.errorWithContext("❌ Recording file was not created after 1 second")
+            return
+        }
         
         while await MainActor.run(body: { isRecording }) {
             do {
-                // Wait a bit before checking
-                try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                // Wait before checking for new data
+                try await Task.sleep(nanoseconds: pollInterval)
                 
                 // Check if file exists and get its size
                 guard FileManager.default.fileExists(atPath: fileURL.path) else {
+                    appBootLog.warningWithContext("⚠️ Recording file disappeared")
                     continue
                 }
                 
                 let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
-                guard let fileSize = attributes[.size] as? UInt64 else { continue }
+                guard let fileSize = attributes[.size] as? UInt64 else { 
+                    appBootLog.warningWithContext("⚠️ Could not read file size")
+                    continue 
+                }
                 
                 // Check if there's new data
                 if fileSize > lastPosition {
                     let newDataSize = fileSize - lastPosition
                     
-                    // Read new data
-                    let fileHandle = try FileHandle(forReadingFrom: fileURL)
-                    defer { try? fileHandle.close() }
+                    appBootLog.debugWithContext("📊 File grew: +\(newDataSize) bytes (total: \(fileSize) bytes)")
                     
-                    try fileHandle.seek(toOffset: lastPosition)
+                    // Read new data in chunks to avoid memory issues
+                    var currentChunkPosition = lastPosition
                     
-                    if let data = try fileHandle.read(upToCount: Int(newDataSize)) {
+                    while currentChunkPosition < fileSize {
+                        let remainingBytes = fileSize - currentChunkPosition
+                        let bytesToRead = min(chunkSize, remainingBytes)
+                        
+                        // Open file handle for this chunk
+                        let fileHandle = try FileHandle(forReadingFrom: fileURL)
+                        defer { try? fileHandle.close() }
+                        
+                        try fileHandle.seek(toOffset: currentChunkPosition)
+                        
+                        guard let data = try fileHandle.read(upToCount: Int(bytesToRead)), !data.isEmpty else {
+                            appBootLog.warningWithContext("⚠️ No data read from offset \(currentChunkPosition)")
+                            break
+                        }
+                        
                         // Upload chunk
-                        appBootLog.infoWithContext("📤 Uploading \(data.count) bytes from offset \(lastPosition)")
+                        appBootLog.infoWithContext("📤 Uploading chunk: \(data.count) bytes from offset \(currentChunkPosition)")
                         
                         try await uploader.uploadChunk(data)
-                        lastPosition = fileSize
+                        currentChunkPosition += UInt64(data.count)
                         
-                        appBootLog.infoWithContext("✅ Chunk uploaded. Total uploaded: \(uploader.bytesUploaded) bytes")
+                        appBootLog.infoWithContext("✅ Chunk uploaded. Progress: \(uploader.bytesUploaded) bytes total")
+                        
+                        // Reset error counter on success
+                        consecutiveErrors = 0
                     }
+                    
+                    lastPosition = currentChunkPosition
+                    
+                } else if fileSize < lastPosition {
+                    // File size decreased - this shouldn't happen
+                    appBootLog.errorWithContext("❌ File size decreased! Was: \(lastPosition), now: \(fileSize)")
+                    lastPosition = 0 // Reset position
                 }
                 
             } catch {
-                appBootLog.errorWithContext("Error during streaming upload: \(error.localizedDescription)")
+                consecutiveErrors += 1
+                appBootLog.errorWithContext("❌ Error during streaming upload (\(consecutiveErrors)/\(maxConsecutiveErrors)): \(error.localizedDescription)")
+                
+                // If too many consecutive errors, stop monitoring
+                if consecutiveErrors >= maxConsecutiveErrors {
+                    appBootLog.errorWithContext("❌ Too many consecutive errors, stopping upload monitoring")
+                    await MainActor.run {
+                        self.error = .captureError("Streaming upload failed: \(error.localizedDescription)")
+                    }
+                    return
+                }
+                
                 // Continue monitoring despite errors
+                try? await Task.sleep(nanoseconds: pollInterval)
             }
         }
         
         // Recording stopped, finalize upload
         appBootLog.infoWithContext("🏁 Recording stopped, finalizing upload...")
         
+        // Give AVFoundation time to finish writing
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        
         do {
             // Get final file size
+            guard FileManager.default.fileExists(atPath: fileURL.path) else {
+                appBootLog.errorWithContext("❌ Recording file disappeared before finalization")
+                throw NSError(domain: "CameraManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Recording file not found"])
+            }
+            
             let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
-            if let fileSize = attributes[.size] as? UInt64 {
+            guard let fileSize = attributes[.size] as? UInt64 else {
+                throw NSError(domain: "CameraManager", code: -2, userInfo: [NSLocalizedDescriptionKey: "Could not read final file size"])
+            }
+            
+            appBootLog.infoWithContext("📊 Final file size: \(fileSize) bytes")
+            appBootLog.infoWithContext("📊 Last uploaded position: \(lastPosition) bytes")
+            
+            // Upload any remaining data
+            if fileSize > lastPosition {
+                let remainingBytes = fileSize - lastPosition
+                appBootLog.infoWithContext("📤 Uploading final \(remainingBytes) bytes...")
                 
-                // Upload any remaining data
-                if fileSize > lastPosition {
-                    let fileHandle = try FileHandle(forReadingFrom: fileURL)
-                    defer { try? fileHandle.close() }
-                    
-                    try fileHandle.seek(toOffset: lastPosition)
-                    
-                    if let data = try fileHandle.read(upToCount: Int(fileSize - lastPosition)) {
-                        appBootLog.infoWithContext("📤 Uploading final chunk: \(data.count) bytes")
-                        try await uploader.uploadChunk(data)
-                    }
-                }
+                let fileHandle = try FileHandle(forReadingFrom: fileURL)
+                defer { try? fileHandle.close() }
                 
-                // Finalize upload
-                try await uploader.finalizeUpload(totalSize: Int64(fileSize))
+                try fileHandle.seek(toOffset: lastPosition)
                 
-                appBootLog.infoWithContext("✅ Streaming upload completed! Total size: \(fileSize) bytes")
-                
-                // Post notification
-                await MainActor.run {
-                    NotificationCenter.default.post(
-                        name: NSNotification.Name("StreamingUploadComplete"),
-                        object: nil,
-                        userInfo: [
-                            "fileURL": fileURL,
-                            "bytesUploaded": uploader.bytesUploaded
-                        ]
-                    )
+                if let data = try fileHandle.read(upToCount: Int(fileSize - lastPosition)), !data.isEmpty {
+                    appBootLog.infoWithContext("📤 Final chunk size: \(data.count) bytes")
+                    try await uploader.uploadChunk(data)
+                    appBootLog.infoWithContext("✅ Final chunk uploaded")
                 }
             }
+            
+            // Finalize upload
+            appBootLog.infoWithContext("🏁 Finalizing upload with total size: \(fileSize) bytes")
+            try await uploader.finalizeUpload(totalSize: Int64(fileSize))
+            
+            appBootLog.infoWithContext("✅✅✅ Streaming upload completed successfully! ✅✅✅")
+            appBootLog.infoWithContext("   Total size: \(fileSize) bytes")
+            appBootLog.infoWithContext("   Total uploaded: \(uploader.bytesUploaded) bytes")
+            
+            // Delete local file since it's been uploaded
+            do {
+                try FileManager.default.removeItem(at: fileURL)
+                appBootLog.infoWithContext("🗑️ Local recording file deleted (uploaded to Drive)")
+                
+                await MainActor.run {
+                    currentVideoURL = nil
+                }
+            } catch {
+                appBootLog.warningWithContext("⚠️ Could not delete local file: \(error.localizedDescription)")
+            }
+            
+            // Post notification
+            await MainActor.run {
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("StreamingUploadComplete"),
+                    object: nil,
+                    userInfo: [
+                        "fileURL": fileURL,
+                        "bytesUploaded": uploader.bytesUploaded,
+                        "success": true
+                    ]
+                )
+            }
+            
         } catch {
-            appBootLog.errorWithContext("Failed to finalize upload: \(error.localizedDescription)")
+            appBootLog.errorWithContext("❌❌❌ Failed to finalize upload: \(error.localizedDescription)")
             await MainActor.run {
                 self.error = .captureError("Upload finalization failed: \(error.localizedDescription)")
+                
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("StreamingUploadComplete"),
+                    object: nil,
+                    userInfo: [
+                        "fileURL": fileURL,
+                        "bytesUploaded": uploader.bytesUploaded,
+                        "success": false,
+                        "error": error.localizedDescription
+                    ]
+                )
             }
         }
     }

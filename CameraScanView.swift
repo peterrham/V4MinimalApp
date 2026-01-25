@@ -333,31 +333,111 @@ struct CameraScanView: View {
                     }
                 }
                 
-                // Streaming upload indicator
+                // Streaming upload indicator - Enhanced with more details
                 if streamingUploader.isUploading && cameraManager.isRecording {
                     VStack {
-                        HStack(spacing: 12) {
-                            ProgressView()
-                                .tint(.white)
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Streaming to Drive")
-                                    .font(.callout)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.white)
+                        VStack(spacing: 8) {
+                            HStack(spacing: 12) {
+                                // Animated upload icon
+                                ZStack {
+                                    Circle()
+                                        .fill(.white.opacity(0.2))
+                                        .frame(width: 32, height: 32)
+                                    
+                                    Image(systemName: "icloud.and.arrow.up")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white)
+                                        .symbolEffect(.bounce, options: .repeating)
+                                }
                                 
-                                Text("\(formatBytes(streamingUploader.bytesUploaded)) uploaded")
-                                    .font(.caption)
-                                    .foregroundColor(.white.opacity(0.8))
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack(spacing: 6) {
+                                        Text("Live Upload")
+                                            .font(.callout)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.white)
+                                        
+                                        Circle()
+                                            .fill(.white)
+                                            .frame(width: 6, height: 6)
+                                            .opacity(0.8)
+                                    }
+                                    
+                                    Text("\(formatBytes(streamingUploader.bytesUploaded)) → Google Drive")
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.9))
+                                }
+                                
+                                Spacer()
+                            }
+                            
+                            // Upload speed indicator (optional - shows activity)
+                            HStack(spacing: 4) {
+                                ForEach(0..<10, id: \.self) { index in
+                                    Capsule()
+                                        .fill(.white.opacity(0.4))
+                                        .frame(width: 20, height: 3)
+                                        .overlay(
+                                            Capsule()
+                                                .fill(.white)
+                                                .frame(width: streamingUploader.bytesUploaded > 0 ? 20 : 0, height: 3)
+                                        )
+                                }
                             }
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
                         .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(.green.opacity(0.9))
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(.green.gradient.opacity(0.95))
+                                .shadow(color: .green.opacity(0.3), radius: 8, y: 4)
                         )
                         .padding(.top, 120)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        
+                        Spacer()
+                    }
+                }
+                
+                // Upload completion indicator
+                if !streamingUploader.isUploading && streamingUploader.bytesUploaded > 0 && !cameraManager.isRecording {
+                    VStack {
+                        HStack(spacing: 12) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Upload Complete!")
+                                    .font(.callout)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                                
+                                Text("\(formatBytes(streamingUploader.bytesUploaded)) saved to Drive")
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.9))
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(.blue.gradient.opacity(0.95))
+                        )
+                        .padding(.top, 120)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .onAppear {
+                            // Auto-dismiss after 3 seconds
+                            Task {
+                                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                                await MainActor.run {
+                                    withAnimation {
+                                        // Reset uploader state
+                                        streamingUploader.bytesUploaded = 0
+                                    }
+                                }
+                            }
+                        }
                         
                         Spacer()
                     }
@@ -396,9 +476,26 @@ struct CameraScanView: View {
                     object: nil,
                     queue: .main
                 ) { notification in
-                    if let bytesUploaded = notification.userInfo?["bytesUploaded"] as? Int64 {
-                        logger.info("✅ Streaming upload complete: \(bytesUploaded) bytes uploaded to Google Drive")
-                        // Could show success alert here
+                    if let success = notification.userInfo?["success"] as? Bool {
+                        if success {
+                            if let bytesUploaded = notification.userInfo?["bytesUploaded"] as? Int64 {
+                                logger.info("✅✅✅ Streaming upload completed successfully!")
+                                logger.info("   Total uploaded: \(bytesUploaded) bytes")
+                                logger.info("   File automatically saved to Google Drive")
+                                
+                                // Show success haptic
+                                let generator = UINotificationFeedbackGenerator()
+                                generator.notificationOccurred(.success)
+                            }
+                        } else {
+                            if let errorMessage = notification.userInfo?["error"] as? String {
+                                logger.error("❌ Streaming upload failed: \(errorMessage)")
+                                
+                                // Show error haptic
+                                let generator = UINotificationFeedbackGenerator()
+                                generator.notificationOccurred(.error)
+                            }
+                        }
                     }
                 }
             }

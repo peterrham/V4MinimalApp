@@ -43,8 +43,12 @@
 		BE8C22C52F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22C42F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md */; };
 		BE8C22C72F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22C62F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md */; };
 		BE8C22C92F2605BD00E32ACB /* UI_GUIDE_STREAMING.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22C82F2605BD00E32ACB /* UI_GUIDE_STREAMING.md */; };
+		BE8C22CB2F260B3E00E32ACB /* STREAMING_UPLOAD_USAGE_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22CA2F260B3E00E32ACB /* STREAMING_UPLOAD_USAGE_GUIDE.md */; };
+		BE8C22CD2F260B6E00E32ACB /* STREAMING_IMPROVEMENTS_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22CC2F260B6E00E32ACB /* STREAMING_IMPROVEMENTS_SUMMARY.md */; };
+		BE8C22CF2F260B9300E32ACB /* STREAMING_QUICK_REFERENCE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22CE2F260B9300E32ACB /* STREAMING_QUICK_REFERENCE.md */; };
 		BEAF835B2F1F2EBB001837B7 /* GoogleDriveUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */; };
 		BECA718B2F22FE0C00FB1F99 /* EarlyInit.c in Sources */ = {isa = PBXBuildFile; fileRef = BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */; };
+		BECE6BD12F260EA5009344A1 /* GoogleCloudStorageUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BECE6BD02F260EA5009344A1 /* GoogleCloudStorageUploader.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -81,9 +85,13 @@
 		BE8C22C42F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = STREAMING_UPLOAD_GUIDE.md; sourceTree = "<group>"; };
 		BE8C22C62F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = STREAMING_UPLOAD_SUMMARY.md; sourceTree = "<group>"; };
 		BE8C22C82F2605BD00E32ACB /* UI_GUIDE_STREAMING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = UI_GUIDE_STREAMING.md; sourceTree = "<group>"; };
+		BE8C22CA2F260B3E00E32ACB /* STREAMING_UPLOAD_USAGE_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = STREAMING_UPLOAD_USAGE_GUIDE.md; sourceTree = "<group>"; };
+		BE8C22CC2F260B6E00E32ACB /* STREAMING_IMPROVEMENTS_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = STREAMING_IMPROVEMENTS_SUMMARY.md; sourceTree = "<group>"; };
+		BE8C22CE2F260B9300E32ACB /* STREAMING_QUICK_REFERENCE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = STREAMING_QUICK_REFERENCE.md; sourceTree = "<group>"; };
 		BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognition.swift; sourceTree = "<group>"; };
 		BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveUploader.swift; sourceTree = "<group>"; };
 		BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = EarlyInit.c; sourceTree = "<group>"; };
+		BECE6BD02F260EA5009344A1 /* GoogleCloudStorageUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleCloudStorageUploader.swift; sourceTree = "<group>"; };
 		BEEEFAA42CD2C9120072891A /* NewMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewMain.swift; sourceTree = "<group>"; };
 		BEEEFAAA2CD2DC350072891A /* VoiceDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = VoiceDataModel.xcdatamodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -185,6 +193,10 @@
 				BE8C22C42F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md */,
 				BE8C22C62F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md */,
 				BE8C22C82F2605BD00E32ACB /* UI_GUIDE_STREAMING.md */,
+				BE8C22CA2F260B3E00E32ACB /* STREAMING_UPLOAD_USAGE_GUIDE.md */,
+				BE8C22CC2F260B6E00E32ACB /* STREAMING_IMPROVEMENTS_SUMMARY.md */,
+				BE8C22CE2F260B9300E32ACB /* STREAMING_QUICK_REFERENCE.md */,
+				BECE6BD02F260EA5009344A1 /* GoogleCloudStorageUploader.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -265,11 +277,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BE8C22CB2F260B3E00E32ACB /* STREAMING_UPLOAD_USAGE_GUIDE.md in Resources */,
 				BE8C22C52F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md in Resources */,
 				BE8C22BB2F25F73100E32ACB /* VIDEO_RECORDING_SUMMARY.md in Resources */,
+				BE8C22CF2F260B9300E32ACB /* STREAMING_QUICK_REFERENCE.md in Resources */,
 				BE8C22B72F25F6F700E32ACB /* GOOGLE_DRIVE_SETUP.md in Resources */,
 				BE8C22A92F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md in Resources */,
 				BE8C22C72F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md in Resources */,
+				BE8C22CD2F260B6E00E32ACB /* STREAMING_IMPROVEMENTS_SUMMARY.md in Resources */,
 				BE8C22B12F25F1C600E32ACB /* CAMERA_SETUP.md in Resources */,
 				BE8C22C92F2605BD00E32ACB /* UI_GUIDE_STREAMING.md in Resources */,
 				BE8B14B22CE3DBBA00714DB0 /* AppendExtention.swift in Resources */,
@@ -292,6 +307,7 @@
 				BE8C22A72F25E8D100E32ACB /* CameraScanView.swift in Sources */,
 				BE8C22BD2F25F74E00E32ACB /* LocalVideoStorage.swift in Sources */,
 				BE8C22A32F25E89600E32ACB /* ItemDetailView.swift in Sources */,
+				BECE6BD12F260EA5009344A1 /* GoogleCloudStorageUploader.swift in Sources */,
 				BE8C22992F25E78500E32ACB /* MainTabView.swift in Sources */,
 				BE8C229B2F25E80400E32ACB /* ImplementationPlan.swift in Sources */,
 				BE8C229F2F25E84B00E32ACB /* HomeView.swift in Sources */,
