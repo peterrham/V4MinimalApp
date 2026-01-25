@@ -7,7 +7,7 @@ import Foundation
 /*
 func logWithTimestamp(_ string: String) {
     let timestamp = ISO8601DateFormatter().string(from: Date())
-    print("[\(timestamp)] \(string)")
+    appBootLog.infoWithContext("[\(timestamp)] \(string)")
 }
  */
 
@@ -478,7 +478,7 @@ class SpeechRecognitionManager: ObservableObject {
              // Print the first 16 bits (first Int16 sample) of the buffer
              if let channelData = buffer.int16ChannelData {
              let firstSample = channelData.pointee[0]
-             print("First 16 bits of buffer (as Int16): \(firstSample)")
+             appBootLog.infoWithContext("First 16 bits of buffer (as Int16): \(firstSample)")
              }
              */
 
@@ -672,4 +672,5 @@ class SpeechRecognitionManager: ObservableObject {
 }
 
 import Combine
+
 
