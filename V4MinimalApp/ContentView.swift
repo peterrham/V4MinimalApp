@@ -109,17 +109,17 @@ struct ContentView: View {
     
     var body: some View {
         NavigationStack{
-            VStack(spacing: 20) {
-                HStack(spacing: 12) {
+            VStack(spacing: 12) {
+                VStack(spacing: 12) {
                     NavigationLink(destination: DebugView()) {
                         Text("#1 DebugView")
+                            .unifiedNavLabel()
                     }
-                    .buttonStyle(PrimaryButtonStyle())
 
                     NavigationLink(destination: GoogleSignInView()) {
                         Text("Sign In")
+                            .unifiedNavLabel()
                     }
-                    .buttonStyle(PrimaryButtonStyle())
                 }
                 
                 Text("Incremental Speech:")
@@ -171,7 +171,8 @@ struct ContentView: View {
                     alignment: .trailing
                 )
             }
-            .padding()
+            .padding(.horizontal)
+            .frame(maxWidth: 480)
         }
     }
 }

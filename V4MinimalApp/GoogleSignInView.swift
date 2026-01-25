@@ -23,43 +23,68 @@ struct GoogleSignInView: View {
     }
     
     var body: some View {
-        
-        
-        Button(action: signOut) {
-            Text("Sign OUT")
+        VStack(spacing: 12) {
+            Button(action: signOut) {
+                Text("Sign OUT")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(UnifiedButtonStyle())
+
+            Button(action: {
+                appBootLog.debugWithContext("Append")
+                AppendLog().append(text: "abc")
+            }) {
+                Text("Append")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(UnifiedButtonStyle())
+
+            Button(action: signIn) {
+                Text("Sign In")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(UnifiedButtonStyle())
+
+            Button(action: {
+                googleSignInManager().createSpreadsheet()
+            }) {
+                Text("createSpreadsheet")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(UnifiedButtonStyle())
+
+            Button(action: {
+                var client = GoogleSheetsClient(inputAccessToken: googleSignInManager().user!.accessToken.tokenString)
+                client.CopyToSheet(argSpreadsheetId: googleSignInManager().spreadsheetID)
+            }) {
+                Text("PopulateGoogleSheet")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(UnifiedButtonStyle())
+
+            Button(action: {
+                googleSignInManager().disconnect()
+            }) {
+                Text("Disconect")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(UnifiedButtonStyle())
+
+            Button(action: {
+                googleSignInManager().fetchAndPrintUserInfo()
+            }) {
+                Text("FetchUserInfo")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(UnifiedButtonStyle())
+
+            NavigationLink(destination: ContentView()) {
+                Text("Go to Audio Listening")
+                    .unifiedNavLabel()
+            }
         }
-        .buttonStyle(PrimaryButtonStyle())
-        
-        Button("Append") {
-           appBootLog.debugWithContext("Append")
-            AppendLog().append(text: "abc")
-        }
-        .buttonStyle(PrimaryButtonStyle())
-        
-        Button(action: signIn) {
-            Text("Sign In")
-        }
-        .buttonStyle(PrimaryButtonStyle())
-        Button("createSpreadsheet") {
-            googleSignInManager().createSpreadsheet()
-        }.buttonStyle(PrimaryButtonStyle())
-        Button("PopulateGoogleSheet") {
-            
-            var  client =  GoogleSheetsClient(inputAccessToken: googleSignInManager().user!.accessToken.tokenString)
-           client.CopyToSheet(argSpreadsheetId: googleSignInManager().spreadsheetID)
-        }.buttonStyle(PrimaryButtonStyle())
-        
-        Button("Disconect") {
-            googleSignInManager().disconnect()
-        }.buttonStyle(PrimaryButtonStyle())
-        Button("FetchUserInfo") {
-            googleSignInManager().fetchAndPrintUserInfo()
-        }.buttonStyle(PrimaryButtonStyle())
-        
-        NavigationLink(destination: ContentView()) {
-            Text("Go to Audio Listening")
-        }
-        .buttonStyle(PrimaryButtonStyle())
-        
+        .padding(.horizontal)
+        .frame(maxWidth: 480)
     }
 }
+
