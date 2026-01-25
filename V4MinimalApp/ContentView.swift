@@ -110,10 +110,17 @@ struct ContentView: View {
     var body: some View {
         NavigationStack{
             VStack(spacing: 20) {
-                NavigationLink(destination: DebugView()) {
-                    Text("#1 DebugView")
+                HStack(spacing: 12) {
+                    NavigationLink(destination: DebugView()) {
+                        Text("#1 DebugView")
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+
+                    NavigationLink(destination: GoogleSignInView()) {
+                        Text("Sign In")
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
                 }
-                .buttonStyle(PrimaryButtonStyle())
                 
                 Text("Incremental Speech:")
                     .font(.headline)

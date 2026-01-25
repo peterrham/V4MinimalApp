@@ -56,5 +56,10 @@ struct GoogleSignInView: View {
             googleSignInManager().fetchAndPrintUserInfo()
         }.buttonStyle(PrimaryButtonStyle())
         
+        NavigationLink(destination: ContentView()) {
+            Text("Go to Audio Listening")
+        }
+        .buttonStyle(PrimaryButtonStyle())
+        
     }
 }
