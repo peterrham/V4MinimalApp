@@ -1,0 +1,13 @@
+# ⚠️ IMPORTANT: Add this to your .gitignore file
+
+# Gemini API Configuration
+# Never commit API keys to version control!
+Config.plist
+
+# Xcode User Settings
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# macOS
+.DS_Store

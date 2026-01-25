@@ -37,6 +37,11 @@ class CameraManager: NSObject, ObservableObject {
     var recordingStartTime: Date?
     var currentVideoURL: URL?
     
+    // Photo identification
+    @Published var lastCapturedImage: UIImage?
+    @Published var photoIdentification: String = ""
+    @Published var isIdentifyingPhoto = false
+    
     override init() {
         super.init()
         Task {
@@ -410,8 +415,14 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
         Task { @MainActor in
             appBootLog.infoWithContext("Photo captured: \(imageData.count) bytes")
             
+            // Store the captured image
+            self.lastCapturedImage = image
+            
             // Save to Photo Library
             await self.savePhotoToLibrary(image)
+            
+            // Identify with Gemini API
+            await self.identifyPhotoWithGemini(image)
             
             // Notify that photo was captured
             NotificationCenter.default.post(
@@ -419,9 +430,6 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
                 object: nil,
                 userInfo: ["image": image]
             )
-            
-            // TODO: Process image with AI/ML for item detection
-            // This is where you'd integrate with Vision framework or ML models
         }
     }
     
@@ -538,6 +546,38 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
             appBootLog.errorWithContext("❌ Failed to save video to Photos: \(error.localizedDescription)")
             self.error = .captureError("Failed to save video: \(error.localizedDescription)")
         }
+    }
+    
+    // MARK: - Photo Identification
+    
+    /// Identify a photo using Gemini Vision API
+    private func identifyPhotoWithGemini(_ image: UIImage) async {
+        isIdentifyingPhoto = true
+        photoIdentification = "Analyzing..."
+        
+        appBootLog.infoWithContext("🔍 Starting Gemini photo identification...")
+        
+        let geminiService = GeminiVisionService.shared
+        await geminiService.identifyImage(image)
+        
+        // Update with the result
+        if let error = geminiService.error {
+            photoIdentification = "Error: \(error)"
+            appBootLog.errorWithContext("❌ Gemini identification failed: \(error)")
+        } else if !geminiService.latestIdentification.isEmpty {
+            photoIdentification = geminiService.latestIdentification
+            appBootLog.infoWithContext("✅ Gemini identification: \(geminiService.latestIdentification)")
+        } else {
+            photoIdentification = ""
+        }
+        
+        isIdentifyingPhoto = false
+    }
+    
+    /// Clear photo identification
+    func clearPhotoIdentification() {
+        photoIdentification = ""
+        lastCapturedImage = nil
     }
 }
 

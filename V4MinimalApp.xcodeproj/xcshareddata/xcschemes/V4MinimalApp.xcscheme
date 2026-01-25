@@ -50,6 +50,13 @@
             ReferencedContainer = "container:V4MinimalApp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "GEMINI_API_KEY"
+            value = "AIzaSyDE74YdHITrsuVczNKSubtvE73zgdun1Wc"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

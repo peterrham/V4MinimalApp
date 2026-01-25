@@ -17,6 +17,15 @@
 		BE3DD6A42F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6A32F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md */; };
 		BE3DD6A62F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6A52F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md */; };
 		BE3DD6A82F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6A72F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md */; };
+		BE3DD6AA2F261B12002C9706 /* GeminiVisionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3DD6A92F261B12002C9706 /* GeminiVisionService.swift */; };
+		BE3DD6AE2F261B4D002C9706 /* Config.plist.template in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6AD2F261B4D002C9706 /* Config.plist.template */; };
+		BE3DD6B02F261B51002C9706 /* GITIGNORE_ADDITIONS.txt in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6AF2F261B51002C9706 /* GITIGNORE_ADDITIONS.txt */; };
+		BE3DD6B22F261B76002C9706 /* GEMINI_IMPLEMENTATION.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6B12F261B76002C9706 /* GEMINI_IMPLEMENTATION.md */; };
+		BE3DD6B42F261B95002C9706 /* GeminiPromptExamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3DD6B32F261B95002C9706 /* GeminiPromptExamples.swift */; };
+		BE3DD6B62F261BCA002C9706 /* GEMINI_README.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6B52F261BCA002C9706 /* GEMINI_README.md */; };
+		BE3DD6B82F261C0C002C9706 /* QUICK_START 2.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6B72F261C0C002C9706 /* QUICK_START 2.md */; };
+		BE3DD6BA2F261C4D002C9706 /* IMPLEMENTATION_COMPLETE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6B92F261C4D002C9706 /* IMPLEMENTATION_COMPLETE.md */; };
+		BE3DD6BC2F261C80002C9706 /* UI_LOCATIONS.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6BB2F261C80002C9706 /* UI_LOCATIONS.md */; };
 		BE54A2872CDDA6D200C6B639 /* NewMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEEFAA42CD2C9120072891A /* NewMain.swift */; };
 		BE54A2892CDDA81E00C6B639 /* SpeechRecognitionExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */; };
 		BE54A28B2CDDA81E00C6B639 /* SpeechRecognition.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */; };
@@ -72,6 +81,15 @@
 		BE3DD6A32F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = VIDEO_UPLOAD_QUEUE_GUIDE.md; sourceTree = "<group>"; };
 		BE3DD6A52F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = VIDEO_UPLOAD_QUEUE_SUMMARY.md; sourceTree = "<group>"; };
 		BE3DD6A72F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = UPLOAD_QUEUE_ARCHITECTURE.md; sourceTree = "<group>"; };
+		BE3DD6A92F261B12002C9706 /* GeminiVisionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiVisionService.swift; sourceTree = "<group>"; };
+		BE3DD6AD2F261B4D002C9706 /* Config.plist.template */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Config.plist.template; sourceTree = "<group>"; };
+		BE3DD6AF2F261B51002C9706 /* GITIGNORE_ADDITIONS.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = GITIGNORE_ADDITIONS.txt; sourceTree = "<group>"; };
+		BE3DD6B12F261B76002C9706 /* GEMINI_IMPLEMENTATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GEMINI_IMPLEMENTATION.md; sourceTree = "<group>"; };
+		BE3DD6B32F261B95002C9706 /* GeminiPromptExamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiPromptExamples.swift; sourceTree = "<group>"; };
+		BE3DD6B52F261BCA002C9706 /* GEMINI_README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GEMINI_README.md; sourceTree = "<group>"; };
+		BE3DD6B72F261C0C002C9706 /* QUICK_START 2.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "QUICK_START 2.md"; sourceTree = "<group>"; };
+		BE3DD6B92F261C4D002C9706 /* IMPLEMENTATION_COMPLETE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = IMPLEMENTATION_COMPLETE.md; sourceTree = "<group>"; };
+		BE3DD6BB2F261C80002C9706 /* UI_LOCATIONS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = UI_LOCATIONS.md; sourceTree = "<group>"; };
 		BE54A2172CDDA27F00C6B639 /* V4MinimalApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = V4MinimalApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE6204AD2CD97169001823E5 /* ExportToCSVView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportToCSVView.swift; sourceTree = "<group>"; };
 		BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionExtension.swift; sourceTree = "<group>"; };
@@ -227,6 +245,15 @@
 				BE3DD6A32F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md */,
 				BE3DD6A52F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md */,
 				BE3DD6A72F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md */,
+				BE3DD6A92F261B12002C9706 /* GeminiVisionService.swift */,
+				BE3DD6AD2F261B4D002C9706 /* Config.plist.template */,
+				BE3DD6AF2F261B51002C9706 /* GITIGNORE_ADDITIONS.txt */,
+				BE3DD6B12F261B76002C9706 /* GEMINI_IMPLEMENTATION.md */,
+				BE3DD6B32F261B95002C9706 /* GeminiPromptExamples.swift */,
+				BE3DD6B52F261BCA002C9706 /* GEMINI_README.md */,
+				BE3DD6B72F261C0C002C9706 /* QUICK_START 2.md */,
+				BE3DD6B92F261C4D002C9706 /* IMPLEMENTATION_COMPLETE.md */,
+				BE3DD6BB2F261C80002C9706 /* UI_LOCATIONS.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -316,13 +343,20 @@
 				BE8C22B72F25F6F700E32ACB /* GOOGLE_DRIVE_SETUP.md in Resources */,
 				BE3DD69A2F26138D002C9706 /* VIDEO_AUTO_SAVE_SUMMARY.md in Resources */,
 				BE8C22A92F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md in Resources */,
+				BE3DD6B62F261BCA002C9706 /* GEMINI_README.md in Resources */,
 				BE8C22C72F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md in Resources */,
 				BE3DD6962F261350002C9706 /* PHOTOS_LIBRARY_SETUP.md in Resources */,
+				BE3DD6BA2F261C4D002C9706 /* IMPLEMENTATION_COMPLETE.md in Resources */,
 				BE8C22CD2F260B6E00E32ACB /* STREAMING_IMPROVEMENTS_SUMMARY.md in Resources */,
 				BE8C22B12F25F1C600E32ACB /* CAMERA_SETUP.md in Resources */,
 				BE3DD6A62F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md in Resources */,
+				BE3DD6AE2F261B4D002C9706 /* Config.plist.template in Resources */,
+				BE3DD6BC2F261C80002C9706 /* UI_LOCATIONS.md in Resources */,
 				BE3DD6A42F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md in Resources */,
+				BE3DD6B22F261B76002C9706 /* GEMINI_IMPLEMENTATION.md in Resources */,
 				BE3DD69E2F2613C9002C9706 /* VIDEO_FLOW_DIAGRAM.md in Resources */,
+				BE3DD6B82F261C0C002C9706 /* QUICK_START 2.md in Resources */,
+				BE3DD6B02F261B51002C9706 /* GITIGNORE_ADDITIONS.txt in Resources */,
 				BE8C22C92F2605BD00E32ACB /* UI_GUIDE_STREAMING.md in Resources */,
 				BE8B14B22CE3DBBA00714DB0 /* AppendExtention.swift in Resources */,
 				BE8C22BF2F25F79600E32ACB /* QUICK_START.md in Resources */,
@@ -342,6 +376,8 @@
 				BE8C22C32F26050A00E32ACB /* CameraManager+StreamingUpload.swift in Sources */,
 				BE8C22B52F25F6A300E32ACB /* GoogleDriveService.swift in Sources */,
 				BE3DD6982F26135B002C9706 /* VideoSavedToast.swift in Sources */,
+				BE3DD6AA2F261B12002C9706 /* GeminiVisionService.swift in Sources */,
+				BE3DD6B42F261B95002C9706 /* GeminiPromptExamples.swift in Sources */,
 				BE8C22A72F25E8D100E32ACB /* CameraScanView.swift in Sources */,
 				BE8C22BD2F25F74E00E32ACB /* LocalVideoStorage.swift in Sources */,
 				BE8C22A32F25E89600E32ACB /* ItemDetailView.swift in Sources */,

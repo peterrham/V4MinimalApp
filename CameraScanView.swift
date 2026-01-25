@@ -170,6 +170,57 @@ struct CameraScanView: View {
                     
                     Spacer()
                     
+                    // Photo Identification Display
+                    if !cameraManager.photoIdentification.isEmpty {
+                        VStack(spacing: 8) {
+                            HStack(spacing: 8) {
+                                if cameraManager.isIdentifyingPhoto {
+                                    ProgressView()
+                                        .tint(.white)
+                                        .scaleEffect(0.8)
+                                } else {
+                                    Image(systemName: "sparkles")
+                                        .font(.callout)
+                                        .foregroundColor(.yellow)
+                                }
+                                
+                                Text(cameraManager.photoIdentification)
+                                    .font(.callout)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.white)
+                                    .multilineTextAlignment(.leading)
+                                    .lineLimit(3)
+                                
+                                Spacer()
+                                
+                                // Dismiss button
+                                Button {
+                                    withAnimation {
+                                        cameraManager.clearPhotoIdentification()
+                                    }
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.title3)
+                                        .foregroundColor(.white.opacity(0.7))
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(.ultraThinMaterial)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                                    )
+                            )
+                        }
+                        .padding(.horizontal, AppTheme.Spacing.l)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                    
+                    Spacer()
+                    
                     // Bottom Controls
                     VStack(spacing: AppTheme.Spacing.l) {
                         // Detected items overlay
