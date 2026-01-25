@@ -23,9 +23,11 @@ struct CameraScanView: View {
     @State private var showPhotoPicker = false
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var showPhotoSavedAlert = false
+    @State private var enableStreamingUpload = false
     
     private let logger = Logger(subsystem: "com.yourcompany.yourapp", category: "CameraScanView")
     private let driveUploader = GoogleDriveUploader()
+    @StateObject private var streamingUploader = StreamingVideoUploader()
     
     var body: some View {
         NavigationStack {
@@ -149,6 +151,18 @@ struct CameraScanView: View {
                                 .frame(width: 44, height: 44)
                                 .background(Circle().fill(.ultraThinMaterial))
                         }
+                        
+                        // Streaming upload toggle
+                        Button {
+                            enableStreamingUpload.toggle()
+                        } label: {
+                            Image(systemName: enableStreamingUpload ? "icloud.fill" : "icloud.slash.fill")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .foregroundColor(enableStreamingUpload ? .green : .white)
+                                .frame(width: 44, height: 44)
+                                .background(Circle().fill(.ultraThinMaterial))
+                        }
                     }
                     .padding(AppTheme.Spacing.l)
                     
@@ -237,7 +251,20 @@ struct CameraScanView: View {
                                 if cameraManager.isRecording {
                                     cameraManager.stopRecording()
                                 } else {
-                                    cameraManager.startRecording()
+                                    if enableStreamingUpload {
+                                        // Start recording with streaming upload
+                                        Task {
+                                            do {
+                                                try await cameraManager.startRecordingWithStreaming(uploader: streamingUploader)
+                                            } catch {
+                                                logger.error("Failed to start streaming upload: \(error.localizedDescription)")
+                                                cameraManager.error = .captureError("Streaming upload failed: \(error.localizedDescription)")
+                                            }
+                                        }
+                                    } else {
+                                        // Regular recording
+                                        cameraManager.startRecording()
+                                    }
                                 }
                             } label: {
                                 ZStack {
@@ -254,6 +281,14 @@ struct CameraScanView: View {
                                     Image(systemName: cameraManager.isRecording ? "stop.circle.fill" : "video.fill")
                                         .font(.title2)
                                         .foregroundColor(cameraManager.isRecording ? .red : .white)
+                                    
+                                    // Show cloud icon overlay when streaming
+                                    if enableStreamingUpload && cameraManager.isRecording {
+                                        Image(systemName: "icloud.fill")
+                                            .font(.caption2)
+                                            .foregroundColor(.green)
+                                            .offset(x: 15, y: -15)
+                                    }
                                 }
                             }
                             .symbolEffect(.pulse, isActive: cameraManager.isRecording)
@@ -265,7 +300,7 @@ struct CameraScanView: View {
                 }
                 
                 // Instructions overlay
-                if detectedItems.isEmpty {
+                if detectedItems.isEmpty && !cameraManager.isRecording {
                     VStack {
                         Spacer()
                         
@@ -297,6 +332,36 @@ struct CameraScanView: View {
                         Spacer()
                     }
                 }
+                
+                // Streaming upload indicator
+                if streamingUploader.isUploading && cameraManager.isRecording {
+                    VStack {
+                        HStack(spacing: 12) {
+                            ProgressView()
+                                .tint(.white)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Streaming to Drive")
+                                    .font(.callout)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                
+                                Text("\(formatBytes(streamingUploader.bytesUploaded)) uploaded")
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.8))
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(.green.opacity(0.9))
+                        )
+                        .padding(.top, 120)
+                        
+                        Spacer()
+                    }
+                }
             }
             .navigationBarHidden(true)
             .onAppear {
@@ -323,6 +388,18 @@ struct CameraScanView: View {
                 ) { notification in
                     // Show success alert
                     showPhotoSavedAlert = true
+                }
+                
+                // Listen for streaming upload completion
+                NotificationCenter.default.addObserver(
+                    forName: NSNotification.Name("StreamingUploadComplete"),
+                    object: nil,
+                    queue: .main
+                ) { notification in
+                    if let bytesUploaded = notification.userInfo?["bytesUploaded"] as? Int64 {
+                        logger.info("✅ Streaming upload complete: \(bytesUploaded) bytes uploaded to Google Drive")
+                        // Could show success alert here
+                    }
                 }
             }
             .onDisappear {
@@ -514,6 +591,13 @@ struct CameraScanView: View {
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+    
+    private func formatBytes(_ bytes: Int64) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useKB, .useMB, .useGB]
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: bytes)
     }
     
     private func uploadToGoogleDrive() async {

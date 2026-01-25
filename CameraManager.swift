@@ -20,7 +20,7 @@ class CameraManager: NSObject, ObservableObject {
     let session = AVCaptureSession()
     private var videoOutput = AVCaptureVideoDataOutput()
     private var photoOutput = AVCapturePhotoOutput()
-    private var movieOutput = AVCaptureMovieFileOutput()
+    var movieOutput = AVCaptureMovieFileOutput()
     
     private var deviceInput: AVCaptureDeviceInput?
     private var currentDevice: AVCaptureDevice?
@@ -33,8 +33,8 @@ class CameraManager: NSObject, ObservableObject {
     // Video recording
     @Published var isRecording = false
     @Published var recordingDuration: TimeInterval = 0
-    private var recordingTimer: Timer?
-    private var recordingStartTime: Date?
+    var recordingTimer: Timer?
+    var recordingStartTime: Date?
     var currentVideoURL: URL?
     
     override init() {

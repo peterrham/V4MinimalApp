@@ -38,6 +38,11 @@
 		BE8C22BB2F25F73100E32ACB /* VIDEO_RECORDING_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22BA2F25F73100E32ACB /* VIDEO_RECORDING_SUMMARY.md */; };
 		BE8C22BD2F25F74E00E32ACB /* LocalVideoStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22BC2F25F74E00E32ACB /* LocalVideoStorage.swift */; };
 		BE8C22BF2F25F79600E32ACB /* QUICK_START.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22BE2F25F79600E32ACB /* QUICK_START.md */; };
+		BE8C22C12F2604F400E32ACB /* StreamingVideoUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22C02F2604F400E32ACB /* StreamingVideoUploader.swift */; };
+		BE8C22C32F26050A00E32ACB /* CameraManager+StreamingUpload.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22C22F26050A00E32ACB /* CameraManager+StreamingUpload.swift */; };
+		BE8C22C52F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22C42F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md */; };
+		BE8C22C72F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22C62F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md */; };
+		BE8C22C92F2605BD00E32ACB /* UI_GUIDE_STREAMING.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22C82F2605BD00E32ACB /* UI_GUIDE_STREAMING.md */; };
 		BEAF835B2F1F2EBB001837B7 /* GoogleDriveUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */; };
 		BECA718B2F22FE0C00FB1F99 /* EarlyInit.c in Sources */ = {isa = PBXBuildFile; fileRef = BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */; };
 /* End PBXBuildFile section */
@@ -71,6 +76,11 @@
 		BE8C22BA2F25F73100E32ACB /* VIDEO_RECORDING_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = VIDEO_RECORDING_SUMMARY.md; sourceTree = "<group>"; };
 		BE8C22BC2F25F74E00E32ACB /* LocalVideoStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalVideoStorage.swift; sourceTree = "<group>"; };
 		BE8C22BE2F25F79600E32ACB /* QUICK_START.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QUICK_START.md; sourceTree = "<group>"; };
+		BE8C22C02F2604F400E32ACB /* StreamingVideoUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingVideoUploader.swift; sourceTree = "<group>"; };
+		BE8C22C22F26050A00E32ACB /* CameraManager+StreamingUpload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraManager+StreamingUpload.swift"; sourceTree = "<group>"; };
+		BE8C22C42F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = STREAMING_UPLOAD_GUIDE.md; sourceTree = "<group>"; };
+		BE8C22C62F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = STREAMING_UPLOAD_SUMMARY.md; sourceTree = "<group>"; };
+		BE8C22C82F2605BD00E32ACB /* UI_GUIDE_STREAMING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = UI_GUIDE_STREAMING.md; sourceTree = "<group>"; };
 		BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognition.swift; sourceTree = "<group>"; };
 		BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveUploader.swift; sourceTree = "<group>"; };
 		BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = EarlyInit.c; sourceTree = "<group>"; };
@@ -170,6 +180,11 @@
 				BE8C22BA2F25F73100E32ACB /* VIDEO_RECORDING_SUMMARY.md */,
 				BE8C22BC2F25F74E00E32ACB /* LocalVideoStorage.swift */,
 				BE8C22BE2F25F79600E32ACB /* QUICK_START.md */,
+				BE8C22C02F2604F400E32ACB /* StreamingVideoUploader.swift */,
+				BE8C22C22F26050A00E32ACB /* CameraManager+StreamingUpload.swift */,
+				BE8C22C42F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md */,
+				BE8C22C62F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md */,
+				BE8C22C82F2605BD00E32ACB /* UI_GUIDE_STREAMING.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -250,10 +265,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BE8C22C52F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md in Resources */,
 				BE8C22BB2F25F73100E32ACB /* VIDEO_RECORDING_SUMMARY.md in Resources */,
 				BE8C22B72F25F6F700E32ACB /* GOOGLE_DRIVE_SETUP.md in Resources */,
 				BE8C22A92F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md in Resources */,
+				BE8C22C72F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md in Resources */,
 				BE8C22B12F25F1C600E32ACB /* CAMERA_SETUP.md in Resources */,
+				BE8C22C92F2605BD00E32ACB /* UI_GUIDE_STREAMING.md in Resources */,
 				BE8B14B22CE3DBBA00714DB0 /* AppendExtention.swift in Resources */,
 				BE8C22BF2F25F79600E32ACB /* QUICK_START.md in Resources */,
 			);
@@ -269,6 +287,7 @@
 				BE8C22932F25D55600E32ACB /* Styles.swift in Sources */,
 				BE8C22AB2F25E99500E32ACB /* QUICK_START_GUIDE.swift in Sources */,
 				BE8C22B92F25F70E00E32ACB /* GoogleDriveService+Authentication.swift in Sources */,
+				BE8C22C32F26050A00E32ACB /* CameraManager+StreamingUpload.swift in Sources */,
 				BE8C22B52F25F6A300E32ACB /* GoogleDriveService.swift in Sources */,
 				BE8C22A72F25E8D100E32ACB /* CameraScanView.swift in Sources */,
 				BE8C22BD2F25F74E00E32ACB /* LocalVideoStorage.swift in Sources */,
@@ -280,6 +299,7 @@
 				BE8C229D2F25E82400E32ACB /* Models.swift in Sources */,
 				BE8C22A52F25E8B400E32ACB /* SettingsView.swift in Sources */,
 				BE54A2892CDDA81E00C6B639 /* SpeechRecognitionExtension.swift in Sources */,
+				BE8C22C12F2604F400E32ACB /* StreamingVideoUploader.swift in Sources */,
 				BE8C22AD2F25F18300E32ACB /* CameraManager.swift in Sources */,
 				BEAF835B2F1F2EBB001837B7 /* GoogleDriveUploader.swift in Sources */,
 				BE8C22A12F25E87200E32ACB /* InventoryListView.swift in Sources */,
