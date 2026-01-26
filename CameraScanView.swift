@@ -537,7 +537,11 @@ struct CameraScanView: View {
             .navigationBarHidden(true)
             .onAppear {
                 logger.info("CameraScanView appeared")
-                // Camera manager will auto-start session after configuration
+                // Restart camera session if it was stopped (e.g., after returning from Live Detection)
+                if cameraManager.isAuthorized && !cameraManager.isSessionRunning {
+                    logger.info("Restarting camera session...")
+                    cameraManager.startSession()
+                }
                 
                 // Listen for video recording completion
                 NotificationCenter.default.addObserver(
