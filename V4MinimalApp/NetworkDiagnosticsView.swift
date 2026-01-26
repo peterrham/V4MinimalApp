@@ -68,6 +68,7 @@ struct Endpoint: Identifiable {
 struct NetworkDiagnosticsView: View {
     @State private var logServerHost: String = ""
     @State private var logServerPort: String = "9999"
+    @State private var screenshotServerPort: String = "9998"
     @State private var connectionStatuses: [UUID: ConnectionStatus] = [:]
     @State private var isTestingAll = false
     @State private var showingHelp = false
@@ -75,6 +76,8 @@ struct NetworkDiagnosticsView: View {
     @State private var debugServerResult: String? = nil
     @State private var debugServerSuccess: Bool = false
     @State private var connectionLog: [String] = []
+    @State private var isScreenshotStreaming: Bool = false
+    @State private var screenshotInterval: Double = 2.0
 
     // Predefined endpoints
     let endpoints: [Endpoint] = [
@@ -112,6 +115,9 @@ struct NetworkDiagnosticsView: View {
 
                 // Log Server Configuration
                 serverConfigCard
+
+                // Screenshot Streaming
+                screenshotStreamingCard
 
                 // Endpoint Tests
                 endpointTestsCard
@@ -325,6 +331,123 @@ struct NetworkDiagnosticsView: View {
         .padding(AppTheme.Spacing.l)
         .background(Color(.systemBackground))
         .cornerRadius(AppTheme.cornerRadius)
+    }
+
+    // MARK: - Screenshot Streaming Card
+
+    private var screenshotStreamingCard: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.m) {
+            Label("Screenshot Streaming", systemImage: "camera.viewfinder")
+                .font(.headline)
+                .foregroundStyle(AppTheme.Colors.primary)
+
+            Text("Stream screenshots to Mac for visual debugging (correlated with logs)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            // Port configuration
+            HStack {
+                Text("Screenshot Port")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                TextField("9998", text: $screenshotServerPort)
+                    .textFieldStyle(.roundedBorder)
+                    .keyboardType(.numberPad)
+                    .frame(width: 80)
+                    .onChange(of: screenshotServerPort) { _ in
+                        UserDefaults.standard.set(screenshotServerPort, forKey: "screenshotServerPort")
+                    }
+            }
+
+            // Interval slider
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Capture Interval")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    Text("\(String(format: "%.1f", screenshotInterval))s")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundStyle(AppTheme.Colors.primary)
+                }
+
+                Slider(value: $screenshotInterval, in: 0.5...5.0, step: 0.5)
+                    .tint(AppTheme.Colors.primary)
+                    .onChange(of: screenshotInterval) { newValue in
+                        ScreenshotStreamer.shared.captureInterval = newValue
+                    }
+            }
+
+            // Toggle button
+            Button {
+                toggleScreenshotStreaming()
+            } label: {
+                HStack {
+                    Image(systemName: isScreenshotStreaming ? "stop.circle.fill" : "play.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(isScreenshotStreaming ? AppTheme.Colors.error : AppTheme.Colors.success)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(isScreenshotStreaming ? "Stop Streaming" : "Start Streaming")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+
+                        Text(isScreenshotStreaming ? "Screenshots being sent to Mac" : "Tap to begin capturing screenshots")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    if isScreenshotStreaming {
+                        Circle()
+                            .fill(AppTheme.Colors.error)
+                            .frame(width: 12, height: 12)
+                            .overlay(
+                                Circle()
+                                    .stroke(AppTheme.Colors.error.opacity(0.5), lineWidth: 2)
+                                    .scaleEffect(1.5)
+                            )
+                    }
+                }
+                .padding(AppTheme.Spacing.m)
+                .background(Color(.secondarySystemBackground))
+                .cornerRadius(10)
+            }
+            .buttonStyle(.plain)
+            .disabled(logServerHost.isEmpty)
+            .opacity(logServerHost.isEmpty ? 0.6 : 1)
+
+            if logServerHost.isEmpty {
+                Text("Configure server host above to enable streaming")
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+            }
+        }
+        .padding(AppTheme.Spacing.l)
+        .background(Color(.systemBackground))
+        .cornerRadius(AppTheme.cornerRadius)
+        .onAppear {
+            screenshotServerPort = UserDefaults.standard.string(forKey: "screenshotServerPort") ?? "9998"
+            isScreenshotStreaming = ScreenshotStreamer.shared.isActive
+        }
+    }
+
+    private func toggleScreenshotStreaming() {
+        if isScreenshotStreaming {
+            ScreenshotStreamer.shared.stopStreaming()
+            isScreenshotStreaming = false
+        } else {
+            ScreenshotStreamer.shared.captureInterval = screenshotInterval
+            ScreenshotStreamer.shared.startStreaming()
+            isScreenshotStreaming = true
+        }
     }
 
     // MARK: - Endpoint Tests Card

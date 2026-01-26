@@ -3,13 +3,14 @@
 V4MinimalApp Log Server
 
 Receives logs from the iOS app over TCP and displays them in unified log format.
+Also receives screenshots on a separate port for visual debugging.
 Writes logs to a file that Claude Code can read for debugging.
 
 Usage:
-    python3 log_server.py [--port PORT] [--output FILE]
+    python3 log_server.py [--port PORT] [--screenshot-port PORT] [--output FILE]
 
 Example:
-    python3 log_server.py --port 9999 --output /tmp/app_logs.txt
+    python3 log_server.py --port 9999 --screenshot-port 9998 --output /tmp/app_logs.txt
 """
 
 import socket
@@ -19,6 +20,7 @@ import sys
 import os
 import signal
 import threading
+import struct
 from pathlib import Path
 
 # ANSI colors for terminal output
@@ -112,6 +114,154 @@ def colorize_log(log_line: str, level: str) -> str:
     return f"{color}{log_line}{Colors.RESET}"
 
 
+class ScreenshotServer:
+    """Handles incoming screenshots on a separate port."""
+
+    def __init__(self, port: int, output_dir: str, quiet: bool = False):
+        self.port = port
+        self.output_dir = output_dir
+        self.quiet = quiet
+        self.running = False
+        self.server_socket = None
+        self.clients = []
+        self.lock = threading.Lock()
+        self.screenshot_count = 0
+
+        # Create output directory
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    def handle_client(self, client_socket, addr):
+        """Handle a single screenshot client connection."""
+        if not self.quiet:
+            print(f"{Colors.MAGENTA}Screenshot client connected: {addr[0]}:{addr[1]}{Colors.RESET}")
+
+        try:
+            while self.running:
+                try:
+                    # Protocol:
+                    # 1. Read 8 bytes for timestamp length (big-endian uint64)
+                    # 2. Read timestamp string
+                    # 3. Read 8 bytes for image size (big-endian uint64)
+                    # 4. Read image data
+
+                    # Read timestamp length
+                    ts_len_data = self._recv_exact(client_socket, 8)
+                    if not ts_len_data:
+                        break
+                    ts_len = struct.unpack('>Q', ts_len_data)[0]
+
+                    # Read timestamp
+                    ts_data = self._recv_exact(client_socket, ts_len)
+                    if not ts_data:
+                        break
+                    timestamp = ts_data.decode('utf-8')
+
+                    # Read image size
+                    img_len_data = self._recv_exact(client_socket, 8)
+                    if not img_len_data:
+                        break
+                    img_len = struct.unpack('>Q', img_len_data)[0]
+
+                    # Read image data
+                    img_data = self._recv_exact(client_socket, img_len)
+                    if not img_data:
+                        break
+
+                    # Save the screenshot
+                    safe_ts = timestamp.replace(':', '-').replace(' ', '_').replace('.', '-')
+                    filename = f"screenshot_{safe_ts}.jpg"
+                    filepath = os.path.join(self.output_dir, filename)
+
+                    with open(filepath, 'wb') as f:
+                        f.write(img_data)
+
+                    self.screenshot_count += 1
+
+                    if not self.quiet:
+                        size_kb = len(img_data) / 1024
+                        print(f"{Colors.MAGENTA}[Screenshot #{self.screenshot_count}] {filename} ({size_kb:.1f} KB){Colors.RESET}")
+
+                except socket.timeout:
+                    continue
+                except Exception as e:
+                    if self.running and not self.quiet:
+                        print(f"{Colors.RED}Screenshot error from {addr}: {e}{Colors.RESET}")
+                    break
+
+        finally:
+            client_socket.close()
+            with self.lock:
+                if client_socket in self.clients:
+                    self.clients.remove(client_socket)
+            if not self.quiet:
+                print(f"{Colors.YELLOW}Screenshot client disconnected: {addr[0]}:{addr[1]}{Colors.RESET}")
+
+    def _recv_exact(self, sock, n):
+        """Receive exactly n bytes from socket."""
+        data = b''
+        while len(data) < n:
+            try:
+                chunk = sock.recv(n - len(data))
+                if not chunk:
+                    return None
+                data += chunk
+            except socket.timeout:
+                if not self.running:
+                    return None
+                continue
+        return data
+
+    def run(self):
+        """Run the screenshot server."""
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        try:
+            self.server_socket.bind(('0.0.0.0', self.port))
+            self.server_socket.listen(5)
+            self.server_socket.settimeout(1.0)
+        except OSError as e:
+            print(f"{Colors.RED}Error: Could not bind screenshot server to port {self.port}: {e}{Colors.RESET}")
+            return
+
+        self.running = True
+
+        while self.running:
+            try:
+                client_socket, addr = self.server_socket.accept()
+                client_socket.settimeout(5.0)
+                with self.lock:
+                    self.clients.append(client_socket)
+
+                thread = threading.Thread(target=self.handle_client, args=(client_socket, addr))
+                thread.daemon = True
+                thread.start()
+
+            except socket.timeout:
+                continue
+            except Exception as e:
+                if self.running:
+                    print(f"{Colors.RED}Screenshot server error: {e}{Colors.RESET}")
+
+    def shutdown(self):
+        """Shutdown the screenshot server."""
+        self.running = False
+
+        with self.lock:
+            for client in self.clients:
+                try:
+                    client.close()
+                except:
+                    pass
+            self.clients.clear()
+
+        if self.server_socket:
+            try:
+                self.server_socket.close()
+            except:
+                pass
+
+
 class LogServer:
     def __init__(self, port: int, output_file: str = None, quiet: bool = False):
         self.port = port
@@ -195,19 +345,6 @@ class LogServer:
             self.out_file = open(self.output_file, 'a', buffering=1)  # Line buffered
             print(f"{Colors.CYAN}Writing logs to: {self.output_file}{Colors.RESET}")
 
-        # Print startup banner
-        print(f"\n{Colors.BOLD}{'='*60}{Colors.RESET}")
-        print(f"{Colors.GREEN}V4MinimalApp Log Server Started (TCP){Colors.RESET}")
-        print(f"{Colors.BOLD}{'='*60}{Colors.RESET}")
-        print(f"  Listening on: {Colors.CYAN}{local_ip}:{self.port}{Colors.RESET}")
-        print(f"  Also on:      {Colors.CYAN}0.0.0.0:{self.port}{Colors.RESET} (all interfaces)")
-        if self.output_file:
-            print(f"  Log file:     {Colors.CYAN}{self.output_file}{Colors.RESET}")
-        print(f"\n  {Colors.YELLOW}Configure iOS app with:{Colors.RESET}")
-        print(f"    Host: {Colors.BOLD}{local_ip}{Colors.RESET}")
-        print(f"    Port: {Colors.BOLD}{self.port}{Colors.RESET}")
-        print(f"\n{Colors.GRAY}Waiting for connections... (Ctrl+C to stop){Colors.RESET}\n")
-
         self.running = True
 
         # Main accept loop
@@ -260,20 +397,24 @@ class LogServer:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='V4MinimalApp Log Server - Receives logs from iOS app over TCP',
+        description='V4MinimalApp Log Server - Receives logs and screenshots from iOS app over TCP',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s                          # Listen on port 9999
-  %(prog)s --port 8888              # Listen on port 8888
+  %(prog)s                          # Listen on port 9999 (logs) and 9998 (screenshots)
+  %(prog)s --port 8888              # Listen on port 8888 for logs
   %(prog)s -o /tmp/app_logs.txt     # Write logs to file
   %(prog)s -o /tmp/logs.txt -q      # Write to file only (quiet mode)
         """
     )
     parser.add_argument('-p', '--port', type=int, default=9999,
-                        help='TCP port to listen on (default: 9999)')
+                        help='TCP port for logs (default: 9999)')
+    parser.add_argument('-s', '--screenshot-port', type=int, default=9998,
+                        help='TCP port for screenshots (default: 9998)')
     parser.add_argument('-o', '--output', type=str, default=None,
                         help='Output file to write logs (for Claude Code to read)')
+    parser.add_argument('--screenshot-dir', type=str, default='/tmp/app_screenshots',
+                        help='Directory to save screenshots (default: /tmp/app_screenshots)')
     parser.add_argument('-q', '--quiet', action='store_true',
                         help='Quiet mode - only write to file, no terminal output')
 
@@ -283,17 +424,43 @@ Examples:
         print(f"{Colors.RED}Error: --quiet requires --output{Colors.RESET}")
         sys.exit(1)
 
-    server = LogServer(args.port, args.output, args.quiet)
+    local_ip = get_local_ip()
+
+    # Print startup banner
+    print(f"\n{Colors.BOLD}{'='*60}{Colors.RESET}")
+    print(f"{Colors.GREEN}V4MinimalApp Log Server Started (TCP){Colors.RESET}")
+    print(f"{Colors.BOLD}{'='*60}{Colors.RESET}")
+    print(f"  Log server:        {Colors.CYAN}{local_ip}:{args.port}{Colors.RESET}")
+    print(f"  Screenshot server: {Colors.MAGENTA}{local_ip}:{args.screenshot_port}{Colors.RESET}")
+    print(f"  Screenshot dir:    {Colors.MAGENTA}{args.screenshot_dir}{Colors.RESET}")
+    if args.output:
+        print(f"  Log file:          {Colors.CYAN}{args.output}{Colors.RESET}")
+    print(f"\n  {Colors.YELLOW}Configure iOS app with:{Colors.RESET}")
+    print(f"    Host: {Colors.BOLD}{local_ip}{Colors.RESET}")
+    print(f"    Log Port: {Colors.BOLD}{args.port}{Colors.RESET}")
+    print(f"    Screenshot Port: {Colors.BOLD}{args.screenshot_port}{Colors.RESET}")
+    print(f"\n{Colors.GRAY}Waiting for connections... (Ctrl+C to stop){Colors.RESET}\n")
+
+    # Create servers
+    log_server = LogServer(args.port, args.output, args.quiet)
+    screenshot_server = ScreenshotServer(args.screenshot_port, args.screenshot_dir, args.quiet)
 
     # Handle graceful shutdown
     def signal_handler(sig, frame):
-        server.shutdown()
+        log_server.shutdown()
+        screenshot_server.shutdown()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    server.run()
+    # Start screenshot server in a thread
+    screenshot_thread = threading.Thread(target=screenshot_server.run)
+    screenshot_thread.daemon = True
+    screenshot_thread.start()
+
+    # Run log server in main thread
+    log_server.run()
 
 
 if __name__ == '__main__':
