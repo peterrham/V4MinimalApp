@@ -62,8 +62,9 @@ let appBootLog: Logger = {
 
     let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "V4MinimalApp", category: "Boot")
 
-    // First log message - goes to both unified logging and network
-    logger.infoWithContext("BOOT_MARKER_INITIALIZED — Logger created via closure and ready")
+    // First Swift log message - goes to both unified logging and network
+    // Note: EarlyInit.c constructor already sent the FIRST log directly to TCP before Swift loaded
+    logger.infoWithContext("BOOT_MARKER_INITIALIZED — Swift logger created (C constructor ran earlier)")
     return logger
 }()
 
