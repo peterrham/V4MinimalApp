@@ -68,6 +68,20 @@
 		BEAF835B2F1F2EBB001837B7 /* GoogleDriveUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */; };
 		BECA718B2F22FE0C00FB1F99 /* EarlyInit.c in Sources */ = {isa = PBXBuildFile; fileRef = BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */; };
 		BECE6BD12F260EA5009344A1 /* GoogleCloudStorageUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BECE6BD02F260EA5009344A1 /* GoogleCloudStorageUploader.swift */; };
+		BEE210CA2F26AEEB006F2740 /* GEMINI_TROUBLESHOOTING.md in Resources */ = {isa = PBXBuildFile; fileRef = BEE210C92F26AEEB006F2740 /* GEMINI_TROUBLESHOOTING.md */; };
+		BEE210CC2F26AF2A006F2740 /* DEBUGGING_IMPROVEMENTS.md in Resources */ = {isa = PBXBuildFile; fileRef = BEE210CB2F26AF2A006F2740 /* DEBUGGING_IMPROVEMENTS.md */; };
+		BEEB319D2F26251F002E0842 /* GeminiStreamingVisionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEB319C2F26251F002E0842 /* GeminiStreamingVisionService.swift */; };
+		BEEB319F2F26252A002E0842 /* CameraManager+FrameCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEB319E2F26252A002E0842 /* CameraManager+FrameCapture.swift */; };
+		BEEB31A12F262541002E0842 /* StreamingObjectDetectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEB31A02F262541002E0842 /* StreamingObjectDetectionView.swift */; };
+		BEEB31A32F262561002E0842 /* LiveObjectDetectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEB31A22F262561002E0842 /* LiveObjectDetectionView.swift */; };
+		BEEB31A52F262598002E0842 /* LIVE_DETECTION_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31A42F262598002E0842 /* LIVE_DETECTION_GUIDE.md */; };
+		BEEB31A72F2625AC002E0842 /* INTEGRATION_EXAMPLE.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEB31A62F2625AC002E0842 /* INTEGRATION_EXAMPLE.swift */; };
+		BEEB31A92F2625EB002E0842 /* LIVE_DETECTION_ARCHITECTURE.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31A82F2625EB002E0842 /* LIVE_DETECTION_ARCHITECTURE.md */; };
+		BEEB31AB2F26260F002E0842 /* QUICK_START_LIVE_DETECTION.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31AA2F26260F002E0842 /* QUICK_START_LIVE_DETECTION.md */; };
+		BEEB31AD2F262643002E0842 /* PHOTO_VS_LIVE_COMPARISON.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31AC2F262643002E0842 /* PHOTO_VS_LIVE_COMPARISON.md */; };
+		BEEB31AF2F26268F002E0842 /* IMPLEMENTATION_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31AE2F26268F002E0842 /* IMPLEMENTATION_SUMMARY.md */; };
+		BEEB31B12F2626CE002E0842 /* TESTING_CHECKLIST.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31B02F2626CE002E0842 /* TESTING_CHECKLIST.md */; };
+		BEEB31B32F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31B22F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -130,6 +144,20 @@
 		BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveUploader.swift; sourceTree = "<group>"; };
 		BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = EarlyInit.c; sourceTree = "<group>"; };
 		BECE6BD02F260EA5009344A1 /* GoogleCloudStorageUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleCloudStorageUploader.swift; sourceTree = "<group>"; };
+		BEE210C92F26AEEB006F2740 /* GEMINI_TROUBLESHOOTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GEMINI_TROUBLESHOOTING.md; sourceTree = "<group>"; };
+		BEE210CB2F26AF2A006F2740 /* DEBUGGING_IMPROVEMENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEBUGGING_IMPROVEMENTS.md; sourceTree = "<group>"; };
+		BEEB319C2F26251F002E0842 /* GeminiStreamingVisionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiStreamingVisionService.swift; sourceTree = "<group>"; };
+		BEEB319E2F26252A002E0842 /* CameraManager+FrameCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraManager+FrameCapture.swift"; sourceTree = "<group>"; };
+		BEEB31A02F262541002E0842 /* StreamingObjectDetectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingObjectDetectionView.swift; sourceTree = "<group>"; };
+		BEEB31A22F262561002E0842 /* LiveObjectDetectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveObjectDetectionView.swift; sourceTree = "<group>"; };
+		BEEB31A42F262598002E0842 /* LIVE_DETECTION_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LIVE_DETECTION_GUIDE.md; sourceTree = "<group>"; };
+		BEEB31A62F2625AC002E0842 /* INTEGRATION_EXAMPLE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = INTEGRATION_EXAMPLE.swift; sourceTree = "<group>"; };
+		BEEB31A82F2625EB002E0842 /* LIVE_DETECTION_ARCHITECTURE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LIVE_DETECTION_ARCHITECTURE.md; sourceTree = "<group>"; };
+		BEEB31AA2F26260F002E0842 /* QUICK_START_LIVE_DETECTION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QUICK_START_LIVE_DETECTION.md; sourceTree = "<group>"; };
+		BEEB31AC2F262643002E0842 /* PHOTO_VS_LIVE_COMPARISON.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PHOTO_VS_LIVE_COMPARISON.md; sourceTree = "<group>"; };
+		BEEB31AE2F26268F002E0842 /* IMPLEMENTATION_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = IMPLEMENTATION_SUMMARY.md; sourceTree = "<group>"; };
+		BEEB31B02F2626CE002E0842 /* TESTING_CHECKLIST.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TESTING_CHECKLIST.md; sourceTree = "<group>"; };
+		BEEB31B22F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SYSTEM_OVERVIEW_VISUAL.md; sourceTree = "<group>"; };
 		BEEEFAA42CD2C9120072891A /* NewMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewMain.swift; sourceTree = "<group>"; };
 		BEEEFAAA2CD2DC350072891A /* VoiceDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = VoiceDataModel.xcdatamodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -254,6 +282,20 @@
 				BE3DD6B72F261C0C002C9706 /* QUICK_START 2.md */,
 				BE3DD6B92F261C4D002C9706 /* IMPLEMENTATION_COMPLETE.md */,
 				BE3DD6BB2F261C80002C9706 /* UI_LOCATIONS.md */,
+				BEEB319C2F26251F002E0842 /* GeminiStreamingVisionService.swift */,
+				BEEB319E2F26252A002E0842 /* CameraManager+FrameCapture.swift */,
+				BEEB31A02F262541002E0842 /* StreamingObjectDetectionView.swift */,
+				BEEB31A22F262561002E0842 /* LiveObjectDetectionView.swift */,
+				BEEB31A42F262598002E0842 /* LIVE_DETECTION_GUIDE.md */,
+				BEEB31A62F2625AC002E0842 /* INTEGRATION_EXAMPLE.swift */,
+				BEEB31A82F2625EB002E0842 /* LIVE_DETECTION_ARCHITECTURE.md */,
+				BEEB31AA2F26260F002E0842 /* QUICK_START_LIVE_DETECTION.md */,
+				BEEB31AC2F262643002E0842 /* PHOTO_VS_LIVE_COMPARISON.md */,
+				BEEB31AE2F26268F002E0842 /* IMPLEMENTATION_SUMMARY.md */,
+				BEEB31B02F2626CE002E0842 /* TESTING_CHECKLIST.md */,
+				BEEB31B22F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md */,
+				BEE210C92F26AEEB006F2740 /* GEMINI_TROUBLESHOOTING.md */,
+				BEE210CB2F26AF2A006F2740 /* DEBUGGING_IMPROVEMENTS.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -338,14 +380,19 @@
 				BE8C22C52F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md in Resources */,
 				BE3DD6A82F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md in Resources */,
 				BE8C22BB2F25F73100E32ACB /* VIDEO_RECORDING_SUMMARY.md in Resources */,
+				BEEB31B32F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md in Resources */,
 				BE3DD69C2F26139B002C9706 /* QUICK_START_AUTO_SAVE.md in Resources */,
 				BE8C22CF2F260B9300E32ACB /* STREAMING_QUICK_REFERENCE.md in Resources */,
 				BE8C22B72F25F6F700E32ACB /* GOOGLE_DRIVE_SETUP.md in Resources */,
 				BE3DD69A2F26138D002C9706 /* VIDEO_AUTO_SAVE_SUMMARY.md in Resources */,
 				BE8C22A92F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md in Resources */,
 				BE3DD6B62F261BCA002C9706 /* GEMINI_README.md in Resources */,
+				BEEB31B12F2626CE002E0842 /* TESTING_CHECKLIST.md in Resources */,
 				BE8C22C72F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md in Resources */,
+				BEEB31AB2F26260F002E0842 /* QUICK_START_LIVE_DETECTION.md in Resources */,
 				BE3DD6962F261350002C9706 /* PHOTOS_LIBRARY_SETUP.md in Resources */,
+				BEEB31A92F2625EB002E0842 /* LIVE_DETECTION_ARCHITECTURE.md in Resources */,
+				BEEB31A52F262598002E0842 /* LIVE_DETECTION_GUIDE.md in Resources */,
 				BE3DD6BA2F261C4D002C9706 /* IMPLEMENTATION_COMPLETE.md in Resources */,
 				BE8C22CD2F260B6E00E32ACB /* STREAMING_IMPROVEMENTS_SUMMARY.md in Resources */,
 				BE8C22B12F25F1C600E32ACB /* CAMERA_SETUP.md in Resources */,
@@ -353,11 +400,15 @@
 				BE3DD6AE2F261B4D002C9706 /* Config.plist.template in Resources */,
 				BE3DD6BC2F261C80002C9706 /* UI_LOCATIONS.md in Resources */,
 				BE3DD6A42F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md in Resources */,
+				BEEB31AD2F262643002E0842 /* PHOTO_VS_LIVE_COMPARISON.md in Resources */,
 				BE3DD6B22F261B76002C9706 /* GEMINI_IMPLEMENTATION.md in Resources */,
 				BE3DD69E2F2613C9002C9706 /* VIDEO_FLOW_DIAGRAM.md in Resources */,
 				BE3DD6B82F261C0C002C9706 /* QUICK_START 2.md in Resources */,
+				BEEB31AF2F26268F002E0842 /* IMPLEMENTATION_SUMMARY.md in Resources */,
 				BE3DD6B02F261B51002C9706 /* GITIGNORE_ADDITIONS.txt in Resources */,
 				BE8C22C92F2605BD00E32ACB /* UI_GUIDE_STREAMING.md in Resources */,
+				BEE210CA2F26AEEB006F2740 /* GEMINI_TROUBLESHOOTING.md in Resources */,
+				BEE210CC2F26AF2A006F2740 /* DEBUGGING_IMPROVEMENTS.md in Resources */,
 				BE8B14B22CE3DBBA00714DB0 /* AppendExtention.swift in Resources */,
 				BE8C22BF2F25F79600E32ACB /* QUICK_START.md in Resources */,
 			);
@@ -396,9 +447,14 @@
 				BE8C22A12F25E87200E32ACB /* InventoryListView.swift in Sources */,
 				BE54A28B2CDDA81E00C6B639 /* SpeechRecognition.swift in Sources */,
 				BE8B156A2CE5979200714DB0 /* MainApp.swift in Sources */,
+				BEEB319F2F26252A002E0842 /* CameraManager+FrameCapture.swift in Sources */,
+				BEEB31A72F2625AC002E0842 /* INTEGRATION_EXAMPLE.swift in Sources */,
+				BEEB31A12F262541002E0842 /* StreamingObjectDetectionView.swift in Sources */,
 				BE8B15682CE5273700714DB0 /* AppState.swift in Sources */,
 				BE54A28D2CDDA81E00C6B639 /* ExportToCSVView.swift in Sources */,
 				BE3DD6A22F2616DF002C9706 /* VideoUploadQueueView.swift in Sources */,
+				BEEB31A32F262561002E0842 /* LiveObjectDetectionView.swift in Sources */,
+				BEEB319D2F26251F002E0842 /* GeminiStreamingVisionService.swift in Sources */,
 				BECA718B2F22FE0C00FB1F99 /* EarlyInit.c in Sources */,
 				BE54A2872CDDA6D200C6B639 /* NewMain.swift in Sources */,
 				BE8C22952F25D76800E32ACB /* Theme.swift in Sources */,
