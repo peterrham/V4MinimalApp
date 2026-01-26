@@ -82,6 +82,7 @@
 		BEEB31AF2F26268F002E0842 /* IMPLEMENTATION_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31AE2F26268F002E0842 /* IMPLEMENTATION_SUMMARY.md */; };
 		BEEB31B12F2626CE002E0842 /* TESTING_CHECKLIST.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31B02F2626CE002E0842 /* TESTING_CHECKLIST.md */; };
 		BEEB31B32F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31B22F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md */; };
+		BENET0022F280002002C9706 /* NetworkLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = BENET0012F280001002C9706 /* NetworkLogger.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -160,6 +161,7 @@
 		BEEB31B22F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SYSTEM_OVERVIEW_VISUAL.md; sourceTree = "<group>"; };
 		BEEEFAA42CD2C9120072891A /* NewMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewMain.swift; sourceTree = "<group>"; };
 		BEEEFAAA2CD2DC350072891A /* VoiceDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = VoiceDataModel.xcdatamodel; sourceTree = "<group>"; };
+		BENET0012F280001002C9706 /* NetworkLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkLogger.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -225,6 +227,7 @@
 				BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */,
 				BEEEFAA92CD2DC350072891A /* VoiceDataModel.xcdatamodeld */,
 				BEEEFAA42CD2C9120072891A /* NewMain.swift */,
+				BENET0012F280001002C9706 /* NetworkLogger.swift */,
 				BE6204AD2CD97169001823E5 /* ExportToCSVView.swift */,
 				BE54A2182CDDA27F00C6B639 /* V4MinimalApp */,
 				BE20F1102CDC2D17004F3007 /* Frameworks */,
@@ -459,6 +462,7 @@
 				BE54A2872CDDA6D200C6B639 /* NewMain.swift in Sources */,
 				BE8C22952F25D76800E32ACB /* Theme.swift in Sources */,
 				BE8C22972F25D76900E32ACB /* SecondaryButtonStyle.swift in Sources */,
+				BENET0022F280002002C9706 /* NetworkLogger.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

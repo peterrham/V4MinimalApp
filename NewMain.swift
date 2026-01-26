@@ -13,7 +13,10 @@ extension Logger {
         function: String = #function,
         line: Int = #line
     ) {
+        // Unified logging
         self.info("[\(file, privacy: .public):\(line)] \(message, privacy: .public) \(function, privacy: .public)")
+        // Network logging
+        NetworkLogger.shared.info(message, category: "Boot", file: file, function: function, line: line)
     }
 
     func errorWithContext(
@@ -22,7 +25,10 @@ extension Logger {
         function: String = #function,
         line: Int = #line
     ) {
+        // Unified logging
         self.error("[\(file, privacy: .public):\(line)] \(message, privacy: .public) \(function, privacy: .public)")
+        // Network logging
+        NetworkLogger.shared.error(message, category: "Boot", file: file, function: function, line: line)
     }
 
     func warningWithContext(
@@ -31,7 +37,10 @@ extension Logger {
         function: String = #function,
         line: Int = #line
     ) {
+        // Unified logging
         self.warning("[\(file, privacy: .public):\(line)] \(message, privacy: .public) \(function, privacy: .public)")
+        // Network logging
+        NetworkLogger.shared.warning(message, category: "Boot", file: file, function: function, line: line)
     }
 
     func debugWithContext(
@@ -40,12 +49,20 @@ extension Logger {
         function: String = #function,
         line: Int = #line
     ) {
+        // Unified logging
         self.debug("[\(file, privacy: .public):\(line)] \(message, privacy: .public) \(function, privacy: .public)")
+        // Network logging
+        NetworkLogger.shared.debug(message, category: "Boot", file: file, function: function, line: line)
     }
 }
 
 let appBootLog: Logger = {
-    let logger = Logger(subsystem: "com.yourcompany.yourapp", category: "Boot")
+    // Initialize NetworkLogger early (reads settings from UserDefaults)
+    _ = NetworkLogger.shared
+
+    let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "V4MinimalApp", category: "Boot")
+
+    // First log message - goes to both unified logging and network
     logger.infoWithContext("BOOT_MARKER_INITIALIZED — Logger created via closure and ready")
     return logger
 }()
