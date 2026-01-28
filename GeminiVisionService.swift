@@ -21,7 +21,7 @@ class GeminiVisionService: ObservableObject {
     // MARK: - Configuration
     
     private let apiKey: String
-    private let apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent"
+    private let apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent"
     
     // MARK: - Singleton
     

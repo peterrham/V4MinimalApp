@@ -64,6 +64,40 @@ enum ItemCategory: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+extension ItemCategory {
+    /// Map a raw string (from Gemini) to an ItemCategory case
+    static func from(rawString: String) -> ItemCategory {
+        let lower = rawString.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        // Direct rawValue match
+        if let match = ItemCategory.allCases.first(where: { $0.rawValue.lowercased() == lower }) {
+            return match
+        }
+        // Alias / substring matching
+        let aliases: [String: ItemCategory] = [
+            "electronic": .electronics, "tv": .electronics, "computer": .electronics,
+            "phone": .electronics, "laptop": .electronics, "monitor": .electronics,
+            "tablet": .electronics, "speaker": .electronics, "camera": .electronics,
+            "furnitur": .furniture, "chair": .furniture, "table": .furniture,
+            "sofa": .furniture, "couch": .furniture, "desk": .furniture, "bed": .furniture,
+            "appliance": .appliances, "washer": .appliances, "dryer": .appliances,
+            "microwave": .appliances, "refrigerator": .appliances, "oven": .appliances,
+            "cloth": .clothing, "shirt": .clothing, "pants": .clothing, "jacket": .clothing,
+            "kitchen": .kitchenware, "utensil": .kitchenware, "pot": .kitchenware, "pan": .kitchenware,
+            "decor": .decor, "lamp": .decor, "vase": .decor, "candle": .decor,
+            "tool": .tools, "hammer": .tools, "drill": .tools, "wrench": .tools,
+            "book": .books, "magazine": .books,
+            "sport": .sports, "fitness": .sports, "exercise": .sports,
+            "toy": .toys, "game": .toys,
+            "jewel": .jewelry, "ring": .jewelry, "necklace": .jewelry, "watch": .jewelry,
+            "art": .art, "painting": .art, "sculpture": .art, "collectible": .art,
+        ]
+        for (key, category) in aliases {
+            if lower.contains(key) { return category }
+        }
+        return .other
+    }
+}
+
 // MARK: - Inventory Item
 
 struct InventoryItem: Identifiable, Codable, Hashable {
@@ -75,6 +109,8 @@ struct InventoryItem: Identifiable, Codable, Hashable {
     var purchasePrice: Double?
     var purchaseDate: Date?
     var brand: String?
+    var itemColor: String?
+    var size: String?
     var notes: String
     var photos: [String] // URLs or local paths
     var voiceTranscripts: [String]
@@ -105,6 +141,8 @@ struct InventoryItem: Identifiable, Codable, Hashable {
         purchasePrice: Double? = nil,
         purchaseDate: Date? = nil,
         brand: String? = nil,
+        itemColor: String? = nil,
+        size: String? = nil,
         notes: String = "",
         photos: [String] = [],
         voiceTranscripts: [String] = []
@@ -117,6 +155,8 @@ struct InventoryItem: Identifiable, Codable, Hashable {
         self.purchasePrice = purchasePrice
         self.purchaseDate = purchaseDate
         self.brand = brand
+        self.itemColor = itemColor
+        self.size = size
         self.notes = notes
         self.photos = photos
         self.voiceTranscripts = voiceTranscripts

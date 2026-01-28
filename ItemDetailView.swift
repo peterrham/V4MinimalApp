@@ -6,29 +6,40 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct ItemDetailView: View {
     let item: InventoryItem
     @State private var isEditing = false
     @State private var showingDeleteAlert = false
+    @State private var selectedPhoto: String?
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         ScrollView {
             VStack(spacing: AppTheme.Spacing.xl) {
-                // Photo Gallery
+                // Photo Gallery (tap to zoom)
                 if !item.photos.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: AppTheme.Spacing.m) {
                             ForEach(item.photos, id: \.self) { photo in
-                                RoundedRectangle(cornerRadius: AppTheme.cornerRadius)
-                                    .fill(item.category.color.opacity(0.1))
-                                    .frame(width: 280, height: 280)
-                                    .overlay {
-                                        Image(systemName: item.category.icon)
-                                            .font(.system(size: 80))
-                                            .foregroundStyle(item.category.color.opacity(0.3))
-                                    }
+                                if let uiImage = UIImage(contentsOfFile: InventoryStore.photoURL(for: photo).path) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 280, height: 280)
+                                        .clipShape(RoundedRectangle(cornerRadius: AppTheme.cornerRadius))
+                                        .onTapGesture { selectedPhoto = photo }
+                                } else {
+                                    RoundedRectangle(cornerRadius: AppTheme.cornerRadius)
+                                        .fill(item.category.color.opacity(0.1))
+                                        .frame(width: 280, height: 280)
+                                        .overlay {
+                                            Image(systemName: item.category.icon)
+                                                .font(.system(size: 80))
+                                                .foregroundStyle(item.category.color.opacity(0.3))
+                                        }
+                                }
                             }
                         }
                         .padding(.horizontal, AppTheme.Spacing.l)
@@ -38,7 +49,7 @@ struct ItemDetailView: View {
                         RoundedRectangle(cornerRadius: AppTheme.cornerRadius)
                             .fill(item.category.color.opacity(0.1))
                             .frame(height: 280)
-                        
+
                         Image(systemName: item.category.icon)
                             .font(.system(size: 100))
                             .foregroundStyle(item.category.color.opacity(0.3))
@@ -234,6 +245,97 @@ struct ItemDetailView: View {
         }
         .sheet(isPresented: $isEditing) {
             ItemEditView(item: item)
+        }
+        .fullScreenCover(item: $selectedPhoto) { photo in
+            ZoomablePhotoView(photoFilename: photo)
+        }
+    }
+}
+
+// MARK: - Identifiable wrapper for String
+extension String: @retroactive Identifiable {
+    public var id: String { self }
+}
+
+// MARK: - Zoomable Photo View
+
+struct ZoomablePhotoView: View {
+    let photoFilename: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @State private var offset: CGSize = .zero
+    @State private var lastOffset: CGSize = .zero
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            if let uiImage = UIImage(contentsOfFile: InventoryStore.photoURL(for: photoFilename).path) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .scaleEffect(scale)
+                    .offset(offset)
+                    .gesture(
+                        MagnifyGesture()
+                            .onChanged { value in
+                                scale = lastScale * value.magnification
+                            }
+                            .onEnded { value in
+                                lastScale = scale
+                                if scale < 1.0 {
+                                    withAnimation {
+                                        scale = 1.0
+                                        lastScale = 1.0
+                                        offset = .zero
+                                        lastOffset = .zero
+                                    }
+                                }
+                            }
+                    )
+                    .simultaneousGesture(
+                        DragGesture()
+                            .onChanged { value in
+                                offset = CGSize(
+                                    width: lastOffset.width + value.translation.width,
+                                    height: lastOffset.height + value.translation.height
+                                )
+                            }
+                            .onEnded { _ in
+                                lastOffset = offset
+                            }
+                    )
+                    .onTapGesture(count: 2) {
+                        withAnimation {
+                            if scale > 1.0 {
+                                scale = 1.0
+                                lastScale = 1.0
+                                offset = .zero
+                                lastOffset = .zero
+                            } else {
+                                scale = 3.0
+                                lastScale = 3.0
+                            }
+                        }
+                    }
+            }
+
+            // Close button
+            VStack {
+                HStack {
+                    Spacer()
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title)
+                            .foregroundStyle(.white.opacity(0.8))
+                            .padding()
+                    }
+                }
+                Spacer()
+            }
         }
     }
 }

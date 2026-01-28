@@ -364,7 +364,7 @@ extension CameraManager {
 
         guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
 
-        let image = UIImage(cgImage: cgImage)
+        let image = UIImage(cgImage: cgImage, scale: 1.0, orientation: .right)
 
         // Call the handler on main thread
         Task { @MainActor in

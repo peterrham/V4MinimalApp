@@ -83,6 +83,7 @@
 		BEEB31B12F2626CE002E0842 /* TESTING_CHECKLIST.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31B02F2626CE002E0842 /* TESTING_CHECKLIST.md */; };
 		BEEB31B32F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31B22F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md */; };
 		BENET0022F280002002C9706 /* NetworkLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = BENET0012F280001002C9706 /* NetworkLogger.swift */; };
+		BEINVS022F290002002C9706 /* InventoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEINVS012F290001002C9706 /* InventoryStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -162,6 +163,8 @@
 		BEEEFAA42CD2C9120072891A /* NewMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewMain.swift; sourceTree = "<group>"; };
 		BEEEFAAA2CD2DC350072891A /* VoiceDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = VoiceDataModel.xcdatamodel; sourceTree = "<group>"; };
 		BENET0012F280001002C9706 /* NetworkLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkLogger.swift; sourceTree = "<group>"; };
+		BEINVS012F290001002C9706 /* InventoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryStore.swift; sourceTree = "<group>"; };
+		BESECR012F290010002C9706 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -299,6 +302,8 @@
 				BEEB31B22F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md */,
 				BEE210C92F26AEEB006F2740 /* GEMINI_TROUBLESHOOTING.md */,
 				BEE210CB2F26AF2A006F2740 /* DEBUGGING_IMPROVEMENTS.md */,
+				BEINVS012F290001002C9706 /* InventoryStore.swift */,
+				BESECR012F290010002C9706 /* Secrets.xcconfig */,
 			);
 			sourceTree = "<group>";
 		};
@@ -463,6 +468,7 @@
 				BE8C22952F25D76800E32ACB /* Theme.swift in Sources */,
 				BE8C22972F25D76900E32ACB /* SecondaryButtonStyle.swift in Sources */,
 				BENET0022F280002002C9706 /* NetworkLogger.swift in Sources */,
+				BEINVS022F290002002C9706 /* InventoryStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -471,6 +477,7 @@
 /* Begin XCBuildConfiguration section */
 		BE54A2282CDDA28100C6B639 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = BESECR012F290010002C9706 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -506,6 +513,7 @@
 		};
 		BE54A2292CDDA28100C6B639 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = BESECR012F290010002C9706 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

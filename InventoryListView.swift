@@ -6,16 +6,18 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct InventoryListView: View {
-    @State private var items: [InventoryItem] = InventoryItem.sampleItems
+    @EnvironmentObject var inventoryStore: InventoryStore
     @State private var searchText = ""
     @State private var selectedCategory: ItemCategory?
     @State private var selectedRoom: String?
     @State private var isGridView = true
+    @State private var showingDeleteAllAlert = false
     
     var filteredItems: [InventoryItem] {
-        items.filter { item in
+        inventoryStore.items.filter { item in
             let matchesSearch = searchText.isEmpty ||
                 item.name.localizedCaseInsensitiveContains(searchText) ||
                 item.brand?.localizedCaseInsensitiveContains(searchText) ?? false
@@ -37,7 +39,7 @@ struct InventoryListView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Filter Chips
-                if !items.isEmpty {
+                if !inventoryStore.items.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: AppTheme.Spacing.s) {
                             // Category filters
@@ -49,7 +51,7 @@ struct InventoryListView: View {
                             }
                             
                             ForEach(ItemCategory.allCases.filter { category in
-                                items.contains { $0.category == category }
+                                inventoryStore.items.contains { $0.category == category }
                             }) { category in
                                 FilterChip(
                                     title: category.rawValue,
@@ -162,6 +164,16 @@ struct InventoryListView: View {
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "Search items...")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if !inventoryStore.items.isEmpty {
+                        Button(role: .destructive) {
+                            showingDeleteAllAlert = true
+                        } label: {
+                            Image(systemName: "trash")
+                                .foregroundStyle(.red)
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         withAnimation {
@@ -172,6 +184,14 @@ struct InventoryListView: View {
                             .imageScale(.large)
                     }
                 }
+            }
+            .alert("Delete All Items", isPresented: $showingDeleteAllAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete All", role: .destructive) {
+                    inventoryStore.deleteAllItems()
+                }
+            } message: {
+                Text("This will permanently delete all \(inventoryStore.items.count) inventory items and their photos.")
             }
         }
     }
@@ -219,15 +239,24 @@ struct ItemCardList: View {
     var body: some View {
         HStack(spacing: AppTheme.Spacing.m) {
             // Thumbnail
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(item.category.color.opacity(0.1))
-                
-                Image(systemName: item.category.icon)
-                    .font(.title)
-                    .foregroundStyle(item.category.color)
+            if let photoName = item.photos.first,
+               let uiImage = UIImage(contentsOfFile: InventoryStore.photoURL(for: photoName).path) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 70, height: 70)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(item.category.color.opacity(0.1))
+
+                    Image(systemName: item.category.icon)
+                        .font(.title)
+                        .foregroundStyle(item.category.color)
+                }
+                .frame(width: 70, height: 70)
             }
-            .frame(width: 70, height: 70)
             
             // Info
             VStack(alignment: .leading, spacing: 4) {
@@ -297,4 +326,5 @@ struct RoomCard: View {
 
 #Preview {
     InventoryListView()
+        .environmentObject(InventoryStore())
 }

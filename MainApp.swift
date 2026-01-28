@@ -23,7 +23,8 @@ struct VoiceRecognitionApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     @StateObject private var appState = AppState()
-    
+    @StateObject private var inventoryStore = InventoryStore()
+
     init() {
         logWithTimestamp("App struct: VoiceRecognitionApp initialized")
         
@@ -54,6 +55,7 @@ struct VoiceRecognitionApp: App {
         WindowGroup {
             if appState.isAuthenticated {
                 MainTabView()
+                    .environmentObject(inventoryStore)
                     .environment(\.managedObjectContext, DynamicPersistenceController.shared.container.viewContext)
                     .onOpenURL { url in
                         // Handle Google Sign-In URL callbacks

@@ -6,28 +6,29 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct HomeView: View {
-    @State private var items: [InventoryItem] = InventoryItem.sampleItems
+    @EnvironmentObject var inventoryStore: InventoryStore
     @State private var rooms: [Room] = Room.sampleRooms
     @State private var showingScanView = false
     
     var totalValue: Double {
-        items.reduce(0) { sum, item in
+        inventoryStore.items.reduce(0) { sum, item in
             sum + (item.purchasePrice ?? item.estimatedValue ?? 0)
         }
     }
-    
+
     var itemCount: Int {
-        items.count
+        inventoryStore.items.count
     }
-    
+
     var roomCount: Int {
-        Set(items.map { $0.room }).count
+        Set(inventoryStore.items.map { $0.room }).filter { !$0.isEmpty }.count
     }
-    
+
     var recentItems: [InventoryItem] {
-        Array(items.sorted { $0.createdAt > $1.createdAt }.prefix(6))
+        Array(inventoryStore.items.sorted { $0.createdAt > $1.createdAt }.prefix(6))
     }
     
     var body: some View {
@@ -187,7 +188,7 @@ struct HomeView: View {
     }
     
     private func itemsInRoom(_ roomName: String) -> Int {
-        items.filter { $0.room == roomName }.count
+        inventoryStore.items.filter { $0.room == roomName }.count
     }
 }
 
@@ -229,15 +230,24 @@ struct ItemCardCompact: View {
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.s) {
             // Photo or placeholder
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(item.category.color.opacity(0.1))
-                
-                Image(systemName: item.category.icon)
-                    .font(.system(size: 40))
-                    .foregroundStyle(item.category.color)
+            if let photoName = item.photos.first,
+               let uiImage = UIImage(contentsOfFile: InventoryStore.photoURL(for: photoName).path) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: 100)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(item.category.color.opacity(0.1))
+
+                    Image(systemName: item.category.icon)
+                        .font(.system(size: 40))
+                        .foregroundStyle(item.category.color)
+                }
+                .frame(height: 100)
             }
-            .frame(height: 100)
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.name)
@@ -267,8 +277,10 @@ struct ItemCardCompact: View {
 
 #Preview("Home View") {
     HomeView()
+        .environmentObject(InventoryStore())
 }
 
 #Preview("Empty State") {
     HomeView()
+        .environmentObject(InventoryStore())
 }

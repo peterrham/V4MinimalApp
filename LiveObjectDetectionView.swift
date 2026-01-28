@@ -10,10 +10,14 @@ import AVFoundation
 
 struct LiveObjectDetectionView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var inventoryStore: InventoryStore
     @StateObject private var cameraManager = CameraManager()
     @StateObject private var visionService = GeminiStreamingVisionService()
-    
+
     @State private var isDetectionActive = false
+    @State private var showingInventorySheet = false
+    @State private var showingDuplicateReview = false
+    @State private var saveAllConfirmation = false
     
     var body: some View {
         NavigationStack {
@@ -41,7 +45,15 @@ struct LiveObjectDetectionView: View {
                     if isDetectionActive || !visionService.detectedObjects.isEmpty {
                         StreamingObjectDetectionView(
                             detectedObjects: visionService.detectedObjects,
-                            isAnalyzing: isDetectionActive
+                            isAnalyzing: isDetectionActive,
+                            onSaveItem: { object in
+                                inventoryStore.addItem(from: object)
+                                let generator = UINotificationFeedbackGenerator()
+                                generator.notificationOccurred(.success)
+                            },
+                            onSaveAll: {
+                                saveAllConfirmation = true
+                            }
                         )
                         .padding(.horizontal)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -58,6 +70,24 @@ struct LiveObjectDetectionView: View {
             }
             .onDisappear {
                 cleanup()
+            }
+            .sheet(isPresented: $showingInventorySheet) {
+                SavedInventorySheet()
+                    .environmentObject(inventoryStore)
+            }
+            .sheet(isPresented: $showingDuplicateReview) {
+                DuplicateReviewSheet()
+                    .environmentObject(inventoryStore)
+            }
+            .alert("Save All Objects", isPresented: $saveAllConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Save \(visionService.detectedObjects.count) Items") {
+                    inventoryStore.addItems(from: visionService.detectedObjects)
+                    let generator = UINotificationFeedbackGenerator()
+                    generator.notificationOccurred(.success)
+                }
+            } message: {
+                Text("Add all \(visionService.detectedObjects.count) detected objects to your inventory?")
             }
         }
     }
@@ -151,23 +181,47 @@ struct LiveObjectDetectionView: View {
             }
             .symbolEffect(.pulse, isActive: isDetectionActive)
             
-            // Export/Share button
-            Button {
-                shareDetections()
-            } label: {
-                VStack(spacing: 4) {
-                    Image(systemName: "square.and.arrow.up.fill")
-                        .font(.title3)
-                        .foregroundColor(.white)
-                    
-                    Text("Share")
-                        .font(.caption2)
-                        .foregroundColor(.white)
+            // Inventory & Merge buttons
+            VStack(spacing: 8) {
+                Button {
+                    showingInventorySheet = true
+                } label: {
+                    VStack(spacing: 4) {
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "archivebox.fill")
+                                .font(.title3)
+                                .foregroundColor(.white)
+
+                            if inventoryStore.items.count > 0 {
+                                Text("\(inventoryStore.items.count)")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(3)
+                                    .background(Circle().fill(.red))
+                                    .offset(x: 10, y: -10)
+                            }
+                        }
+
+                        Text("Inventory")
+                            .font(.caption2)
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 60, height: 60)
+                    .background(Circle().fill(.ultraThinMaterial))
                 }
-                .frame(width: 60, height: 60)
-                .background(Circle().fill(.ultraThinMaterial))
+
+                Button {
+                    showingDuplicateReview = true
+                } label: {
+                    Text("Merge")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Capsule().fill(.ultraThinMaterial))
+                }
             }
-            .disabled(visionService.detectedObjects.isEmpty)
         }
         .padding(.horizontal)
     }
@@ -263,33 +317,11 @@ struct LiveObjectDetectionView: View {
         }
     }
     
-    private func shareDetections() {
-        let detectionList = visionService.detectedObjects
-            .map { "• \($0.name)" }
-            .joined(separator: "\n")
-        
-        let shareText = """
-        Detected Objects (\(visionService.detectedObjects.count)):
-        
-        \(detectionList)
-        
-        Generated with Live Object Detection
-        """
-        
-        let activityVC = UIActivityViewController(
-            activityItems: [shareText],
-            applicationActivities: nil
-        )
-        
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootViewController = windowScene.windows.first?.rootViewController {
-            rootViewController.present(activityVC, animated: true)
-        }
-    }
 }
 
 // MARK: - Preview
 
 #Preview {
     LiveObjectDetectionView()
+        .environmentObject(InventoryStore())
 }

@@ -10,7 +10,9 @@ import SwiftUI
 struct StreamingObjectDetectionView: View {
     let detectedObjects: [DetectedObject]
     let isAnalyzing: Bool
-    
+    var onSaveItem: ((DetectedObject) -> Void)? = nil
+    var onSaveAll: (() -> Void)? = nil
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -19,14 +21,31 @@ struct StreamingObjectDetectionView: View {
                     .font(.callout)
                     .foregroundColor(isAnalyzing ? .green : .gray)
                     .symbolEffect(.pulse, isActive: isAnalyzing)
-                
+
                 Text(isAnalyzing ? "Live Detection" : "Detection Paused")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
-                
+
                 Spacer()
-                
+
+                if let onSaveAll = onSaveAll, !detectedObjects.isEmpty {
+                    Button {
+                        onSaveAll()
+                    } label: {
+                        Text("Save All")
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                Capsule()
+                                    .fill(Color.blue.opacity(0.6))
+                            )
+                    }
+                }
+
                 Text("\(detectedObjects.count)")
                     .font(.caption)
                     .fontWeight(.bold)
@@ -72,8 +91,10 @@ struct StreamingObjectDetectionView: View {
                         } else {
                             // Show detected objects
                             ForEach(detectedObjects.reversed()) { object in
-                                ObjectDetectionRow(object: object)
-                                    .id(object.id)
+                                ObjectDetectionRow(object: object) {
+                                    onSaveItem?(object)
+                                }
+                                .id(object.id)
                             }
                         }
                     }
@@ -108,28 +129,58 @@ struct StreamingObjectDetectionView: View {
 
 struct ObjectDetectionRow: View {
     let object: DetectedObject
+    var onSave: (() -> Void)? = nil
     @State private var appeared = false
-    
+    @State private var saved = false
+
     var body: some View {
         HStack(spacing: 8) {
-            // Indicator dot
+            // Indicator dot — orange if bounding boxes loaded
             Circle()
-                .fill(.green)
+                .fill(object.boundingBoxes != nil ? .orange : (saved ? .blue : .green))
                 .frame(width: 6, height: 6)
-            
-            // Object name
-            Text(object.name)
-                .font(.callout)
-                .fontWeight(.medium)
-                .foregroundColor(.white)
-                .lineLimit(1)
-            
+
+            // Object name and details
+            VStack(alignment: .leading, spacing: 1) {
+                Text(object.name)
+                    .font(.callout)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+
+                let details = [object.brand, object.color, object.size]
+                    .compactMap { $0 }
+                if !details.isEmpty {
+                    Text(details.joined(separator: " · "))
+                        .font(.caption2)
+                        .foregroundColor(.white.opacity(0.5))
+                        .lineLimit(1)
+                }
+            }
+
             Spacer()
-            
-            // Timestamp
-            Text(timeAgo(from: object.timestamp))
-                .font(.caption2)
-                .foregroundColor(.white.opacity(0.6))
+
+            // Save button
+            if let onSave = onSave {
+                Button {
+                    onSave()
+                    withAnimation {
+                        saved = true
+                    }
+                } label: {
+                    Image(systemName: saved ? "checkmark.circle.fill" : "plus.circle.fill")
+                        .font(.body)
+                        .foregroundColor(saved ? .blue : .green)
+                }
+                .disabled(saved)
+            }
+
+            // Live timestamp
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                Text(timeAgo(from: object.timestamp, now: context.date))
+                    .font(.caption2)
+                    .foregroundColor(.white.opacity(0.6))
+            }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
@@ -146,9 +197,9 @@ struct ObjectDetectionRow: View {
         }
     }
     
-    private func timeAgo(from date: Date) -> String {
-        let seconds = Int(Date().timeIntervalSince(date))
-        
+    private func timeAgo(from date: Date, now: Date) -> String {
+        let seconds = Int(now.timeIntervalSince(date))
+
         if seconds < 5 {
             return "now"
         } else if seconds < 60 {

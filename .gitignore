@@ -1,0 +1,21 @@
+# Build output
+build/
+DerivedData/
+
+# Secrets
+Secrets.xcconfig
+
+# Xcode user data
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+
+# macOS
+.DS_Store
+
+# CocoaPods (if used)
+Pods/
+
+# Swift Package Manager
+.build/
+.swiftpm/
