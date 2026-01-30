@@ -10,14 +10,8 @@ class AppState: ObservableObject {
         checkAuthStatus()
     }
 
-    private func checkAuthStatus() {
-        // Check if the user has previously signed in
-        if GIDSignIn.sharedInstance.currentUser != nil {
-            // User is already signed in
-            isAuthenticated = true
-        } else {
-            isAuthenticated = false
-        }
+    func checkAuthStatus() {
+        isAuthenticated = GIDSignIn.sharedInstance.currentUser != nil
     }
 }
 

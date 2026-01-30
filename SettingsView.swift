@@ -9,11 +9,12 @@ import SwiftUI
 import GoogleSignIn
 
 struct SettingsView: View {
+    @EnvironmentObject var appState: AppState
     @State private var autoSync = true
     @State private var aiConfidenceThreshold = 0.7
     @State private var developerMode = false
     @State private var showingSignOut = false
-    
+
     var currentUser = GIDSignIn.sharedInstance.currentUser
     
     var body: some View {
@@ -97,27 +98,21 @@ struct SettingsView: View {
                     Text("Automatically backup your inventory to Google Sheets")
                 }
                 
-                // AI Settings
+                // Camera & Detection Settings
                 Section {
-                    VStack(alignment: .leading, spacing: AppTheme.Spacing.s) {
-                        HStack {
-                            Text("Confidence Threshold")
-                            Spacer()
-                            Text("\(Int(aiConfidenceThreshold * 100))%")
-                                .foregroundStyle(.secondary)
-                        }
-                        
-                        Slider(value: $aiConfidenceThreshold, in: 0.5...0.95)
-                            .tint(AppTheme.Colors.primary)
+                    NavigationLink {
+                        CameraSettingsView()
+                    } label: {
+                        Label("Camera & Detection", systemImage: "camera.aperture")
                     }
-                    
+
                     Toggle(isOn: .constant(true)) {
                         Label("Voice Annotations", systemImage: "mic.fill")
                     }
                 } header: {
                     Text("AI Recognition")
                 } footer: {
-                    Text("Lower threshold detects more items but may be less accurate")
+                    Text("Configure camera resolution, detection speed, and enrichment")
                 }
                 
                 // Export Options
@@ -192,6 +187,7 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { }
                 Button("Sign Out", role: .destructive) {
                     GIDSignIn.sharedInstance.signOut()
+                    appState.checkAuthStatus()
                 }
             } message: {
                 Text("Are you sure you want to sign out?")

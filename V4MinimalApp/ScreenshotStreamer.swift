@@ -27,7 +27,7 @@ class ScreenshotStreamer {
     /// JPEG compression quality (0.0 - 1.0)
     var compressionQuality: CGFloat = 0.5
 
-    /// Server settings from UserDefaults
+    /// Server settings from UserDefaults (set in NetworkDiagnosticsView)
     private var serverHost: String {
         UserDefaults.standard.string(forKey: "logServerHost") ?? ""
     }

@@ -267,7 +267,7 @@ class GoogleSignInManager: ObservableObject {
         }
     }
     
-    func signIn() {
+    func signIn(completion: (() -> Void)? = nil) {
         guard let rootViewController = UIApplication.shared.windows.first?.rootViewController else {
             logWithTimestamp("Error: Unable to access root view controller.")
             return
@@ -309,6 +309,10 @@ class GoogleSignInManager: ObservableObject {
             
             if let grantedScopes = self?.user!.grantedScopes {
                 logWithTimestamp("Granted Scopes: \(grantedScopes)")
+            }
+
+            DispatchQueue.main.async {
+                completion?()
             }
         }
     }

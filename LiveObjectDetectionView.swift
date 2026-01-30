@@ -13,6 +13,7 @@ struct LiveObjectDetectionView: View {
     @EnvironmentObject var inventoryStore: InventoryStore
     @StateObject private var cameraManager = CameraManager()
     @StateObject private var visionService = GeminiStreamingVisionService()
+    @StateObject private var enrichmentService = BackgroundEnrichmentService()
 
     @State private var isDetectionActive = false
     @State private var showingInventorySheet = false
@@ -283,16 +284,29 @@ struct LiveObjectDetectionView: View {
     // MARK: - Methods
     
     private func setupStreamingDetection() {
+        // Wire enrichment service to vision service
+        enrichmentService.visionService = visionService
+
         // Enable frame capture with vision analysis
         cameraManager.enableFrameCapture { image in
             Task {
+                let countBefore = visionService.detectedObjects.count
                 await visionService.analyzeFrame(image)
+                let countAfter = visionService.detectedObjects.count
+
+                // Enqueue new detections for background enrichment
+                if countAfter > countBefore {
+                    for i in countBefore..<countAfter {
+                        enrichmentService.enqueue(visionService.detectedObjects[i])
+                    }
+                }
             }
         }
     }
     
     private func cleanup() {
         visionService.stopAnalyzing()
+        enrichmentService.cancelAll()
         cameraManager.disableFrameCapture()
         cameraManager.stopSession()
     }

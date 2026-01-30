@@ -21,7 +21,7 @@ class NetworkLogger {
     private var pendingMessages: [String] = []
     private let maxPendingMessages = 100
 
-    // Server settings from UserDefaults
+    // Server settings from UserDefaults (set in NetworkDiagnosticsView)
     private var serverHost: String {
         UserDefaults.standard.string(forKey: "logServerHost") ?? ""
     }

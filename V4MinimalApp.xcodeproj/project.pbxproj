@@ -84,6 +84,11 @@
 		BEEB31B32F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31B22F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md */; };
 		BENET0022F280002002C9706 /* NetworkLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = BENET0012F280001002C9706 /* NetworkLogger.swift */; };
 		BEINVS022F290002002C9706 /* InventoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEINVS012F290001002C9706 /* InventoryStore.swift */; };
+		BEBGES022F2A0002002C9706 /* BackgroundEnrichmentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEBGES012F2A0001002C9706 /* BackgroundEnrichmentService.swift */; };
+		BECSVW022F2A0002002C9706 /* CameraSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BECSVW012F2A0001002C9706 /* CameraSettingsView.swift */; };
+		BEDSET022F2A0002002C9706 /* DetectionSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEDSET012F2A0001002C9706 /* DetectionSettings.swift */; };
+		BEBC20012F300010002C9706 /* SampleHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEBC10022F300002002C9706 /* SampleHandler.swift */; };
+		BEBC20022F300011002C9706 /* BroadcastUploadExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BEBC10012F300001002C9706 /* BroadcastUploadExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -165,7 +170,40 @@
 		BENET0012F280001002C9706 /* NetworkLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkLogger.swift; sourceTree = "<group>"; };
 		BEINVS012F290001002C9706 /* InventoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryStore.swift; sourceTree = "<group>"; };
 		BESECR012F290010002C9706 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		BEBGES012F2A0001002C9706 /* BackgroundEnrichmentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundEnrichmentService.swift; sourceTree = "<group>"; };
+		BECSVW012F2A0001002C9706 /* CameraSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSettingsView.swift; sourceTree = "<group>"; };
+		BEDSET012F2A0001002C9706 /* DetectionSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionSettings.swift; sourceTree = "<group>"; };
+		BEBC10012F300001002C9706 /* BroadcastUploadExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BroadcastUploadExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		BEBC10022F300002002C9706 /* SampleHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleHandler.swift; sourceTree = "<group>"; };
+		BEBC10032F300003002C9706 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		BEBC10042F300004002C9706 /* BroadcastUploadExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BroadcastUploadExtension.entitlements; sourceTree = "<group>"; };
+		BEBC10052F300005002C9706 /* V4MinimalApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = V4MinimalApp.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+
+/* Begin PBXCopyFilesBuildPhase section */
+		BEBC40042F300033002C9706 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				BEBC20022F300011002C9706 /* BroadcastUploadExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXContainerItemProxy section */
+		BEBC50012F300040002C9706 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BEEEFA872CD292BA0072891A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BEBC60012F300050002C9706;
+			remoteInfo = BroadcastUploadExtension;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		BE54A2642CDDA2E700C6B639 /* Exceptions for "V4MinimalApp" folder in "V4MinimalApp" target */ = {
@@ -211,6 +249,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+
+		BEBC40022F300031002C9706 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -232,7 +278,9 @@
 				BEEEFAA42CD2C9120072891A /* NewMain.swift */,
 				BENET0012F280001002C9706 /* NetworkLogger.swift */,
 				BE6204AD2CD97169001823E5 /* ExportToCSVView.swift */,
+				BEBC10052F300005002C9706 /* V4MinimalApp.entitlements */,
 				BE54A2182CDDA27F00C6B639 /* V4MinimalApp */,
+				BEBC30012F300020002C9706 /* BroadcastUploadExtension */,
 				BE20F1102CDC2D17004F3007 /* Frameworks */,
 				BEEEFA902CD292BA0072891A /* Products */,
 				BE8B14B12CE3DBBA00714DB0 /* AppendExtention.swift */,
@@ -304,6 +352,9 @@
 				BEE210CB2F26AF2A006F2740 /* DEBUGGING_IMPROVEMENTS.md */,
 				BEINVS012F290001002C9706 /* InventoryStore.swift */,
 				BESECR012F290010002C9706 /* Secrets.xcconfig */,
+				BEBGES012F2A0001002C9706 /* BackgroundEnrichmentService.swift */,
+				BECSVW012F2A0001002C9706 /* CameraSettingsView.swift */,
+				BEDSET012F2A0001002C9706 /* DetectionSettings.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -311,8 +362,19 @@
 			isa = PBXGroup;
 			children = (
 				BE54A2172CDDA27F00C6B639 /* V4MinimalApp.app */,
+				BEBC10012F300001002C9706 /* BroadcastUploadExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		BEBC30012F300020002C9706 /* BroadcastUploadExtension */ = {
+			isa = PBXGroup;
+			children = (
+				BEBC10022F300002002C9706 /* SampleHandler.swift */,
+				BEBC10032F300003002C9706 /* Info.plist */,
+				BEBC10042F300004002C9706 /* BroadcastUploadExtension.entitlements */,
+			);
+			path = BroadcastUploadExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -325,13 +387,17 @@
 				BE54A2132CDDA27F00C6B639 /* Sources */,
 				BE54A2142CDDA27F00C6B639 /* Frameworks */,
 				BE54A2152CDDA27F00C6B639 /* Resources */,
+				BEBC40042F300033002C9706 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				BEBC50022F300041002C9706 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
+				BEBC10052F300005002C9706 /* V4MinimalApp.entitlements */,
 				BE54A2182CDDA27F00C6B639 /* V4MinimalApp */,
+				BEBC30012F300020002C9706 /* BroadcastUploadExtension */,
 			);
 			name = V4MinimalApp;
 			packageProductDependencies = (
@@ -342,7 +408,34 @@
 			productReference = BE54A2172CDDA27F00C6B639 /* V4MinimalApp.app */;
 			productType = "com.apple.product-type.application";
 		};
+		BEBC60012F300050002C9706 /* BroadcastUploadExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BEBC80012F300070002C9706 /* Build configuration list for PBXNativeTarget "BroadcastUploadExtension" */;
+			buildPhases = (
+				BEBC40012F300030002C9706 /* Sources */,
+				BEBC40022F300031002C9706 /* Frameworks */,
+				BEBC40032F300032002C9706 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BroadcastUploadExtension;
+			productName = BroadcastUploadExtension;
+			productReference = BEBC10012F300001002C9706 /* BroadcastUploadExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXTargetDependency section */
+		BEBC50022F300041002C9706 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BEBC60012F300050002C9706 /* BroadcastUploadExtension */;
+			targetProxy = BEBC50012F300040002C9706 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+
 
 /* Begin PBXProject section */
 		BEEEFA872CD292BA0072891A /* Project object */ = {
@@ -375,6 +468,7 @@
 			projectRoot = "";
 			targets = (
 				BE54A2162CDDA27F00C6B639 /* V4MinimalApp */,
+				BEBC60012F300050002C9706 /* BroadcastUploadExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -419,6 +513,14 @@
 				BEE210CC2F26AF2A006F2740 /* DEBUGGING_IMPROVEMENTS.md in Resources */,
 				BE8B14B22CE3DBBA00714DB0 /* AppendExtention.swift in Resources */,
 				BE8C22BF2F25F79600E32ACB /* QUICK_START.md in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+
+		BEBC40032F300032002C9706 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -469,6 +571,18 @@
 				BE8C22972F25D76900E32ACB /* SecondaryButtonStyle.swift in Sources */,
 				BENET0022F280002002C9706 /* NetworkLogger.swift in Sources */,
 				BEINVS022F290002002C9706 /* InventoryStore.swift in Sources */,
+				BEBGES022F2A0002002C9706 /* BackgroundEnrichmentService.swift in Sources */,
+				BECSVW022F2A0002002C9706 /* CameraSettingsView.swift in Sources */,
+				BEDSET022F2A0002002C9706 /* DetectionSettings.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+
+		BEBC40012F300030002C9706 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BEBC20012F300010002C9706 /* SampleHandler.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -481,6 +595,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -517,6 +632,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -668,6 +784,58 @@
 			};
 			name = Release;
 		};
+		BEBC70012F300060002C9706 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BX37W36VT3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BroadcastUploadExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Screen Broadcast";
+				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.broadcast-services-upload";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Test-Organization.V2NoScopesApp.BroadcastUpload";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BEBC70022F300061002C9706 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = BX37W36VT3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BroadcastUploadExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Screen Broadcast";
+				INFOPLIST_KEY_NSExtension_NSExtensionPointIdentifier = "com.apple.broadcast-services-upload";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Test-Organization.V2NoScopesApp.BroadcastUpload";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -685,6 +853,15 @@
 			buildConfigurations = (
 				BEEEFA9B2CD292BC0072891A /* Debug */,
 				BEEEFA9C2CD292BC0072891A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BEBC80012F300070002C9706 /* Build configuration list for PBXNativeTarget "BroadcastUploadExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BEBC70012F300060002C9706 /* Debug */,
+				BEBC70022F300061002C9706 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

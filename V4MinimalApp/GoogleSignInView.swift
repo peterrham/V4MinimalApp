@@ -9,17 +9,21 @@ import SwiftUI
 
 
 struct GoogleSignInView: View {
-    
+    @EnvironmentObject var appState: AppState
+
     func googleSignInManager() -> GoogleSignInManager {
         return AuthManager.shared.googleSignInManager!
     }
-    
+
     func signIn() {
-        AuthManager.shared.googleSignInManager!.signIn()
+        AuthManager.shared.googleSignInManager!.signIn {
+            self.appState.checkAuthStatus()
+        }
     }
-    
+
     func signOut() {
         AuthManager.shared.googleSignInManager!.signOut()
+        appState.checkAuthStatus()
     }
     
     var body: some View {
@@ -65,7 +69,7 @@ struct GoogleSignInView: View {
             Button(action: {
                 googleSignInManager().disconnect()
             }) {
-                Text("Disconect")
+                Text("Disconnect")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(UnifiedButtonStyle())

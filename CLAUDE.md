@@ -94,6 +94,9 @@ iOS home inventory app that uses the camera to photograph/video items, AI (Gemin
 - Retired Gemini model → Updated from `gemini-2.0-flash-exp` to `gemini-2.5-flash-lite`
 - Bounding box race condition → Combined detection+boxes in single prompt instead of fire-and-forget second call
 - Corrupted inventory items → `cleanupCorruptedItems()` on init removes items with JSON fragments in names
+- Google Sign-In not redirecting to home → `AppState.checkAuthStatus()` now called after sign-in success via completion callback; `appState` passed as `@EnvironmentObject` through view hierarchy
+- Sign-out not returning to login screen → `appState.checkAuthStatus()` called after `GIDSignIn.signOut()` in SettingsView
+- Typo "Disconect" → "Disconnect" in GoogleSignInView
 
 ## Current State (as of last session)
 - Inventory system fully working: detect → save → persist → display with photos
@@ -104,6 +107,40 @@ iOS home inventory app that uses the camera to photograph/video items, AI (Gemin
 - Delete-all debug button in inventory list toolbar
 - Orange dot indicator in detection list = bounding box loaded
 - All changes committed and pushed to `origin/main`
+
+## ReplayKit Broadcast Upload Extension (COMPLETE — WORKING)
+**Status:** Implemented and tested end-to-end. Frames stream successfully at ~2fps.
+
+**How to use:**
+1. Start `tools/log-server/log_server.py` on Mac
+2. On iPhone: Control Center → long-press Screen Recording → select "Screen Broadcast" → Start
+3. Use phone normally — frames arrive in `/tmp/app_screenshots/`
+4. Stop via red status bar
+
+**Files created:**
+- `BroadcastUploadExtension/SampleHandler.swift` — RPBroadcastSampleHandler, throttles to ~2fps, JPEG over TCP
+- `BroadcastUploadExtension/Info.plist` — Extension point config
+- `BroadcastUploadExtension/BroadcastUploadExtension.entitlements` — App Group (not yet active)
+- `V4MinimalApp.entitlements` — App Group (not yet active)
+
+**Current limitation:** Server IP is hardcoded to `10.0.141.70` in SampleHandler.swift because App Group `group.Test-Organization.V2NoScopesApp` isn't registered on Apple Developer portal. Command-line builds can't register it. To fix: open project in Xcode GUI → Signing & Capabilities → add App Groups to both targets → Xcode auto-registers on portal. Then switch SampleHandler back to reading from shared UserDefaults.
+
+**Main app files** (NetworkLogger, ScreenshotStreamer, NetworkDiagnosticsView) use `UserDefaults.standard` — NOT the shared suite. Reverted to avoid App Group provisioning errors.
+
+## Bugs Found From Broadcast Screen Review (Jan 30, 2025)
+Issues observed by recording a full app usage session via broadcast extension:
+
+1. **[HIGH] Gemini response stored as item names** — "Recent Items" on HomeView show AI refusal text ("I cannot provide a list of physical items...", "but I cannot detect any physical items...") as item names. The Gemini response is being saved verbatim instead of being parsed/rejected. Need to fix the response parsing in GeminiVisionService or the save logic in InventoryStore.
+
+2. **[MEDIUM] $0 Total Value with 90 items** — All 90 items have no value set. Either values aren't being parsed from AI responses, or the value fields aren't being populated on save.
+
+3. **[MEDIUM] 0 Rooms despite 90 items** — No rooms created. Room assignment may not be happening during scan/save flow.
+
+4. **[LOW] Typo: "Disconect"** — Debug page button should say "Disconnect".
+
+5. **[LOW] Third stat card clipped** — The "Rooms" card on the Home dashboard is partially cut off on the right edge. Horizontal layout needs adjustment.
+
+6. **[LOW] Debug page UX** — Flat wall of identical purple buttons with developer-facing labels. Fine for debug but could use grouping/organization.
 
 ## Future Work (user mentioned)
 - Background Gemini enrichment for colors/brands/sizes/categories ("eventually")

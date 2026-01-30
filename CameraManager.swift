@@ -26,6 +26,10 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
     private var currentDevice: AVCaptureDevice?
     private var audioInput: AVCaptureDeviceInput?
     private var isSessionConfigured = false
+
+    // Cached CIContext — creating per-frame is expensive
+    // nonisolated(unsafe) because captureOutput is called from a non-main queue
+    nonisolated(unsafe) private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
     
     // Flash control
     @Published var isFlashOn = false
@@ -101,10 +105,51 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
             }
             
             currentDevice = videoDevice
+
+            // Configure autofocus and exposure for inventory scanning (0.5-2m range)
+            let settings = DetectionSettings.shared
+            do {
+                try videoDevice.lockForConfiguration()
+
+                if settings.enableAutoFocus && videoDevice.isFocusModeSupported(.continuousAutoFocus) {
+                    videoDevice.focusMode = .continuousAutoFocus
+                    if videoDevice.isAutoFocusRangeRestrictionSupported {
+                        videoDevice.autoFocusRangeRestriction = .near
+                    }
+                    appBootLog.infoWithContext("Autofocus: continuous, near-range")
+                }
+
+                if settings.enableAutoExposure && videoDevice.isExposureModeSupported(.continuousAutoExposure) {
+                    videoDevice.exposureMode = .continuousAutoExposure
+                    appBootLog.infoWithContext("Auto-exposure: continuous")
+                }
+
+                if videoDevice.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                    videoDevice.whiteBalanceMode = .continuousAutoWhiteBalance
+                }
+
+                videoDevice.unlockForConfiguration()
+            } catch {
+                appBootLog.warningWithContext("Could not configure focus/exposure: \(error.localizedDescription)")
+            }
+
             let videoInput = try AVCaptureDeviceInput(device: videoDevice)
             
             session.beginConfiguration()
-            session.sessionPreset = .photo
+
+            // Use preset from DetectionSettings (default .hd1280x720 — much smaller than .photo 4032x3024)
+            let presetString = DetectionSettings.shared.sessionPreset
+            let preset: AVCaptureSession.Preset = {
+                switch presetString {
+                case "vga640x480": return .vga640x480
+                case "hd1280x720": return .hd1280x720
+                case "hd1920x1080": return .hd1920x1080
+                case "photo": return .photo
+                default: return .hd1280x720
+                }
+            }()
+            session.sessionPreset = preset
+            appBootLog.infoWithContext("Session preset: \(presetString)")
             
             if session.canAddInput(videoInput) {
                 session.addInput(videoInput)
@@ -360,9 +405,8 @@ extension CameraManager {
         guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
         let ciImage = CIImage(cvPixelBuffer: imageBuffer)
-        let context = CIContext()
 
-        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
+        guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) else { return }
 
         let image = UIImage(cgImage: cgImage, scale: 1.0, orientation: .right)
 

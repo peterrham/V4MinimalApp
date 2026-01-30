@@ -18,15 +18,25 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
     @Published var detectedObjects: [DetectedObject] = []
     @Published var isAnalyzing = false
     @Published var error: String?
-    
+
+    // MARK: - Timing Metrics
+
+    @Published var lastResponseTimeMs: Int = 0
+    @Published var averageResponseTimeMs: Int = 0
+    @Published var totalAnalyses: Int = 0
+    @Published var successfulAnalyses: Int = 0
+    private var recentResponseTimes: [Double] = []  // rolling window of last 50
+
     // MARK: - Configuration
-    
+
     private let apiKey: String
     private let apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent"
-    
+
     // Frame analysis throttling
     private var lastAnalysisTime: Date = .distantPast
-    private let analysisInterval: TimeInterval = 2.0 // Analyze every 2 seconds
+    private var analysisInterval: TimeInterval {
+        DetectionSettings.shared.analysisInterval
+    }
     private var isCurrentlyAnalyzing = false
 
     /// Last analyzed frame — stored so we can grab a thumbnail when the user saves
@@ -113,12 +123,18 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
         lastAnalyzedFrame = image
 
         do {
-            // Convert image to base64
-            guard let imageData = image.jpegData(compressionQuality: 0.5) else {
+            // Resize frame for faster analysis (default 640px wide)
+            let resized = Self.resizeForAnalysis(image)
+
+            // Convert image to base64 with configurable quality
+            let quality = DetectionSettings.shared.jpegQuality
+            guard let imageData = resized.jpegData(compressionQuality: quality) else {
                 throw GeminiStreamingError.imageConversionFailed
             }
 
             let base64Image = imageData.base64EncodedString()
+            let payloadKB = imageData.count / 1024
+            print("📦 Frame: \(Int(resized.size.width))x\(Int(resized.size.height)), \(payloadKB)KB, q=\(String(format: "%.0f%%", quality * 100))")
 
             // Combined prompt: item names + bounding boxes in one call
             let prompt = """
@@ -134,8 +150,22 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
 
             let request = try createRequest(base64Image: base64Image, prompt: prompt, maxOutputTokens: 400)
 
-            // Make API call
+            // Make API call with timing
+            let startTime = CFAbsoluteTimeGetCurrent()
+            totalAnalyses += 1
+
             let (data, response) = try await URLSession.shared.data(for: request)
+
+            let elapsed = CFAbsoluteTimeGetCurrent() - startTime
+            let elapsedMs = Int(elapsed * 1000)
+            lastResponseTimeMs = elapsedMs
+
+            // Update rolling average (keep last 50)
+            recentResponseTimes.append(elapsed * 1000)
+            if recentResponseTimes.count > 50 {
+                recentResponseTimes.removeFirst()
+            }
+            averageResponseTimeMs = Int(recentResponseTimes.reduce(0, +) / Double(recentResponseTimes.count))
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw GeminiStreamingError.invalidResponse
@@ -145,6 +175,9 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
                 let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
                 throw GeminiStreamingError.apiError(statusCode: httpResponse.statusCode, message: errorBody)
             }
+
+            successfulAnalyses += 1
+            print("📦 Response: \(elapsedMs)ms (avg \(averageResponseTimeMs)ms, \(successfulAnalyses)/\(totalAnalyses) ok)")
 
             // Parse response
             let geminiResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
@@ -202,6 +235,22 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
         isCurrentlyAnalyzing = false
     }
     
+    // MARK: - Frame Resizing
+
+    /// Resize image to target width for faster API analysis
+    static func resizeForAnalysis(_ image: UIImage) -> UIImage {
+        let targetWidth = CGFloat(DetectionSettings.shared.frameResizeWidth)
+        guard image.size.width > targetWidth else { return image }
+
+        let scale = targetWidth / image.size.width
+        let newSize = CGSize(width: targetWidth, height: image.size.height * scale)
+
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        return renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+    }
+
     // MARK: - Response Parsing
 
     /// Parse JSON response with bounding boxes into DetectedObjects

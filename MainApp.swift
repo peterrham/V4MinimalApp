@@ -55,6 +55,7 @@ struct VoiceRecognitionApp: App {
         WindowGroup {
             if appState.isAuthenticated {
                 MainTabView()
+                    .environmentObject(appState)
                     .environmentObject(inventoryStore)
                     .environment(\.managedObjectContext, DynamicPersistenceController.shared.container.viewContext)
                     .onOpenURL { url in
@@ -63,6 +64,7 @@ struct VoiceRecognitionApp: App {
                     }
             } else {
                 GoogleSignInView()
+                    .environmentObject(appState)
             }
         }
     }
