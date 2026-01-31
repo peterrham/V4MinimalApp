@@ -311,7 +311,8 @@ class GoogleSignInManager: ObservableObject {
                 logWithTimestamp("Granted Scopes: \(grantedScopes)")
             }
 
-            DispatchQueue.main.async {
+            // Delay to let the OAuth sheet finish dismissing before triggering view changes
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 completion?()
             }
         }

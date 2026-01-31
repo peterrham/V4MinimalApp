@@ -53,7 +53,7 @@ struct VoiceRecognitionApp: App {
     
     var body: some Scene {
         WindowGroup {
-            if appState.isAuthenticated {
+            ZStack {
                 MainTabView()
                     .environmentObject(appState)
                     .environmentObject(inventoryStore)
@@ -62,10 +62,15 @@ struct VoiceRecognitionApp: App {
                         // Handle Google Sign-In URL callbacks
                         // GIDSignIn.sharedInstance.handle(url)
                     }
-            } else {
-                GoogleSignInView()
-                    .environmentObject(appState)
+
+                if !appState.isAuthenticated {
+                    GoogleSignInView()
+                        .environmentObject(appState)
+                        .transition(.opacity)
+                        .zIndex(1)
+                }
             }
+            .animation(.easeInOut(duration: 0.35), value: appState.isAuthenticated)
         }
     }
     

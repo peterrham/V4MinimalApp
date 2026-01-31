@@ -2,93 +2,91 @@
 //  GoogleSignInView.swift
 //  V4MinimalApp
 //
-//  Created by Ham, Peter on 11/11/24.
+//  Sign-in screen shown on first launch when not authenticated.
 //
 
 import SwiftUI
 
-
 struct GoogleSignInView: View {
     @EnvironmentObject var appState: AppState
+    @State private var isSigningIn = false
 
-    func googleSignInManager() -> GoogleSignInManager {
-        return AuthManager.shared.googleSignInManager!
-    }
-
-    func signIn() {
-        AuthManager.shared.googleSignInManager!.signIn {
-            self.appState.checkAuthStatus()
-        }
-    }
-
-    func signOut() {
-        AuthManager.shared.googleSignInManager!.signOut()
-        appState.checkAuthStatus()
-    }
-    
     var body: some View {
-        VStack(spacing: 12) {
-            Button(action: signOut) {
-                Text("Sign OUT")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(UnifiedButtonStyle())
+        ZStack {
+            // Background gradient
+            LinearGradient(
+                colors: [
+                    Color(red: 0.15, green: 0.15, blue: 0.25),
+                    Color(red: 0.08, green: 0.08, blue: 0.15)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
 
-            Button(action: {
-                appBootLog.debugWithContext("Append")
-                AppendLog().append(text: "abc")
-            }) {
-                Text("Append")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(UnifiedButtonStyle())
+            VStack(spacing: 0) {
+                Spacer()
 
-            Button(action: signIn) {
-                Text("Sign In")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(UnifiedButtonStyle())
+                // App icon
+                Image(systemName: "house.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(AppTheme.Colors.primary)
+                    .padding(.bottom, AppTheme.Spacing.l)
 
-            Button(action: {
-                googleSignInManager().createSpreadsheet()
-            }) {
-                Text("createSpreadsheet")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(UnifiedButtonStyle())
+                // App title
+                Text("Home Inventory")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.white)
 
-            Button(action: {
-                var client = GoogleSheetsClient(inputAccessToken: googleSignInManager().user!.accessToken.tokenString)
-                client.CopyToSheet(argSpreadsheetId: googleSignInManager().spreadsheetID)
-            }) {
-                Text("PopulateGoogleSheet")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(UnifiedButtonStyle())
+                Text("Catalog your home with AI")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.6))
+                    .padding(.top, AppTheme.Spacing.xs)
 
-            Button(action: {
-                googleSignInManager().disconnect()
-            }) {
-                Text("Disconnect")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(UnifiedButtonStyle())
+                Spacer()
 
-            Button(action: {
-                googleSignInManager().fetchAndPrintUserInfo()
-            }) {
-                Text("FetchUserInfo")
+                // Sign in button
+                Button {
+                    isSigningIn = true
+                    AuthManager.shared.googleSignInManager?.signIn {
+                        isSigningIn = false
+                        appState.checkAuthStatus()
+                    }
+                } label: {
+                    HStack(spacing: AppTheme.Spacing.m) {
+                        if isSigningIn {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "person.crop.circle.fill")
+                                .font(.title3)
+                        }
+                        Text("Sign In with Google")
+                            .font(.headline)
+                    }
+                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(UnifiedButtonStyle())
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: AppTheme.cornerRadius)
+                            .fill(AppTheme.Colors.primary)
+                    )
+                }
+                .disabled(isSigningIn)
+                .padding(.horizontal, AppTheme.Spacing.xxl)
 
-            NavigationLink(destination: ContentView()) {
-                Text("Go to Audio Listening")
-                    .unifiedNavLabel()
+                // Skip for now
+                Button {
+                    appState.isAuthenticated = true
+                } label: {
+                    Text("Continue without signing in")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.5))
+                }
+                .padding(.top, AppTheme.Spacing.l)
+                .padding(.bottom, AppTheme.Spacing.xxl)
             }
         }
-        .padding(.horizontal)
-        .frame(maxWidth: 480)
     }
 }
-

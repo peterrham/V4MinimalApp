@@ -14,8 +14,11 @@ struct SettingsView: View {
     @State private var aiConfidenceThreshold = 0.7
     @State private var developerMode = false
     @State private var showingSignOut = false
+    @State private var isSignedIn = GIDSignIn.sharedInstance.currentUser != nil
 
-    var currentUser = GIDSignIn.sharedInstance.currentUser
+    var currentUser: GIDGoogleUser? {
+        isSignedIn ? GIDSignIn.sharedInstance.currentUser : nil
+    }
     
     var body: some View {
         NavigationStack {
@@ -23,13 +26,12 @@ struct SettingsView: View {
                 // Account Section
                 Section {
                     if let user = currentUser, let profile = user.profile {
-                        HStack(spacing: AppTheme.Spacing.m) {
-                            // Profile Image
+                        HStack(spacing: AppTheme.Spacing.l) {
                             ZStack {
                                 Circle()
                                     .fill(AppTheme.Colors.primary.gradient)
-                                    .frame(width: 60, height: 60)
-                                
+                                    .frame(width: 56, height: 56)
+
                                 if let imageUrl = profile.imageURL(withDimension: 120) {
                                     AsyncImage(url: imageUrl) { image in
                                         image
@@ -39,7 +41,7 @@ struct SettingsView: View {
                                         Image(systemName: "person.fill")
                                             .foregroundColor(.white)
                                     }
-                                    .frame(width: 60, height: 60)
+                                    .frame(width: 56, height: 56)
                                     .clipShape(Circle())
                                 } else {
                                     Image(systemName: "person.fill")
@@ -47,32 +49,58 @@ struct SettingsView: View {
                                         .font(.title2)
                                 }
                             }
-                            
+
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(profile.name)
                                     .font(.headline)
-                                
                                 Text(profile.email)
-                                    .font(.caption)
+                                    .font(.subheadline)
                                     .foregroundStyle(.secondary)
                             }
+
+                            Spacer()
                         }
-                        .padding(.vertical, AppTheme.Spacing.s)
-                        
-                        Button(role: .destructive) {
-                            showingSignOut = true
-                        } label: {
-                            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
-                        }
-                    } else {
-                        NavigationLink {
-                            ContentView()
-                        } label: {
-                            Label("Sign In with Google", systemImage: "person.circle.fill")
-                        }
+                        .padding(.vertical, AppTheme.Spacing.xs)
                     }
                 } header: {
                     Text("Account")
+                }
+
+                // Sign Out / Sign In
+                Section {
+                    if currentUser != nil {
+                        Button {
+                            showingSignOut = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                    .font(.body)
+                                Text("Sign Out")
+                                    .font(.body)
+                                    .fontWeight(.medium)
+                            }
+                            .foregroundStyle(AppTheme.Colors.destructive)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, AppTheme.Spacing.xs)
+                        }
+                    } else {
+                        Button {
+                            AuthManager.shared.googleSignInManager?.signIn {
+                                self.isSignedIn = GIDSignIn.sharedInstance.currentUser != nil
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "person.crop.circle.badge.plus")
+                                    .font(.body)
+                                Text("Sign In with Google")
+                                    .font(.body)
+                                    .fontWeight(.medium)
+                            }
+                            .foregroundStyle(AppTheme.Colors.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, AppTheme.Spacing.xs)
+                        }
+                    }
                 }
                 
                 // Sync & Backup
@@ -187,7 +215,7 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { }
                 Button("Sign Out", role: .destructive) {
                     GIDSignIn.sharedInstance.signOut()
-                    appState.checkAuthStatus()
+                    isSignedIn = false
                 }
             } message: {
                 Text("Are you sure you want to sign out?")
