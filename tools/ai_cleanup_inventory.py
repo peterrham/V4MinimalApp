@@ -24,7 +24,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ── Config ──────────────────────────────────────────────────────────────────
 
-API_KEY = "AIzaSyBBUfgEitHieOaV_36N81QZXGz_S6zPplg"
+API_KEY = os.environ.get("GEMINI_API_KEY", "")
 DEFAULT_MODEL = "gemini-2.5-flash"
 BATCH_SIZE = 40
 PARALLEL_REQUESTS = 4

@@ -41,7 +41,7 @@ struct GoogleSheetWriterView: View {
             logWithTimestamp("got call back")
             
         }
-        // "AIzaSyCxEfgNN1f_aM_IksN8GNuA0RaSAKwBu8E" // You will need to obtain and store a valid OAuth token here
+        // You will need to obtain and store a valid OAuth token here
         let url = URL(string: "https://sheets.googleapis.com/v4/spreadsheets")!
         
         var request = URLRequest(url: url)

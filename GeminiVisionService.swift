@@ -8,6 +8,23 @@
 import Foundation
 import UIKit
 
+/// Append a diagnostic line to Documents/debug_log.txt for debugging
+nonisolated func geminiDebugLog(_ msg: String) {
+    print(msg)
+    let ts = ISO8601DateFormatter().string(from: Date())
+    let line = "[\(ts)] \(msg)\n"
+    if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+        let logURL = dir.appendingPathComponent("debug_log.txt")
+        if let handle = try? FileHandle(forWritingTo: logURL) {
+            handle.seekToEndOfFile()
+            if let data = line.data(using: .utf8) { handle.write(data) }
+            handle.closeFile()
+        } else {
+            try? line.data(using: .utf8)?.write(to: logURL, options: .atomic)
+        }
+    }
+}
+
 /// Service for identifying objects in photos using Google's Gemini Vision API
 @MainActor
 class GeminiVisionService: ObservableObject {
@@ -372,6 +389,102 @@ class GeminiVisionService: ObservableObject {
         }
     }
 
+    // MARK: - Multi-Item Identification
+
+    /// Identify ALL items in a photo, returning structured results with bounding boxes
+    func identifyAllItems(_ image: UIImage) async -> [PhotoIdentificationResult] {
+        geminiDebugLog("📸 identifyAllItems called, image: \(Int(image.size.width))x\(Int(image.size.height))")
+
+        guard !apiKey.isEmpty else {
+            error = "API key not configured"
+            geminiDebugLog("📸 ERROR: API key not configured")
+            return []
+        }
+
+        isProcessing = true
+        error = nil
+
+        let prompt = """
+        List ALL individual items visible in this photo for home inventory.
+        Include even partially visible or indistinct items with your best guess.
+        Return JSON array only:
+        [{"name":"...","brand":"...","color":"...","size":"...","category":"...","estimatedValue":...,"description":"...","box":[ymin,xmin,ymax,xmax]}]
+        category: one of Electronics, Furniture, Appliance, Decor, Kitchen, Clothing, Books, Tools, Sports, Toys, Valuables, Other.
+        estimatedValue: number in USD or null. box: bounding box coords 0-1000.
+        description: 1-2 sentence detail. Use null for unknown fields.
+        Each item must have a UNIQUE descriptive name. Do NOT repeat the same name.
+        If multiple similar items exist, number them (e.g. "white bottle 1", "white bottle 2").
+        Include every distinct item, even small ones. JSON only, no markdown fences.
+        """
+
+        do {
+            // Resize large images to max 2048px on longest side for API efficiency
+            let maxDim: CGFloat = 2048
+            let sendImage: UIImage
+            if max(image.size.width, image.size.height) > maxDim {
+                let scale = maxDim / max(image.size.width, image.size.height)
+                let newSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+                let renderer = UIGraphicsImageRenderer(size: newSize)
+                sendImage = renderer.image { _ in image.draw(in: CGRect(origin: .zero, size: newSize)) }
+                geminiDebugLog("📸 Resized \(Int(image.size.width))x\(Int(image.size.height)) → \(Int(newSize.width))x\(Int(newSize.height))")
+            } else {
+                sendImage = image
+            }
+
+            guard let imageData = sendImage.jpegData(compressionQuality: 0.85) else {
+                throw GeminiError.imageConversionFailed
+            }
+            let base64Image = imageData.base64EncodedString()
+            geminiDebugLog("📸 Image base64: \(base64Image.count) chars, \(imageData.count / 1024)KB")
+            let request = try createRequest(base64Image: base64Image, prompt: prompt, maxOutputTokens: 4096)
+
+            geminiDebugLog("📸 Sending request to Gemini...")
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                geminiDebugLog("📸 ERROR: Not an HTTP response")
+                throw GeminiError.invalidResponse
+            }
+
+            geminiDebugLog("📸 HTTP \(httpResponse.statusCode), response: \(data.count) bytes")
+
+            guard httpResponse.statusCode == 200 else {
+                let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
+                geminiDebugLog("📸 API ERROR \(httpResponse.statusCode): \(errorBody.prefix(500))")
+                throw GeminiError.apiError(statusCode: httpResponse.statusCode, message: errorBody)
+            }
+
+            let geminiResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
+            guard let candidate = geminiResponse.candidates.first,
+                  let content = candidate.content.parts.first else {
+                geminiDebugLog("📸 ERROR: No candidates in response")
+                isProcessing = false
+                return []
+            }
+
+            let responseText = content.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            geminiDebugLog("📸 Response text (\(responseText.count) chars):\n\(responseText)")
+
+            if let finishReason = candidate.finishReason {
+                geminiDebugLog("📸 Finish reason: \(finishReason)")
+            }
+
+            let results = PhotoIdentificationResult.parseMultiple(from: responseText)
+            geminiDebugLog("📸 Parsed \(results.count) items")
+            for (i, r) in results.enumerated() {
+                geminiDebugLog("📸   [\(i)] '\(r.name)' cat=\(r.category ?? "-") val=\(r.estimatedValue.map { String(format: "%.0f", $0) } ?? "-") box=\(r.boundingBox != nil)")
+            }
+            isProcessing = false
+            return results
+
+        } catch {
+            self.error = error.localizedDescription
+            geminiDebugLog("📸 CATCH error: \(error)")
+            isProcessing = false
+            return []
+        }
+    }
+
     // MARK: - Private Methods
 
     private func createRequest(base64Image: String, prompt: String, maxOutputTokens: Int = 100) throws -> URLRequest {
@@ -415,7 +528,8 @@ class GeminiVisionService: ObservableObject {
 
 // MARK: - Photo Identification Result
 
-struct PhotoIdentificationResult {
+struct PhotoIdentificationResult: Identifiable {
+    let id = UUID()
     var name: String
     var brand: String?
     var color: String?
@@ -423,6 +537,7 @@ struct PhotoIdentificationResult {
     var category: String?
     var estimatedValue: Double?
     var description: String?
+    var boundingBox: (yMin: CGFloat, xMin: CGFloat, yMax: CGFloat, xMax: CGFloat)?
 
     /// Parse from Gemini JSON response text, with fallback for plain text
     static func parse(from text: String) -> PhotoIdentificationResult {
@@ -467,6 +582,112 @@ struct PhotoIdentificationResult {
         let firstLine = text.components(separatedBy: .newlines).first ?? text
         let name = firstLine.count <= 60 ? firstLine : "Unknown Item"
         return PhotoIdentificationResult(name: name, description: text)
+    }
+
+    /// Parse a JSON array response into multiple PhotoIdentificationResult items.
+    /// Handles truncated JSON (MAX_TOKENS) by recovering complete objects before the break.
+    static func parseMultiple(from text: String) -> [PhotoIdentificationResult] {
+        geminiDebugLog("🔍 parseMultiple input (\(text.count) chars)")
+
+        // Strip markdown fences if present
+        var cleaned = text
+        if let range = cleaned.range(of: "```json") {
+            cleaned = String(cleaned[range.upperBound...])
+            geminiDebugLog("🔍 Stripped ```json fence")
+        } else if let range = cleaned.range(of: "```") {
+            cleaned = String(cleaned[range.upperBound...])
+            geminiDebugLog("🔍 Stripped ``` fence")
+        }
+        if let range = cleaned.range(of: "```") {
+            cleaned = String(cleaned[..<range.lowerBound])
+        }
+        cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Try to find JSON array start
+        guard let startIdx = cleaned.firstIndex(of: "[") else {
+            geminiDebugLog("🔍 No [ found in text")
+            return []
+        }
+
+        // Extract from [ to end (may or may not have closing ])
+        var jsonStr = String(cleaned[startIdx...])
+
+        // Attempt 1: parse as-is (complete JSON)
+        if let results = parseJSONArray(jsonStr) {
+            geminiDebugLog("🔍 Clean parse: \(results.count) items")
+            return results
+        }
+
+        // Attempt 2: truncated JSON — find last complete object and close the array
+        // Look backwards for the last "}," or "}" that ends a complete object
+        geminiDebugLog("🔍 JSON parse failed, attempting truncation recovery...")
+        var recovered = false
+        var searchStr = jsonStr
+        // Try progressively shorter substrings ending at the last complete "}"
+        while let lastBrace = searchStr.lastIndex(of: "}") {
+            let candidate = String(searchStr[...lastBrace]) + "]"
+            if let results = parseJSONArray(candidate) {
+                geminiDebugLog("🔍 Truncation recovery: \(results.count) items from \(candidate.count) chars")
+                return results
+            }
+            // Move search window back before this brace
+            searchStr = String(searchStr[..<lastBrace])
+        }
+
+        if !recovered {
+            geminiDebugLog("🔍 All recovery attempts failed")
+        }
+        return []
+    }
+
+    /// Parse a JSON string as an array of item dictionaries, returning nil on failure
+    private static func parseJSONArray(_ jsonStr: String) -> [PhotoIdentificationResult]? {
+        guard let data = jsonStr.data(using: .utf8),
+              let obj = try? JSONSerialization.jsonObject(with: data),
+              let array = obj as? [[String: Any]] else {
+            return nil
+        }
+
+        var results: [PhotoIdentificationResult] = []
+        var nameCounts: [String: Int] = [:]  // Track duplicate names to cap hallucinations
+        for (i, dict) in array.enumerated() {
+            let name = dict["name"] as? String ?? ""
+            if name.isEmpty { continue }
+            // Filter refusal/garbage names
+            if name.contains("cannot") || name.contains("unable") || name.count > 80 { continue }
+            if name.contains("{") || name.contains("[") || name.contains("\"") { continue }
+            if name.hasPrefix("```") { continue }
+            // Cap duplicate names at 3 to prevent hallucination spam
+            let nameKey = name.lowercased()
+            let count = nameCounts[nameKey, default: 0]
+            if count >= 3 { continue }
+            nameCounts[nameKey] = count + 1
+
+            var box: (yMin: CGFloat, xMin: CGFloat, yMax: CGFloat, xMax: CGFloat)?
+            if let boxArr = dict["box"] as? [NSNumber], boxArr.count == 4 {
+                box = (
+                    yMin: CGFloat(boxArr[0].doubleValue) / 1000.0,
+                    xMin: CGFloat(boxArr[1].doubleValue) / 1000.0,
+                    yMax: CGFloat(boxArr[2].doubleValue) / 1000.0,
+                    xMax: CGFloat(boxArr[3].doubleValue) / 1000.0
+                )
+            }
+
+            let result = PhotoIdentificationResult(
+                name: name,
+                brand: nullableString(dict["brand"]),
+                color: nullableString(dict["color"]),
+                size: nullableString(dict["size"]),
+                category: nullableString(dict["category"]),
+                estimatedValue: nullableDouble(dict["estimatedValue"]),
+                description: nullableString(dict["description"]),
+                boundingBox: box
+            )
+            results.append(result)
+            geminiDebugLog("🔍 [\(i)] ✅ '\(name)' box=\(box != nil)")
+        }
+        geminiDebugLog("🔍 Array: \(results.count)/\(array.count) valid")
+        return results.isEmpty ? nil : results
     }
 
     private static func nullableString(_ value: Any?) -> String? {

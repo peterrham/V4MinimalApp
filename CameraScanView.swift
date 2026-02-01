@@ -29,6 +29,11 @@ struct CameraScanView: View {
     @State private var enableStreamingUpload = false
     @State private var showLiveDetection = false
     @State private var showInstructionOverlay = true
+    @State private var multiItemResults: [PhotoIdentificationResult] = []
+    @State private var libraryPhoto: UIImage?
+    @State private var showingMultiItemSheet = false
+    @State private var savedItemIds: Set<UUID> = []
+    @State private var analysisError: String?
 
     private let logger = Logger(subsystem: "com.yourcompany.yourapp", category: "CameraScanView")
     private let driveUploader = GoogleDriveUploader()
@@ -718,6 +723,149 @@ struct CameraScanView: View {
             .fullScreenCover(isPresented: $showLiveDetection) {
                 LiveObjectDetectionView()
             }
+            .sheet(isPresented: $showingMultiItemSheet) {
+                multiItemSheet
+            }
+            .alert("Analysis Failed", isPresented: Binding(
+                get: { analysisError != nil },
+                set: { if !$0 { analysisError = nil } }
+            )) {
+                Button("OK") { analysisError = nil }
+            } message: {
+                Text(analysisError ?? "")
+            }
+        }
+    }
+
+    // MARK: - Multi-Item Analysis Sheet
+
+    private var multiItemSheet: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                // Photo thumbnail at top
+                if let photo = libraryPhoto {
+                    Image(uiImage: photo)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 120)
+                        .clipped()
+                        .overlay(
+                            LinearGradient(
+                                colors: [.clear, .black.opacity(0.4)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                }
+
+                // Item list
+                List {
+                    ForEach(multiItemResults) { result in
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(result.name)
+                                    .font(.headline)
+                                    .strikethrough(savedItemIds.contains(result.id))
+                                    .foregroundColor(savedItemIds.contains(result.id) ? .secondary : .primary)
+
+                                let subtitle = [result.brand, result.color, result.category]
+                                    .compactMap { $0 }
+                                    .joined(separator: " · ")
+                                if !subtitle.isEmpty {
+                                    Text(subtitle)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                if let desc = result.description, !desc.isEmpty {
+                                    Text(desc)
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
+                                        .lineLimit(1)
+                                }
+                            }
+
+                            Spacer()
+
+                            if let value = result.estimatedValue {
+                                Text(String(format: "$%.0f", value))
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.green)
+                            }
+
+                            if savedItemIds.contains(result.id) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.title3)
+                                    .foregroundColor(.green)
+                            } else {
+                                Button {
+                                    saveMultiItemResult(result)
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.title3)
+                                        .foregroundColor(.blue)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .opacity(savedItemIds.contains(result.id) ? 0.5 : 1.0)
+                    }
+                }
+                .listStyle(.plain)
+
+                // Save All button
+                let unsavedCount = multiItemResults.filter { !savedItemIds.contains($0.id) }.count
+                if unsavedCount > 0 {
+                    Button {
+                        saveAllMultiItemResults()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "square.and.arrow.down.on.square.fill")
+                            Text("Save All (\(unsavedCount))")
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Capsule().fill(.green))
+                        .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                }
+            }
+            .navigationTitle("Found \(multiItemResults.count) Items")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        showingMultiItemSheet = false
+                    }
+                }
+            }
+        }
+    }
+
+    private func saveMultiItemResult(_ result: PhotoIdentificationResult) {
+        guard let photo = libraryPhoto else { return }
+        inventoryStore.addItemFromPhotoAnalysis(result, photo: photo)
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+        withAnimation {
+            savedItemIds.insert(result.id)
+        }
+    }
+
+    private func saveAllMultiItemResults() {
+        guard let photo = libraryPhoto else { return }
+        let unsaved = multiItemResults.filter { !savedItemIds.contains($0.id) }
+        inventoryStore.addItemsFromPhotoAnalysis(unsaved, photo: photo)
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+        withAnimation {
+            for result in unsaved {
+                savedItemIds.insert(result.id)
+            }
         }
     }
     
@@ -859,26 +1007,39 @@ struct CameraScanView: View {
         do {
             if let data = try await item.loadTransferable(type: Data.self),
                let image = UIImage(data: data) {
-                logger.info("Photo selected from library — analyzing with Gemini")
-
-                // Store image so the Save button can access it (same as camera capture)
-                cameraManager.lastCapturedImage = image
+                let mp = image.size.width * image.size.height / 1_000_000
+                print("📷 Photo loaded from library: \(Int(image.size.width))x\(Int(image.size.height)) (\(String(format: "%.1f", mp))MP)")
 
                 await MainActor.run {
                     withAnimation { isIdentifyingPhoto = true }
                 }
 
-                let result = await GeminiVisionService.shared.identifyForInventory(image)
+                print("📷 Calling identifyAllItems...")
+                let results = await GeminiVisionService.shared.identifyAllItems(image)
+                let apiError = await GeminiVisionService.shared.error
+                print("📷 identifyAllItems returned \(results.count) results, error: \(apiError ?? "none")")
 
                 await MainActor.run {
                     withAnimation {
                         isIdentifyingPhoto = false
-                        photoResult = result
+                        if results.isEmpty {
+                            if let err = apiError {
+                                analysisError = err
+                            } else {
+                                analysisError = "No items found in this photo."
+                            }
+                        } else {
+                            print("📷 Showing multi-item sheet with \(results.count) items")
+                            multiItemResults = results
+                            libraryPhoto = image
+                            savedItemIds = []
+                            showingMultiItemSheet = true
+                        }
                     }
                 }
             }
         } catch {
-            logger.error("Failed to load photo: \(error.localizedDescription)")
+            print("📷 Failed to load photo: \(error.localizedDescription)")
             await MainActor.run {
                 withAnimation { isIdentifyingPhoto = false }
             }

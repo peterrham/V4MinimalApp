@@ -231,6 +231,136 @@ class InventoryStore: ObservableObject {
         print("📸 Saved to inventory: \(result.name) (photo: \(Int(scaledSize.width))x\(Int(scaledSize.height)))")
     }
 
+    /// Add a single item from multi-item photo analysis, with bounding box cropping
+    func addItemFromPhotoAnalysis(_ result: PhotoIdentificationResult, photo: UIImage) {
+        let photoData = preparePhotoData(from: photo, boundingBox: result.boundingBox)
+        guard let photoData else { return }
+
+        let category = ItemCategory.from(rawString: result.category ?? "")
+
+        if let existingIndex = findExistingItem(matchingName: result.name) {
+            mergePhotoResult(result, category: category, into: &items[existingIndex])
+            let filename = savePhotoWithUniqueId(photoData, for: items[existingIndex].id)
+            items[existingIndex].photos.append(filename)
+        } else {
+            var item = InventoryItem(
+                name: result.name,
+                category: category,
+                room: "",
+                estimatedValue: result.estimatedValue,
+                brand: result.brand,
+                itemColor: result.color,
+                size: result.size,
+                notes: result.description ?? "",
+                homeId: currentHomeId
+            )
+            let filename = savePhotoWithUniqueId(photoData, for: item.id)
+            item.photos.append(filename)
+            items.append(item)
+        }
+        saveItems()
+        print("📸 Saved from photo analysis: \(result.name)")
+    }
+
+    /// Add multiple items from multi-item photo analysis (batch save)
+    func addItemsFromPhotoAnalysis(_ results: [PhotoIdentificationResult], photo: UIImage) {
+        for result in results {
+            let photoData = preparePhotoData(from: photo, boundingBox: result.boundingBox)
+            guard let photoData else { continue }
+
+            let category = ItemCategory.from(rawString: result.category ?? "")
+
+            if let existingIndex = findExistingItem(matchingName: result.name) {
+                mergePhotoResult(result, category: category, into: &items[existingIndex])
+                let filename = savePhotoWithUniqueId(photoData, for: items[existingIndex].id)
+                items[existingIndex].photos.append(filename)
+            } else {
+                var item = InventoryItem(
+                    name: result.name,
+                    category: category,
+                    room: "",
+                    estimatedValue: result.estimatedValue,
+                    brand: result.brand,
+                    itemColor: result.color,
+                    size: result.size,
+                    notes: result.description ?? "",
+                    homeId: currentHomeId
+                )
+                let filename = savePhotoWithUniqueId(photoData, for: item.id)
+                item.photos.append(filename)
+                items.append(item)
+            }
+        }
+        saveItems()
+        print("📸 Batch saved \(results.count) items from photo analysis")
+    }
+
+    /// Prepare photo data: crop to bounding box if available, otherwise scale full photo
+    private func preparePhotoData(from photo: UIImage, boundingBox: (yMin: CGFloat, xMin: CGFloat, yMax: CGFloat, xMax: CGFloat)?) -> Data? {
+        let maxWidth: CGFloat = 1200
+
+        if let box = boundingBox {
+            let cropped = cropPhoto(photo, to: box)
+            let scale = min(maxWidth / cropped.size.width, 1.0)
+            let scaledSize = CGSize(width: cropped.size.width * scale, height: cropped.size.height * scale)
+            let renderer = UIGraphicsImageRenderer(size: scaledSize)
+            let scaled = renderer.image { _ in
+                cropped.draw(in: CGRect(origin: .zero, size: scaledSize))
+            }
+            return scaled.jpegData(compressionQuality: 0.85)
+        } else {
+            let scale = min(maxWidth / photo.size.width, 1.0)
+            let scaledSize = CGSize(width: photo.size.width * scale, height: photo.size.height * scale)
+            let renderer = UIGraphicsImageRenderer(size: scaledSize)
+            let scaled = renderer.image { _ in
+                photo.draw(in: CGRect(origin: .zero, size: scaledSize))
+            }
+            return scaled.jpegData(compressionQuality: 0.85)
+        }
+    }
+
+    /// Crop photo to a normalized bounding box (0-1 coordinates) with 10% padding
+    private func cropPhoto(_ photo: UIImage, to box: (yMin: CGFloat, xMin: CGFloat, yMax: CGFloat, xMax: CGFloat)) -> UIImage {
+        let imgW = photo.size.width
+        let imgH = photo.size.height
+
+        let bx = box.xMin * imgW
+        let by = box.yMin * imgH
+        let bw = (box.xMax - box.xMin) * imgW
+        let bh = (box.yMax - box.yMin) * imgH
+        let pad: CGFloat = 0.10
+        let padX = bw * pad
+        let padY = bh * pad
+
+        let cropRect = CGRect(
+            x: max(bx - padX, 0),
+            y: max(by - padY, 0),
+            width: min(bw + padX * 2, imgW - max(bx - padX, 0)),
+            height: min(bh + padY * 2, imgH - max(by - padY, 0))
+        )
+
+        // Render at crop rect to handle orientation correctly
+        let renderer = UIGraphicsImageRenderer(size: cropRect.size)
+        return renderer.image { _ in
+            photo.draw(at: CGPoint(x: -cropRect.origin.x, y: -cropRect.origin.y))
+        }
+    }
+
+    /// Merge a PhotoIdentificationResult into an existing inventory item
+    private func mergePhotoResult(_ result: PhotoIdentificationResult, category: ItemCategory, into item: inout InventoryItem) {
+        item.updatedAt = Date()
+        if item.brand == nil, let brand = result.brand { item.brand = brand }
+        if item.itemColor == nil, let color = result.color { item.itemColor = color }
+        if item.size == nil, let size = result.size { item.size = size }
+        if item.category == .other && category != .other { item.category = category }
+        if let value = result.estimatedValue, item.estimatedValue == nil {
+            item.estimatedValue = value
+        }
+        if let desc = result.description, !desc.isEmpty, item.notes.isEmpty {
+            item.notes = desc
+        }
+    }
+
     /// Save photo with a unique filename (supports multiple photos per item)
     private func savePhotoWithUniqueId(_ data: Data, for itemId: UUID) -> String {
         let timestamp = Int(Date().timeIntervalSince1970)
