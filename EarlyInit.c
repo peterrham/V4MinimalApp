@@ -7,6 +7,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <os/log.h>
 #include <objc/runtime.h>
 #include <objc/message.h>
@@ -53,17 +55,15 @@ static void send_early_log(const char *message) {
         return;
     }
 
-    // Create TCP socket and connect
+    // Create TCP socket and connect (non-blocking with 1s timeout to avoid blocking app launch)
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         return;
     }
 
-    // Set short timeout for early boot (don't block app startup)
-    struct timeval timeout;
-    timeout.tv_sec = 1;
-    timeout.tv_usec = 0;
-    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+    // Make socket non-blocking for connect
+    int flags = fcntl(sock, F_GETFL, 0);
+    fcntl(sock, F_SETFL, flags | O_NONBLOCK);
 
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
@@ -75,10 +75,43 @@ static void send_early_log(const char *message) {
         return;
     }
 
-    if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+    int ret = connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    if (ret < 0 && errno != EINPROGRESS) {
         close(sock);
         return;
     }
+
+    if (ret < 0) {
+        // Connection in progress — wait up to 1 second with select()
+        fd_set writefds;
+        FD_ZERO(&writefds);
+        FD_SET(sock, &writefds);
+        struct timeval tv;
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+        ret = select(sock + 1, NULL, &writefds, NULL, &tv);
+        if (ret <= 0) {
+            close(sock);
+            return;
+        }
+        // Check if connect succeeded
+        int so_error;
+        socklen_t len = sizeof(so_error);
+        getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_error, &len);
+        if (so_error != 0) {
+            close(sock);
+            return;
+        }
+    }
+
+    // Restore blocking mode for send
+    fcntl(sock, F_SETFL, flags);
+
+    // Set short send timeout
+    struct timeval timeout;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 
     // Send the message with newline
     char buffer[1024];

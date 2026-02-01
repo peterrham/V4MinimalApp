@@ -24,8 +24,20 @@ enum ItemCategory: String, Codable, CaseIterable, Identifiable {
     case jewelry = "Jewelry"
     case art = "Art & Collectibles"
     case other = "Other"
-    
+
     var id: String { self.rawValue }
+
+    // Fallback decoder: unknown category values decode as .other instead of crashing
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        self = ItemCategory(rawValue: rawValue) ?? ItemCategory.from(rawString: rawValue)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
     
     var icon: String {
         switch self {
@@ -105,6 +117,10 @@ struct InventoryItem: Identifiable, Codable, Hashable {
     var name: String
     var category: ItemCategory
     var room: String
+    var container: String?
+    var quantity: Int
+    var upc: String?
+    var isEmptyBox: Bool
     var estimatedValue: Double?
     var purchasePrice: Double?
     var purchaseDate: Date?
@@ -112,12 +128,48 @@ struct InventoryItem: Identifiable, Codable, Hashable {
     var itemColor: String?
     var size: String?
     var notes: String
-    var photos: [String] // URLs or local paths
+    var photos: [String]
     var voiceTranscripts: [String]
     let createdAt: Date
     var updatedAt: Date
-    
-    // Computed property for display
+    var homeId: UUID?
+
+    // MARK: - CodingKeys (backward-compatible with old JSON lacking new fields)
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, category, room, container
+        case quantity, upc, isEmptyBox
+        case estimatedValue, purchasePrice, purchaseDate
+        case brand, itemColor, size, notes, photos, voiceTranscripts
+        case createdAt, updatedAt, homeId
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        category = try c.decode(ItemCategory.self, forKey: .category)
+        room = try c.decode(String.self, forKey: .room)
+        container = try c.decodeIfPresent(String.self, forKey: .container)
+        quantity = try c.decodeIfPresent(Int.self, forKey: .quantity) ?? 1
+        upc = try c.decodeIfPresent(String.self, forKey: .upc)
+        isEmptyBox = try c.decodeIfPresent(Bool.self, forKey: .isEmptyBox) ?? false
+        estimatedValue = try c.decodeIfPresent(Double.self, forKey: .estimatedValue)
+        purchasePrice = try c.decodeIfPresent(Double.self, forKey: .purchasePrice)
+        purchaseDate = try c.decodeIfPresent(Date.self, forKey: .purchaseDate)
+        brand = try c.decodeIfPresent(String.self, forKey: .brand)
+        itemColor = try c.decodeIfPresent(String.self, forKey: .itemColor)
+        size = try c.decodeIfPresent(String.self, forKey: .size)
+        notes = try c.decode(String.self, forKey: .notes)
+        photos = try c.decode([String].self, forKey: .photos)
+        voiceTranscripts = try c.decode([String].self, forKey: .voiceTranscripts)
+        createdAt = try c.decode(Date.self, forKey: .createdAt)
+        updatedAt = try c.decode(Date.self, forKey: .updatedAt)
+        homeId = try c.decodeIfPresent(UUID.self, forKey: .homeId)
+    }
+
+    // MARK: - Computed Display Properties
+
     var displayValue: String {
         if let price = purchasePrice {
             return String(format: "$%.2f", price)
@@ -127,16 +179,49 @@ struct InventoryItem: Identifiable, Codable, Hashable {
             return "No value"
         }
     }
-    
+
     var mainPhoto: String? {
         photos.first
     }
-    
+
+    /// Brand + name for detail views
+    var displayTitle: String {
+        if let brand = brand, !brand.isEmpty {
+            return "\(brand) \(name)"
+        }
+        return name
+    }
+
+    /// Color · Category subtitle
+    var displaySubtitle: String {
+        var parts: [String] = []
+        if let color = itemColor, !color.isEmpty {
+            parts.append(color)
+        }
+        parts.append(category.rawValue)
+        return parts.joined(separator: " \u{00B7} ")
+    }
+
+    /// Title with quantity prefix when > 1
+    var displayTitleWithQuantity: String {
+        let title = displayTitle
+        if quantity > 1 {
+            return "\(quantity)x \(title)"
+        }
+        return title
+    }
+
+    // MARK: - Init
+
     init(
         id: UUID = UUID(),
         name: String,
         category: ItemCategory,
         room: String,
+        container: String? = nil,
+        quantity: Int = 1,
+        upc: String? = nil,
+        isEmptyBox: Bool = false,
         estimatedValue: Double? = nil,
         purchasePrice: Double? = nil,
         purchaseDate: Date? = nil,
@@ -145,12 +230,17 @@ struct InventoryItem: Identifiable, Codable, Hashable {
         size: String? = nil,
         notes: String = "",
         photos: [String] = [],
-        voiceTranscripts: [String] = []
+        voiceTranscripts: [String] = [],
+        homeId: UUID? = nil
     ) {
         self.id = id
         self.name = name
         self.category = category
         self.room = room
+        self.container = container
+        self.quantity = quantity
+        self.upc = upc
+        self.isEmptyBox = isEmptyBox
         self.estimatedValue = estimatedValue
         self.purchasePrice = purchasePrice
         self.purchaseDate = purchaseDate
@@ -162,6 +252,24 @@ struct InventoryItem: Identifiable, Codable, Hashable {
         self.voiceTranscripts = voiceTranscripts
         self.createdAt = Date()
         self.updatedAt = Date()
+        self.homeId = homeId
+    }
+}
+
+// MARK: - Disambiguation Helper
+
+extension InventoryItem {
+    /// Returns display title with brand only when the name is ambiguous among the provided items
+    static func disambiguatedTitle(for item: InventoryItem, in items: [InventoryItem]) -> String {
+        let sameName = items.filter {
+            $0.id != item.id &&
+            $0.name.caseInsensitiveCompare(item.name) == .orderedSame
+        }
+        let prefix = item.quantity > 1 ? "\(item.quantity)x " : ""
+        if !sameName.isEmpty, let brand = item.brand, !brand.isEmpty {
+            return "\(prefix)\(brand) \(item.name)"
+        }
+        return "\(prefix)\(item.name)"
     }
 }
 
@@ -200,6 +308,51 @@ struct Room: Identifiable, Codable, Hashable {
         try container.encode(name, forKey: .name)
         try container.encode(icon, forKey: .icon)
         try container.encode("#6366F1", forKey: .colorHex) // Simplified for now
+    }
+}
+
+// MARK: - Home Model (Property/Location)
+
+struct Home: Identifiable, Codable, Hashable {
+    /// Well-known ID for the default home. Existing items without homeId belong here.
+    static let defaultHomeId = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+
+    let id: UUID
+    var name: String
+    var icon: String
+    var color: Color
+
+    init(id: UUID = UUID(), name: String, icon: String = "house.fill", color: Color = .blue) {
+        self.id = id
+        self.name = name
+        self.icon = icon
+        self.color = color
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, icon, colorHex
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        icon = try container.decode(String.self, forKey: .icon)
+        let hex = try container.decode(String.self, forKey: .colorHex)
+        color = Color(hex: hex)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(icon, forKey: .icon)
+        // Convert Color to hex for persistence
+        let uiColor = UIColor(color)
+        var r: CGFloat = 0; var g: CGFloat = 0; var b: CGFloat = 0
+        uiColor.getRed(&r, green: &g, blue: &b, alpha: nil)
+        let hex = String(format: "#%02X%02X%02X", Int(r * 255), Int(g * 255), Int(b * 255))
+        try container.encode(hex, forKey: .colorHex)
     }
 }
 

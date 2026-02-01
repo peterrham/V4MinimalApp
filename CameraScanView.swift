@@ -12,10 +12,14 @@ import PhotosUI
 
 struct CameraScanView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var inventoryStore: InventoryStore
     @StateObject private var cameraManager = CameraManager()
-    
+
     @State private var isRecording = false
     @State private var detectedItems: [String] = []
+    @State private var photoResult: PhotoIdentificationResult?
+    @State private var isIdentifyingPhoto = false
+    @State private var savedConfirmation = false
     @State private var showUploadOptions = false
     @State private var recordedVideoURL: URL?
     @State private var isUploading = false
@@ -190,49 +194,143 @@ struct CameraScanView: View {
                     Spacer()
                     
                     // Photo Identification Display
-                    if !cameraManager.photoIdentification.isEmpty {
+                    if isIdentifyingPhoto || photoResult != nil || savedConfirmation {
                         VStack(spacing: 8) {
-                            HStack(spacing: 8) {
-                                if cameraManager.isIdentifyingPhoto {
+                            if savedConfirmation {
+                                // Saved confirmation
+                                HStack(spacing: 8) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.title3)
+                                        .foregroundColor(.green)
+                                    Text("Saved to Inventory")
+                                        .font(.callout)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(.ultraThinMaterial)
+                                )
+                            } else if isIdentifyingPhoto {
+                                // Analyzing spinner
+                                HStack(spacing: 8) {
                                     ProgressView()
                                         .tint(.white)
                                         .scaleEffect(0.8)
-                                } else {
-                                    Image(systemName: "sparkles")
+                                    Text("Analyzing...")
                                         .font(.callout)
-                                        .foregroundColor(.yellow)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.white)
+                                    Spacer()
                                 }
-                                
-                                Text(cameraManager.photoIdentification)
-                                    .font(.callout)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.white)
-                                    .multilineTextAlignment(.leading)
-                                    .lineLimit(3)
-                                
-                                Spacer()
-                                
-                                // Dismiss button
-                                Button {
-                                    withAnimation {
-                                        cameraManager.clearPhotoIdentification()
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(.ultraThinMaterial)
+                                )
+                            } else if let result = photoResult {
+                                // Structured result card
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "sparkles")
+                                            .font(.callout)
+                                            .foregroundColor(.yellow)
+                                        Text(result.name)
+                                            .font(.headline)
+                                            .foregroundColor(.white)
+                                            .lineLimit(2)
+                                        Spacer()
+
+                                        // Dismiss button
+                                        Button {
+                                            withAnimation {
+                                                photoResult = nil
+                                                cameraManager.clearPhotoIdentification()
+                                            }
+                                        } label: {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .font(.title3)
+                                                .foregroundColor(.white.opacity(0.7))
+                                        }
                                     }
-                                } label: {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .font(.title3)
-                                        .foregroundColor(.white.opacity(0.7))
+
+                                    // Subtitle: brand, color, category
+                                    let subtitle = [result.brand, result.color, result.category]
+                                        .compactMap { $0 }
+                                        .joined(separator: " · ")
+                                    if !subtitle.isEmpty {
+                                        Text(subtitle)
+                                            .font(.subheadline)
+                                            .foregroundColor(.white.opacity(0.8))
+                                    }
+
+                                    // Description
+                                    if let desc = result.description, !desc.isEmpty {
+                                        Text(desc)
+                                            .font(.caption)
+                                            .foregroundColor(.white.opacity(0.6))
+                                            .lineLimit(2)
+                                    }
+
+                                    // Value + Save button row
+                                    HStack {
+                                        if let value = result.estimatedValue {
+                                            Text(String(format: "~$%.0f", value))
+                                                .font(.subheadline)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.green)
+                                        }
+
+                                        Spacer()
+
+                                        // Save to Inventory button
+                                        Button {
+                                            if let image = cameraManager.lastCapturedImage {
+                                                inventoryStore.addItemFromPhoto(result, photo: image)
+                                                let generator = UINotificationFeedbackGenerator()
+                                                generator.notificationOccurred(.success)
+                                                withAnimation {
+                                                    photoResult = nil
+                                                    savedConfirmation = true
+                                                }
+                                                // Auto-dismiss after 1.5s
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                                    withAnimation {
+                                                        savedConfirmation = false
+                                                        cameraManager.clearPhotoIdentification()
+                                                    }
+                                                }
+                                            }
+                                        } label: {
+                                            HStack(spacing: 6) {
+                                                Image(systemName: "plus.circle.fill")
+                                                Text("Save to Inventory")
+                                                    .fontWeight(.semibold)
+                                            }
+                                            .font(.subheadline)
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 8)
+                                            .background(Capsule().fill(.green))
+                                        }
+                                    }
+                                    .padding(.top, 4)
                                 }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(.ultraThinMaterial)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .strokeBorder(.white.opacity(0.2), lineWidth: 1)
+                                        )
+                                )
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(.ultraThinMaterial)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .strokeBorder(.white.opacity(0.2), lineWidth: 1)
-                                    )
-                            )
                         }
                         .padding(.horizontal, AppTheme.Spacing.l)
                         .transition(.move(edge: .top).combined(with: .opacity))
@@ -291,11 +389,6 @@ struct CameraScanView: View {
                                 } else {
                                     logger.info("Capture button tapped")
                                     cameraManager.capturePhoto()
-                                    
-                                    // Simulate detection for now
-                                    withAnimation {
-                                        detectedItems.append("Sample Item \(detectedItems.count + 1)")
-                                    }
                                 }
                             } label: {
                                 ZStack {
@@ -555,14 +648,21 @@ struct CameraScanView: View {
                     }
                 }
                 
-                // Listen for photo capture completion
+                // Listen for photo capture completion → trigger structured identification
                 NotificationCenter.default.addObserver(
                     forName: NSNotification.Name("PhotoCaptureComplete"),
                     object: nil,
                     queue: .main
                 ) { notification in
-                    // Photo saved - camera shutter sound provides feedback
-                    // No alert needed
+                    guard let image = notification.userInfo?["image"] as? UIImage else { return }
+                    Task {
+                        withAnimation { isIdentifyingPhoto = true }
+                        let result = await GeminiVisionService.shared.identifyForInventory(image)
+                        withAnimation {
+                            isIdentifyingPhoto = false
+                            photoResult = result
+                        }
+                    }
                 }
                 
                 // Listen for streaming upload completion
@@ -878,5 +978,6 @@ struct CameraScanView: View {
 
 #Preview {
     CameraScanView()
+        .environmentObject(InventoryStore())
 }
 

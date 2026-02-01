@@ -105,16 +105,22 @@ struct SettingsView: View {
                 
                 // Sync & Backup
                 Section {
+                    NavigationLink {
+                        HomesManagementView()
+                    } label: {
+                        Label("Manage Homes", systemImage: "house.fill")
+                    }
+
                     Toggle(isOn: $autoSync) {
                         Label("Auto-Sync to Google Sheets", systemImage: "arrow.triangle.2.circlepath")
                     }
-                    
+
                     NavigationLink {
                         Text("Backup view placeholder")
                     } label: {
                         Label("Backup & Restore", systemImage: "cloud.fill")
                     }
-                    
+
                     Button {
                         // Manual sync
                     } label: {
@@ -174,11 +180,23 @@ struct SettingsView: View {
                     
                     if developerMode {
                         NavigationLink {
+                            InventoryTableView()
+                        } label: {
+                            Label("Inventory Table", systemImage: "tablecells")
+                        }
+
+                        NavigationLink {
+                            NormalizationView()
+                        } label: {
+                            Label("Normalize Inventory", systemImage: "wand.and.stars")
+                        }
+
+                        NavigationLink {
                             DebugView()
                         } label: {
                             Label("Debug View", systemImage: "ant.fill")
                         }
-                        
+
                         NavigationLink {
                             Text("API logs placeholder")
                         } label: {
@@ -215,6 +233,7 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) { }
                 Button("Sign Out", role: .destructive) {
                     GIDSignIn.sharedInstance.signOut()
+                    UserDefaults.standard.removeObject(forKey: "userSkippedAuth")
                     isSignedIn = false
                 }
             } message: {

@@ -61,10 +61,10 @@ struct ItemDetailView: View {
                 VStack(spacing: AppTheme.Spacing.l) {
                     // Name and Category
                     VStack(alignment: .leading, spacing: AppTheme.Spacing.s) {
-                        Text(item.name)
+                        Text(item.displayTitleWithQuantity)
                             .font(.title)
                             .fontWeight(.bold)
-                        
+
                         HStack(spacing: AppTheme.Spacing.s) {
                             Label(item.category.rawValue, systemImage: item.category.icon)
                                 .font(.callout)
@@ -73,13 +73,23 @@ struct ItemDetailView: View {
                                 .background(item.category.color.opacity(0.15))
                                 .foregroundColor(item.category.color)
                                 .cornerRadius(8)
-                            
+
                             Label(item.room, systemImage: "door.left.hand.closed")
                                 .font(.callout)
                                 .padding(.horizontal, AppTheme.Spacing.m)
                                 .padding(.vertical, AppTheme.Spacing.s)
                                 .background(AppTheme.Colors.surface)
                                 .cornerRadius(8)
+
+                            if item.isEmptyBox {
+                                Label("Empty Box", systemImage: "shippingbox")
+                                    .font(.callout)
+                                    .padding(.horizontal, AppTheme.Spacing.m)
+                                    .padding(.vertical, AppTheme.Spacing.s)
+                                    .background(Color.orange.opacity(0.15))
+                                    .foregroundColor(.orange)
+                                    .cornerRadius(8)
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -137,23 +147,31 @@ struct ItemDetailView: View {
                     .padding(.horizontal, AppTheme.Spacing.l)
                     
                     // Details Section
-                    if item.brand != nil || !item.notes.isEmpty {
+                    if item.brand != nil || !item.notes.isEmpty || item.upc != nil || item.quantity > 1 {
                         Card {
                             VStack(alignment: .leading, spacing: AppTheme.Spacing.m) {
                                 Label("Details", systemImage: "info.circle.fill")
                                     .font(.headline)
                                     .foregroundStyle(AppTheme.Colors.primary)
-                                
+
                                 if let brand = item.brand {
                                     DetailRow(label: "Brand", value: brand)
                                 }
-                                
+
+                                if item.quantity > 1 {
+                                    DetailRow(label: "Quantity", value: "\(item.quantity)")
+                                }
+
+                                if let upc = item.upc {
+                                    DetailRow(label: "UPC / Barcode", value: upc)
+                                }
+
                                 if !item.notes.isEmpty {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Notes")
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
-                                        
+
                                         Text(item.notes)
                                             .font(.callout)
                                     }

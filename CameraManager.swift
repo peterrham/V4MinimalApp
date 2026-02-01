@@ -482,16 +482,13 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
         
         Task { @MainActor in
             appBootLog.infoWithContext("Photo captured: \(imageData.count) bytes")
-            
-            // Store the captured image
+
+            // Store the captured image (CameraScanView watches this to trigger identification)
             self.lastCapturedImage = image
-            
+
             // Save to Photo Library
             await self.savePhotoToLibrary(image)
-            
-            // Identify with Gemini API
-            await self.identifyPhotoWithGemini(image)
-            
+
             // Notify that photo was captured
             NotificationCenter.default.post(
                 name: NSNotification.Name("PhotoCaptureComplete"),

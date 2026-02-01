@@ -78,7 +78,7 @@ struct GoogleSignInView: View {
 
                 // Skip for now
                 Button {
-                    appState.isAuthenticated = true
+                    appState.skipAuth()
                 } label: {
                     Text("Continue without signing in")
                         .font(.subheadline)

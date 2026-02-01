@@ -18,6 +18,40 @@ struct DebugView: View {
         Card {
             VStack(spacing: 12) {
 
+                // Debug Options - Tap tests, toggles
+                NavigationLink(destination: DebugOptionsView()) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.orange.opacity(0.15))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "ladybug.fill")
+                                .font(.system(size: 20))
+                                .foregroundStyle(.orange)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Debug Options")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
+                            Text("Button tests, toggles, diagnostics")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(12)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
                 // Network Diagnostics - Featured Entry
                 NavigationLink(destination: NetworkDiagnosticsView()) {
                     HStack(spacing: 12) {

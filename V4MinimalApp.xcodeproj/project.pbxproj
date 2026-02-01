@@ -42,6 +42,8 @@
 		BE8C229B2F25E80400E32ACB /* ImplementationPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C229A2F25E80400E32ACB /* ImplementationPlan.swift */; };
 		BE8C229D2F25E82400E32ACB /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C229C2F25E82400E32ACB /* Models.swift */; };
 		BE8C229F2F25E84B00E32ACB /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C229E2F25E84B00E32ACB /* HomeView.swift */; };
+		7980CA78A7215EE11216766D /* HomesManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 379F99C510793EE57EE81C36 /* HomesManagementView.swift */; };
+		7BE50C1D0E0D3FFAA736602D /* HomePickerMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35B39374B8DC36F23B1BD6D /* HomePickerMenu.swift */; };
 		BE8C22A12F25E87200E32ACB /* InventoryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22A02F25E87200E32ACB /* InventoryListView.swift */; };
 		BE8C22A32F25E89600E32ACB /* ItemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22A22F25E89600E32ACB /* ItemDetailView.swift */; };
 		BE8C22A52F25E8B400E32ACB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22A42F25E8B400E32ACB /* SettingsView.swift */; };
@@ -89,6 +91,9 @@
 		BEDSET022F2A0002002C9706 /* DetectionSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEDSET012F2A0001002C9706 /* DetectionSettings.swift */; };
 		BEBC20012F300010002C9706 /* SampleHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEBC10022F300002002C9706 /* SampleHandler.swift */; };
 		BEBC20022F300011002C9706 /* BroadcastUploadExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BEBC10012F300001002C9706 /* BroadcastUploadExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AA12345600000002002C9706 /* InventoryTableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA12345600000001002C9706 /* InventoryTableView.swift */; };
+		BB12345600000002002C9706 /* InventoryNormalizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB12345600000001002C9706 /* InventoryNormalizationService.swift */; };
+		BB12345600000004002C9706 /* NormalizationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB12345600000003002C9706 /* NormalizationView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -124,6 +129,8 @@
 		BE8C229A2F25E80400E32ACB /* ImplementationPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImplementationPlan.swift; sourceTree = "<group>"; };
 		BE8C229C2F25E82400E32ACB /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		BE8C229E2F25E84B00E32ACB /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		379F99C510793EE57EE81C36 /* HomesManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomesManagementView.swift; sourceTree = "<group>"; };
+		D35B39374B8DC36F23B1BD6D /* HomePickerMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomePickerMenu.swift; sourceTree = "<group>"; };
 		BE8C22A02F25E87200E32ACB /* InventoryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryListView.swift; sourceTree = "<group>"; };
 		BE8C22A22F25E89600E32ACB /* ItemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailView.swift; sourceTree = "<group>"; };
 		BE8C22A42F25E8B400E32ACB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -178,6 +185,9 @@
 		BEBC10032F300003002C9706 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		BEBC10042F300004002C9706 /* BroadcastUploadExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BroadcastUploadExtension.entitlements; sourceTree = "<group>"; };
 		BEBC10052F300005002C9706 /* V4MinimalApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = V4MinimalApp.entitlements; sourceTree = "<group>"; };
+		AA12345600000001002C9706 /* InventoryTableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryTableView.swift; sourceTree = "<group>"; };
+		BB12345600000001002C9706 /* InventoryNormalizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryNormalizationService.swift; sourceTree = "<group>"; };
+		BB12345600000003002C9706 /* NormalizationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NormalizationView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 
@@ -293,6 +303,8 @@
 				BE8C229A2F25E80400E32ACB /* ImplementationPlan.swift */,
 				BE8C229C2F25E82400E32ACB /* Models.swift */,
 				BE8C229E2F25E84B00E32ACB /* HomeView.swift */,
+				379F99C510793EE57EE81C36 /* HomesManagementView.swift */,
+				D35B39374B8DC36F23B1BD6D /* HomePickerMenu.swift */,
 				BE8C22A02F25E87200E32ACB /* InventoryListView.swift */,
 				BE8C22A22F25E89600E32ACB /* ItemDetailView.swift */,
 				BE8C22A42F25E8B400E32ACB /* SettingsView.swift */,
@@ -355,6 +367,9 @@
 				BEBGES012F2A0001002C9706 /* BackgroundEnrichmentService.swift */,
 				BECSVW012F2A0001002C9706 /* CameraSettingsView.swift */,
 				BEDSET012F2A0001002C9706 /* DetectionSettings.swift */,
+				AA12345600000001002C9706 /* InventoryTableView.swift */,
+				BB12345600000001002C9706 /* InventoryNormalizationService.swift */,
+				BB12345600000003002C9706 /* NormalizationView.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -547,6 +562,8 @@
 				BE8C22992F25E78500E32ACB /* MainTabView.swift in Sources */,
 				BE8C229B2F25E80400E32ACB /* ImplementationPlan.swift in Sources */,
 				BE8C229F2F25E84B00E32ACB /* HomeView.swift in Sources */,
+				7980CA78A7215EE11216766D /* HomesManagementView.swift in Sources */,
+				7BE50C1D0E0D3FFAA736602D /* HomePickerMenu.swift in Sources */,
 				BE8C22AF2F25F18900E32ACB /* CameraPreview.swift in Sources */,
 				BE8C229D2F25E82400E32ACB /* Models.swift in Sources */,
 				BE8C22A52F25E8B400E32ACB /* SettingsView.swift in Sources */,
@@ -574,6 +591,9 @@
 				BEBGES022F2A0002002C9706 /* BackgroundEnrichmentService.swift in Sources */,
 				BECSVW022F2A0002002C9706 /* CameraSettingsView.swift in Sources */,
 				BEDSET022F2A0002002C9706 /* DetectionSettings.swift in Sources */,
+				AA12345600000002002C9706 /* InventoryTableView.swift in Sources */,
+				BB12345600000002002C9706 /* InventoryNormalizationService.swift in Sources */,
+				BB12345600000004002C9706 /* NormalizationView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

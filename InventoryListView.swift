@@ -10,23 +10,54 @@ import UIKit
 
 struct InventoryListView: View {
     @EnvironmentObject var inventoryStore: InventoryStore
+    var embedded = false  // true when already inside a NavigationStack
     @State private var searchText = ""
     @State private var selectedCategory: ItemCategory?
     @State private var selectedRoom: String?
     @State private var isGridView = true
     @State private var showingDeleteAllAlert = false
-    
+    @State private var displayLimit = 50
+
     var filteredItems: [InventoryItem] {
-        inventoryStore.items.filter { item in
+        inventoryStore.currentHomeItems.filter { item in
             let matchesSearch = searchText.isEmpty ||
                 item.name.localizedCaseInsensitiveContains(searchText) ||
-                item.brand?.localizedCaseInsensitiveContains(searchText) ?? false
-            
+                item.brand?.localizedCaseInsensitiveContains(searchText) ?? false ||
+                item.upc?.localizedCaseInsensitiveContains(searchText) ?? false
+
             let matchesCategory = selectedCategory == nil || item.category == selectedCategory
             let matchesRoom = selectedRoom == nil || item.room == selectedRoom
-            
+
             return matchesSearch && matchesCategory && matchesRoom
         }
+    }
+
+    /// Items currently visible (progressive loading)
+    var visibleItems: [InventoryItem] {
+        Array(filteredItems.prefix(displayLimit))
+    }
+
+    /// Pre-computed disambiguation titles (O(n) instead of O(n²))
+    var disambiguationMap: [UUID: String] {
+        let items = visibleItems
+        // Count name occurrences
+        var nameCounts: [String: Int] = [:]
+        for item in items {
+            let key = item.name.lowercased()
+            nameCounts[key, default: 0] += 1
+        }
+        // Build map
+        var map: [UUID: String] = [:]
+        for item in items {
+            let key = item.name.lowercased()
+            let prefix = item.quantity > 1 ? "\(item.quantity)x " : ""
+            if (nameCounts[key] ?? 0) > 1, let brand = item.brand, !brand.isEmpty {
+                map[item.id] = "\(prefix)\(brand) \(item.name)"
+            } else {
+                map[item.id] = "\(prefix)\(item.name)"
+            }
+        }
+        return map
     }
     
     var totalValue: Double {
@@ -36,10 +67,20 @@ struct InventoryListView: View {
     }
     
     var body: some View {
-        NavigationStack {
+        if embedded {
+            inventoryContent
+        } else {
+            NavigationStack {
+                inventoryContent
+            }
+        }
+    }
+
+    private var inventoryContent: some View {
             VStack(spacing: 0) {
                 // Filter Chips
-                if !inventoryStore.items.isEmpty {
+                if !inventoryStore.currentHomeItems.isEmpty {
+                    let activeCategories = Set(inventoryStore.currentHomeItems.map(\.category))
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: AppTheme.Spacing.s) {
                             // Category filters
@@ -49,10 +90,8 @@ struct InventoryListView: View {
                             ) {
                                 selectedCategory = nil
                             }
-                            
-                            ForEach(ItemCategory.allCases.filter { category in
-                                inventoryStore.items.contains { $0.category == category }
-                            }) { category in
+
+                            ForEach(ItemCategory.allCases.filter { activeCategories.contains($0) }) { category in
                                 FilterChip(
                                     title: category.rawValue,
                                     icon: category.icon,
@@ -115,9 +154,15 @@ struct InventoryListView: View {
                                 Text("\(filteredItems.count) items")
                                     .font(.callout)
                                     .foregroundStyle(.secondary)
-                                
+
+                                if visibleItems.count < filteredItems.count {
+                                    Text("(showing \(visibleItems.count))")
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
+                                }
+
                                 Spacer()
-                                
+
                                 Text(String(format: "$%.2f", totalValue))
                                     .font(.callout)
                                     .fontWeight(.semibold)
@@ -126,18 +171,22 @@ struct InventoryListView: View {
                             .padding(.horizontal, AppTheme.Spacing.l)
                             .padding(.vertical, AppTheme.Spacing.m)
                             .background(AppTheme.Colors.surface.opacity(0.5))
-                            
+
                             // Grid or List View
+                            let titles = disambiguationMap
                             if isGridView {
                                 LazyVGrid(columns: [
                                     GridItem(.flexible(), spacing: AppTheme.Spacing.m),
                                     GridItem(.flexible(), spacing: AppTheme.Spacing.m)
                                 ], spacing: AppTheme.Spacing.m) {
-                                    ForEach(filteredItems) { item in
+                                    ForEach(visibleItems) { item in
                                         NavigationLink {
                                             ItemDetailView(item: item)
                                         } label: {
-                                            ItemCardCompact(item: item)
+                                            ItemCardCompact(
+                                                item: item,
+                                                displayTitle: titles[item.id]
+                                            )
                                         }
                                         .buttonStyle(.plain)
                                     }
@@ -145,16 +194,39 @@ struct InventoryListView: View {
                                 .padding(AppTheme.Spacing.l)
                             } else {
                                 LazyVStack(spacing: AppTheme.Spacing.m) {
-                                    ForEach(filteredItems) { item in
+                                    ForEach(visibleItems) { item in
                                         NavigationLink {
                                             ItemDetailView(item: item)
                                         } label: {
-                                            ItemCardList(item: item)
+                                            ItemCardList(
+                                                item: item,
+                                                displayTitle: titles[item.id]
+                                            )
                                         }
                                         .buttonStyle(.plain)
                                     }
                                 }
                                 .padding(AppTheme.Spacing.l)
+                            }
+
+                            // Load more trigger
+                            if visibleItems.count < filteredItems.count {
+                                Button {
+                                    withAnimation {
+                                        displayLimit += 50
+                                    }
+                                } label: {
+                                    Text("Show More (\(filteredItems.count - visibleItems.count) remaining)")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundStyle(AppTheme.Colors.primary)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, AppTheme.Spacing.l)
+                                }
+                                .onAppear {
+                                    // Auto-load more when scrolled to bottom
+                                    displayLimit += 50
+                                }
                             }
                         }
                     }
@@ -163,9 +235,12 @@ struct InventoryListView: View {
             .navigationTitle("Inventory")
             .navigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "Search items...")
+            .onChange(of: searchText) { _, _ in displayLimit = 50 }
+            .onChange(of: selectedCategory) { _, _ in displayLimit = 50 }
+            .onChange(of: selectedRoom) { _, _ in displayLimit = 50 }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    if !inventoryStore.items.isEmpty {
+                    if !inventoryStore.currentHomeItems.isEmpty {
                         Button(role: .destructive) {
                             showingDeleteAllAlert = true
                         } label: {
@@ -173,6 +248,9 @@ struct InventoryListView: View {
                                 .foregroundStyle(.red)
                         }
                     }
+                }
+                ToolbarItem(placement: .principal) {
+                    HomePickerMenu()
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -188,12 +266,11 @@ struct InventoryListView: View {
             .alert("Delete All Items", isPresented: $showingDeleteAllAlert) {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete All", role: .destructive) {
-                    inventoryStore.deleteAllItems()
+                    inventoryStore.deleteCurrentHomeItems()
                 }
             } message: {
-                Text("This will permanently delete all \(inventoryStore.items.count) inventory items and their photos.")
+                Text("This will permanently delete all \(inventoryStore.currentHomeItems.count) items in \"\(inventoryStore.currentHome?.name ?? "this home")\" and their photos.")
             }
-        }
     }
 }
 
@@ -235,7 +312,8 @@ struct FilterChip: View {
 
 struct ItemCardList: View {
     let item: InventoryItem
-    
+    var displayTitle: String?
+
     var body: some View {
         HStack(spacing: AppTheme.Spacing.m) {
             // Thumbnail
@@ -257,35 +335,35 @@ struct ItemCardList: View {
                 }
                 .frame(width: 70, height: 70)
             }
-            
+
             // Info
             VStack(alignment: .leading, spacing: 4) {
-                Text(item.name)
+                Text(displayTitle ?? item.name)
                     .font(.headline)
                     .lineLimit(1)
-                
-                HStack(spacing: 4) {
-                    Image(systemName: "door.left.hand.closed")
-                        .font(.caption2)
-                    Text(item.room)
-                        .font(.caption)
+
+                Text(item.displaySubtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if !item.room.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "door.left.hand.closed")
+                            .font(.caption2)
+                        Text(item.room)
+                            .font(.caption)
+                    }
+                    .foregroundStyle(.tertiary)
                 }
-                .foregroundStyle(.secondary)
-                
-                if let brand = item.brand {
-                    Text(brand)
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-                
+
                 Text(item.displayValue)
                     .font(.callout)
                     .fontWeight(.semibold)
                     .foregroundStyle(AppTheme.Colors.success)
             }
-            
+
             Spacer()
-            
+
             Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
@@ -302,22 +380,22 @@ struct ItemCardList: View {
 struct RoomCard: View {
     let room: Room
     let itemCount: Int
-    
+
     var body: some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.s) {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.m) {
             Image(systemName: room.icon)
-                .font(.title)
+                .font(.title2)
                 .foregroundStyle(room.color)
-            
+
             Text(room.name)
                 .font(.headline)
-            
+
             Text("\(itemCount) \(itemCount == 1 ? "item" : "items")")
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
-        .frame(width: 130, alignment: .leading)
-        .padding(AppTheme.Spacing.m)
+        .frame(width: 160, alignment: .leading)
+        .padding(AppTheme.Spacing.l)
         .background(AppTheme.Colors.surface)
         .cornerRadius(AppTheme.cornerRadius)
         .shadow(color: .black.opacity(0.05), radius: 4, y: 2)

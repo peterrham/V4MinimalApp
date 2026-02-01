@@ -22,6 +22,9 @@ class GeminiVisionService: ObservableObject {
     
     private let apiKey: String
     private let apiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent"
+
+    /// Expose API key for other services (e.g., normalization) to reuse
+    var apiKeyValue: String { apiKey }
     
     // MARK: - Singleton
     
@@ -310,10 +313,68 @@ class GeminiVisionService: ObservableObject {
         latestIdentification = ""
         error = nil
     }
-    
+
+    // MARK: - Structured Inventory Identification
+
+    /// Identify an image and return structured inventory data
+    func identifyForInventory(_ image: UIImage) async -> PhotoIdentificationResult? {
+        guard !apiKey.isEmpty else {
+            error = "API key not configured"
+            return nil
+        }
+
+        isProcessing = true
+        error = nil
+
+        let prompt = """
+        Identify the main item in this photo for home inventory.
+        Return JSON only: {"name":"...","brand":"...","color":"...","size":"...","category":"...","estimatedValue":...,"description":"..."}
+        category: one of Electronics, Furniture, Appliance, Decor, Kitchen, Clothing, Books, Tools, Sports, Toys, Valuables, Other.
+        estimatedValue: number in USD or null. description: 1-2 sentence detail about the item.
+        Use null for unknown fields. JSON only, no markdown.
+        """
+
+        do {
+            guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+                throw GeminiError.imageConversionFailed
+            }
+            let base64Image = imageData.base64EncodedString()
+            let request = try createRequest(base64Image: base64Image, prompt: prompt, maxOutputTokens: 300)
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                let errorBody = String(data: data, encoding: .utf8) ?? "Unknown"
+                throw GeminiError.apiError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 0, message: errorBody)
+            }
+
+            let geminiResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
+            guard let candidate = geminiResponse.candidates.first,
+                  let content = candidate.content.parts.first else {
+                isProcessing = false
+                return nil
+            }
+
+            let responseText = content.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            print("📸 Photo identification response: \(responseText.prefix(400))")
+
+            // Also update the display string for backward compat
+            latestIdentification = responseText
+
+            let result = PhotoIdentificationResult.parse(from: responseText)
+            isProcessing = false
+            return result
+
+        } catch {
+            self.error = error.localizedDescription
+            print("📸 Photo identification error: \(error.localizedDescription)")
+            isProcessing = false
+            return nil
+        }
+    }
+
     // MARK: - Private Methods
-    
-    private func createRequest(base64Image: String, prompt: String) throws -> URLRequest {
+
+    private func createRequest(base64Image: String, prompt: String, maxOutputTokens: Int = 100) throws -> URLRequest {
         guard let url = URL(string: "\(apiEndpoint)?key=\(apiKey)") else {
             throw GeminiError.invalidURL
         }
@@ -342,13 +403,82 @@ class GeminiVisionService: ObservableObject {
                 "temperature": 0.4,
                 "topK": 32,
                 "topP": 1,
-                "maxOutputTokens": 100
+                "maxOutputTokens": maxOutputTokens
             ]
         ]
         
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         
         return request
+    }
+}
+
+// MARK: - Photo Identification Result
+
+struct PhotoIdentificationResult {
+    var name: String
+    var brand: String?
+    var color: String?
+    var size: String?
+    var category: String?
+    var estimatedValue: Double?
+    var description: String?
+
+    /// Parse from Gemini JSON response text, with fallback for plain text
+    static func parse(from text: String) -> PhotoIdentificationResult {
+        // Strip markdown fences if present
+        var cleaned = text
+        if let range = cleaned.range(of: "```json") {
+            cleaned = String(cleaned[range.upperBound...])
+        } else if let range = cleaned.range(of: "```") {
+            cleaned = String(cleaned[range.upperBound...])
+        }
+        if let range = cleaned.range(of: "```") {
+            cleaned = String(cleaned[..<range.lowerBound])
+        }
+        cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Try JSON parse
+        if let startIdx = cleaned.firstIndex(of: "{"),
+           let endIdx = cleaned.lastIndex(of: "}") {
+            let jsonStr = String(cleaned[startIdx...endIdx])
+            if let data = jsonStr.data(using: .utf8),
+               let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+
+                let name = dict["name"] as? String ?? "Unknown Item"
+                // Filter out refusal/garbage names
+                if name.contains("cannot") || name.contains("unable") || name.count > 80 {
+                    return PhotoIdentificationResult(name: "Unknown Item", description: text)
+                }
+
+                return PhotoIdentificationResult(
+                    name: name,
+                    brand: Self.nullableString(dict["brand"]),
+                    color: Self.nullableString(dict["color"]),
+                    size: Self.nullableString(dict["size"]),
+                    category: Self.nullableString(dict["category"]),
+                    estimatedValue: Self.nullableDouble(dict["estimatedValue"]),
+                    description: Self.nullableString(dict["description"])
+                )
+            }
+        }
+
+        // Fallback: use raw text as description, try to extract a name from first line
+        let firstLine = text.components(separatedBy: .newlines).first ?? text
+        let name = firstLine.count <= 60 ? firstLine : "Unknown Item"
+        return PhotoIdentificationResult(name: name, description: text)
+    }
+
+    private static func nullableString(_ value: Any?) -> String? {
+        guard let str = value as? String, str != "null", !str.isEmpty else { return nil }
+        return str
+    }
+
+    private static func nullableDouble(_ value: Any?) -> Double? {
+        if let num = value as? Double { return num }
+        if let num = value as? Int { return Double(num) }
+        if let str = value as? String, let num = Double(str) { return num }
+        return nil
     }
 }
 

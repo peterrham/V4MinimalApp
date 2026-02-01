@@ -10,13 +10,32 @@ import SwiftUI
 
 class InventoryStore: ObservableObject {
 
-    @Published private(set) var items: [InventoryItem] = []
+    @Published var items: [InventoryItem] = []
+    @Published var homes: [Home] = []
+    @Published var currentHomeId: UUID = Home.defaultHomeId
 
     private let fileName = "inventory.json"
+    private let homesFileName = "homes.json"
+
+    // MARK: - Computed Properties
+
+    var currentHome: Home? {
+        homes.first { $0.id == currentHomeId }
+    }
+
+    var currentHomeItems: [InventoryItem] {
+        items.filter { ($0.homeId ?? Home.defaultHomeId) == currentHomeId }
+    }
 
     // MARK: - Initialization
 
     init() {
+        loadHomes()
+        if let savedId = UserDefaults.standard.string(forKey: "currentHomeId"),
+           let uuid = UUID(uuidString: savedId),
+           homes.contains(where: { $0.id == uuid }) {
+            currentHomeId = uuid
+        }
         loadItems()
         cleanupCorruptedItems()
     }
@@ -29,6 +48,14 @@ class InventoryStore: ObservableObject {
             in: .userDomainMask
         ).first!
         return documentsDir.appendingPathComponent(fileName)
+    }
+
+    private var homesFileURL: URL {
+        let documentsDir = FileManager.default.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        ).first!
+        return documentsDir.appendingPathComponent(homesFileName)
     }
 
     private var inventoryPhotosDir: URL {
@@ -99,7 +126,8 @@ class InventoryStore: ObservableObject {
                 room: "",
                 brand: detection.brand,
                 itemColor: detection.color,
-                size: detection.size
+                size: detection.size,
+                homeId: currentHomeId
             )
             if let imageData = detection.createThumbnailData() {
                 let filename = saveImage(imageData, for: item.id)
@@ -140,7 +168,8 @@ class InventoryStore: ObservableObject {
                     room: "",
                     brand: detection.brand,
                     itemColor: detection.color,
-                    size: detection.size
+                    size: detection.size,
+                    homeId: currentHomeId
                 )
                 if let imageData = detection.createThumbnailData() {
                     let filename = saveImage(imageData, for: item.id)
@@ -152,6 +181,65 @@ class InventoryStore: ObservableObject {
         saveItems()
     }
 
+    /// Add an item from photo capture with structured identification result
+    func addItemFromPhoto(_ result: PhotoIdentificationResult, photo: UIImage) {
+        // Scale photo to max 1200px wide for storage (better than 480px thumbnails from live detection)
+        let maxWidth: CGFloat = 1200
+        let scale = min(maxWidth / photo.size.width, 1.0)
+        let scaledSize = CGSize(width: photo.size.width * scale, height: photo.size.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: scaledSize)
+        let scaledImage = renderer.image { _ in
+            photo.draw(in: CGRect(origin: .zero, size: scaledSize))
+        }
+        guard let photoData = scaledImage.jpegData(compressionQuality: 0.85) else { return }
+
+        let category = ItemCategory.from(rawString: result.category ?? "")
+
+        if let existingIndex = findExistingItem(matchingName: result.name) {
+            // Merge into existing item
+            items[existingIndex].updatedAt = Date()
+            if items[existingIndex].brand == nil, let brand = result.brand { items[existingIndex].brand = brand }
+            if items[existingIndex].itemColor == nil, let color = result.color { items[existingIndex].itemColor = color }
+            if items[existingIndex].size == nil, let size = result.size { items[existingIndex].size = size }
+            if items[existingIndex].category == .other && category != .other { items[existingIndex].category = category }
+            if let value = result.estimatedValue, items[existingIndex].estimatedValue == nil {
+                items[existingIndex].estimatedValue = value
+            }
+            if let desc = result.description, !desc.isEmpty, items[existingIndex].notes.isEmpty {
+                items[existingIndex].notes = desc
+            }
+            // Always add the new photo (photos are browseable)
+            let filename = savePhotoWithUniqueId(photoData, for: items[existingIndex].id)
+            items[existingIndex].photos.append(filename)
+        } else {
+            var item = InventoryItem(
+                name: result.name,
+                category: category,
+                room: "",
+                estimatedValue: result.estimatedValue,
+                brand: result.brand,
+                itemColor: result.color,
+                size: result.size,
+                notes: result.description ?? "",
+                homeId: currentHomeId
+            )
+            let filename = savePhotoWithUniqueId(photoData, for: item.id)
+            item.photos.append(filename)
+            items.append(item)
+        }
+        saveItems()
+        print("📸 Saved to inventory: \(result.name) (photo: \(Int(scaledSize.width))x\(Int(scaledSize.height)))")
+    }
+
+    /// Save photo with a unique filename (supports multiple photos per item)
+    private func savePhotoWithUniqueId(_ data: Data, for itemId: UUID) -> String {
+        let timestamp = Int(Date().timeIntervalSince1970)
+        let filename = "\(itemId.uuidString)_\(timestamp).jpg"
+        let url = inventoryPhotosDir.appendingPathComponent(filename)
+        try? data.write(to: url, options: .atomic)
+        return filename
+    }
+
     // MARK: - Deduplication Helpers
 
     /// Normalize a name for comparison
@@ -159,14 +247,15 @@ class InventoryStore: ObservableObject {
         name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// Find an existing item whose name matches (exact or containment)
+    /// Find an existing item whose name matches (exact or containment), scoped to current home
     private func findExistingItem(matchingName name: String) -> Int? {
         let normalized = Self.normalizedName(name)
         return items.firstIndex { existing in
+            let sameHome = (existing.homeId ?? Home.defaultHomeId) == currentHomeId
             let existingNorm = Self.normalizedName(existing.name)
-            return existingNorm == normalized ||
+            return sameHome && (existingNorm == normalized ||
                    existingNorm.contains(normalized) ||
-                   normalized.contains(existingNorm)
+                   normalized.contains(existingNorm))
         }
     }
 
@@ -237,6 +326,10 @@ class InventoryStore: ObservableObject {
             if other.name.count > items[keepIndex].name.count {
                 items[keepIndex].name = other.name
             }
+            // Merge new fields
+            items[keepIndex].quantity += other.quantity
+            if items[keepIndex].upc == nil { items[keepIndex].upc = other.upc }
+            if other.isEmptyBox { items[keepIndex].isEmptyBox = true }
         }
         items[keepIndex].updatedAt = Date()
 
@@ -278,9 +371,81 @@ class InventoryStore: ObservableObject {
         print("🗑️ Deleted all inventory items")
     }
 
-    // MARK: - Persistence
+    // MARK: - Home CRUD
 
-    private func saveItems() {
+    func switchHome(to homeId: UUID) {
+        currentHomeId = homeId
+        UserDefaults.standard.set(homeId.uuidString, forKey: "currentHomeId")
+    }
+
+    func addHome(_ home: Home) {
+        homes.append(home)
+        saveHomes()
+    }
+
+    func updateHome(_ home: Home) {
+        if let index = homes.firstIndex(where: { $0.id == home.id }) {
+            homes[index] = home
+            saveHomes()
+        }
+    }
+
+    func deleteHome(id: UUID) {
+        guard homes.count > 1 else { return }
+        guard id != currentHomeId else { return }
+        // Reassign orphaned items to the current home
+        for i in items.indices where (items[i].homeId ?? Home.defaultHomeId) == id {
+            items[i].homeId = currentHomeId
+        }
+        homes.removeAll { $0.id == id }
+        saveItems()
+        saveHomes()
+    }
+
+    /// Delete all items belonging to the current home
+    func deleteCurrentHomeItems() {
+        let homeId = currentHomeId
+        let toDelete = items.filter { ($0.homeId ?? Home.defaultHomeId) == homeId }
+        for item in toDelete {
+            for photo in item.photos { deletePhoto(filename: photo) }
+        }
+        items.removeAll { ($0.homeId ?? Home.defaultHomeId) == homeId }
+        saveItems()
+    }
+
+    // MARK: - Homes Persistence
+
+    func saveHomes() {
+        do {
+            let data = try JSONEncoder().encode(homes)
+            try data.write(to: homesFileURL, options: .atomic)
+        } catch {
+            print("Failed to save homes: \(error)")
+        }
+    }
+
+    private func loadHomes() {
+        guard FileManager.default.fileExists(atPath: homesFileURL.path) else {
+            homes = [Home(id: Home.defaultHomeId, name: "My Home")]
+            saveHomes()
+            return
+        }
+        do {
+            let data = try Data(contentsOf: homesFileURL)
+            homes = try JSONDecoder().decode([Home].self, from: data)
+            if homes.isEmpty {
+                homes = [Home(id: Home.defaultHomeId, name: "My Home")]
+                saveHomes()
+            }
+        } catch {
+            print("Failed to load homes: \(error)")
+            homes = [Home(id: Home.defaultHomeId, name: "My Home")]
+        }
+    }
+
+    // MARK: - Items Persistence
+
+    func saveItems() {
         do {
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .iso8601
@@ -525,6 +690,8 @@ struct DuplicateReviewSheet: View {
         if item.itemColor != nil { count += 10 }
         if item.size != nil { count += 10 }
         if item.category != .other { count += 10 }
+        if item.quantity > 1 { count += 5 }
+        if item.upc != nil { count += 10 }
         return count
     }
 }
