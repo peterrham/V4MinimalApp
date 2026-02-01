@@ -7,6 +7,7 @@
 
 import Foundation
 import UIKit
+import Vision
 
 /// Append a diagnostic line to Documents/debug_log.txt for debugging
 nonisolated func geminiDebugLog(_ msg: String) {
@@ -424,7 +425,9 @@ class GeminiVisionService: ObservableObject {
             if max(image.size.width, image.size.height) > maxDim {
                 let scale = maxDim / max(image.size.width, image.size.height)
                 let newSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
-                let renderer = UIGraphicsImageRenderer(size: newSize)
+                let format = UIGraphicsImageRendererFormat()
+                format.scale = 1.0  // 1:1 pixels, not screen scale
+                let renderer = UIGraphicsImageRenderer(size: newSize, format: format)
                 sendImage = renderer.image { _ in image.draw(in: CGRect(origin: .zero, size: newSize)) }
                 geminiDebugLog("📸 Resized \(Int(image.size.width))x\(Int(image.size.height)) → \(Int(newSize.width))x\(Int(newSize.height))")
             } else {
@@ -469,11 +472,28 @@ class GeminiVisionService: ObservableObject {
                 geminiDebugLog("📸 Finish reason: \(finishReason)")
             }
 
-            let results = PhotoIdentificationResult.parseMultiple(from: responseText)
-            geminiDebugLog("📸 Parsed \(results.count) items")
+            var results = PhotoIdentificationResult.parseMultiple(from: responseText)
+            geminiDebugLog("📸 Parsed \(results.count) items (pre-OCR)")
             for (i, r) in results.enumerated() {
                 geminiDebugLog("📸   [\(i)] '\(r.name)' cat=\(r.category ?? "-") val=\(r.estimatedValue.map { String(format: "%.0f", $0) } ?? "-") box=\(r.boundingBox != nil)")
             }
+
+            // Enrich with on-device OCR (run off main thread)
+            let originalImage = image
+            let preOCR = results
+            results = await withCheckedContinuation { continuation in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    var mutable = preOCR
+                    PhotoIdentificationResult.enrichWithOCR(&mutable, originalImage: originalImage)
+                    continuation.resume(returning: mutable)
+                }
+            }
+
+            geminiDebugLog("📸 Final results after OCR: \(results.count) items")
+            for (i, r) in results.enumerated() {
+                geminiDebugLog("📸   [\(i)] '\(r.name)' brand=\(r.brand ?? "-") size=\(r.size ?? "-") ocr=\(r.ocrText?.count ?? 0) lines")
+            }
+
             isProcessing = false
             return results
 
@@ -538,6 +558,7 @@ struct PhotoIdentificationResult: Identifiable {
     var estimatedValue: Double?
     var description: String?
     var boundingBox: (yMin: CGFloat, xMin: CGFloat, yMax: CGFloat, xMax: CGFloat)?
+    var ocrText: [String]?
 
     /// Parse from Gemini JSON response text, with fallback for plain text
     static func parse(from text: String) -> PhotoIdentificationResult {
@@ -700,6 +721,277 @@ struct PhotoIdentificationResult: Identifiable {
         if let num = value as? Int { return Double(num) }
         if let str = value as? String, let num = Double(str) { return num }
         return nil
+    }
+
+    // MARK: - OCR Enrichment
+
+    /// Run Vision OCR on a UIImage and return recognized text lines
+    static func recognizeText(in image: UIImage) -> [String] {
+        guard let cgImage = image.cgImage else { return [] }
+
+        var results: [String] = []
+        let request = VNRecognizeTextRequest { request, error in
+            guard let observations = request.results as? [VNRecognizedTextObservation] else { return }
+            for observation in observations {
+                if let candidate = observation.topCandidates(1).first, candidate.confidence > 0.3 {
+                    results.append(candidate.string)
+                }
+            }
+        }
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = true
+
+        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        try? handler.perform([request])
+
+        return results
+    }
+
+    /// Crop an image to a normalized bounding box (0-1 coords) with padding for OCR
+    private static func cropForOCR(_ image: UIImage, box: (yMin: CGFloat, xMin: CGFloat, yMax: CGFloat, xMax: CGFloat)) -> UIImage {
+        let imgW = image.size.width
+        let imgH = image.size.height
+
+        let bx = box.xMin * imgW
+        let by = box.yMin * imgH
+        let bw = (box.xMax - box.xMin) * imgW
+        let bh = (box.yMax - box.yMin) * imgH
+        let pad: CGFloat = 0.05
+        let padX = bw * pad
+        let padY = bh * pad
+
+        let cropRect = CGRect(
+            x: max(bx - padX, 0),
+            y: max(by - padY, 0),
+            width: min(bw + padX * 2, imgW - max(bx - padX, 0)),
+            height: min(bh + padY * 2, imgH - max(by - padY, 0))
+        )
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+        let renderer = UIGraphicsImageRenderer(size: cropRect.size, format: format)
+        return renderer.image { _ in
+            image.draw(at: CGPoint(x: -cropRect.origin.x, y: -cropRect.origin.y))
+        }
+    }
+
+    /// Enrich results with on-device OCR from cropped bounding boxes
+    static func enrichWithOCR(_ results: inout [PhotoIdentificationResult], originalImage: UIImage) {
+        geminiDebugLog("🔤 OCR enrichment starting for \(results.count) items")
+
+        for i in results.indices {
+            guard let box = results[i].boundingBox else { continue }
+
+            let cropped = cropForOCR(originalImage, box: box)
+            let ocrLines = recognizeText(in: cropped)
+
+            if ocrLines.isEmpty {
+                geminiDebugLog("🔤 [\(i)] '\(results[i].name)' — no OCR text")
+                continue
+            }
+
+            results[i].ocrText = ocrLines
+            let allText = ocrLines.joined(separator: " ")
+            geminiDebugLog("🔤 [\(i)] '\(results[i].name)' — OCR(\(ocrLines.count) lines): \(ocrLines.prefix(3).joined(separator: " | "))")
+
+            // 1. Extract brand from OCR if missing
+            if results[i].brand == nil || results[i].brand == "Unknown" {
+                if let brand = extractBrand(from: ocrLines) {
+                    geminiDebugLog("🔤   Brand: '\(results[i].brand ?? "nil")' → '\(brand)'")
+                    results[i].brand = brand
+                }
+            }
+
+            // 2. Extract size from OCR if missing
+            if results[i].size == nil {
+                if let size = extractSize(from: allText) {
+                    geminiDebugLog("🔤   Size: nil → '\(size)'")
+                    results[i].size = size
+                }
+            }
+
+            // 3. Improve generic names using OCR
+            let improvedName = improveNameWithOCR(
+                currentName: results[i].name,
+                brand: results[i].brand,
+                ocrLines: ocrLines
+            )
+            if improvedName != results[i].name {
+                geminiDebugLog("🔤   Name: '\(results[i].name)' → '\(improvedName)'")
+                results[i].name = improvedName
+            }
+
+            // 4. Append key OCR text to description
+            let ocrSummary = ocrLines.prefix(5).joined(separator: "; ")
+            if !ocrSummary.isEmpty {
+                let existing = results[i].description ?? ""
+                results[i].description = existing.isEmpty ? "OCR: \(ocrSummary)" : "\(existing) | OCR: \(ocrSummary)"
+            }
+        }
+
+        geminiDebugLog("🔤 OCR enrichment complete")
+    }
+
+    // Common words to skip when looking for brands
+    private static let commonWords: Set<String> = [
+        "the", "and", "for", "with", "from", "this", "that", "your", "not",
+        "all", "new", "use", "see", "may", "can", "get", "how", "our",
+        "drug", "facts", "active", "ingredient", "purpose", "uses", "warnings",
+        "directions", "other", "information", "questions", "keep", "out",
+        "reach", "children", "stop", "ask", "doctor", "apply", "skin",
+        "net", "contents", "made", "usa", "distributed", "do", "not",
+        "danger", "caution", "warning", "maximum", "strength", "fast",
+        "acting", "relief", "daily", "twice", "once"
+    ]
+
+    /// Extract a brand name from OCR lines
+    private static func extractBrand(from ocrLines: [String]) -> String? {
+        // Priority 1: Lines with ® or ™
+        for line in ocrLines {
+            if line.contains("®") || line.contains("™") {
+                let brand = line
+                    .replacingOccurrences(of: "®", with: "")
+                    .replacingOccurrences(of: "™", with: "")
+                    .trimmingCharacters(in: .whitespaces)
+                if brand.count >= 2 && brand.count <= 40 {
+                    return brand
+                }
+            }
+        }
+
+        // Priority 2: ALL-CAPS phrases (3-30 chars, not common/instruction words)
+        for line in ocrLines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard trimmed.count >= 3, trimmed.count <= 30,
+                  trimmed == trimmed.uppercased(),
+                  trimmed.rangeOfCharacter(from: .letters) != nil else { continue }
+
+            let lower = trimmed.lowercased()
+            let words = lower.split(separator: " ").map(String.init)
+            // Skip if ALL words are common
+            if words.allSatisfy({ commonWords.contains($0) }) { continue }
+            // Skip pure numbers
+            if lower.allSatisfy({ $0.isNumber || $0 == " " }) { continue }
+            // Skip sizes
+            if lower.contains(" oz") || lower.contains(" ml") || lower.contains(" mg") { continue }
+            // Skip instructions
+            if lower.hasPrefix("do ") || lower.hasPrefix("use ") || lower.hasPrefix("apply ") { continue }
+            return trimmed
+        }
+
+        // Priority 3: Title-cased multi-word phrases in first few lines
+        for line in ocrLines.prefix(5) {
+            let words = line.split(separator: " ").map(String.init)
+            guard words.count >= 1, words.count <= 4,
+                  line.count >= 3, line.count <= 40 else { continue }
+
+            let hasProperNoun = words.contains { word in
+                guard let first = word.first else { return false }
+                return first.isUppercase && !commonWords.contains(word.lowercased())
+            }
+            guard hasProperNoun else { continue }
+
+            let lower = line.lowercased()
+            if lower.contains("drug facts") || lower.contains("active ingredient") { continue }
+            if lower.hasPrefix("do ") || lower.hasPrefix("use ") || lower.hasPrefix("apply ") { continue }
+            // Skip if it looks like a sentence fragment (contains common verbs)
+            if lower.contains(" is ") || lower.contains(" are ") || lower.contains(" the ") { continue }
+            return line.trimmingCharacters(in: .whitespaces)
+        }
+
+        return nil
+    }
+
+    /// Extract size/weight info from OCR text
+    private static func extractSize(from text: String) -> String? {
+        let patterns = [
+            "\\b(\\d+\\.?\\d*)\\s*(fl\\.?\\s*oz|oz|ml|mg|g|lb|kg|gal)\\b",
+            "\\b(\\d+\\.?\\d*)\\s*(fluid ounce|ounce|gram|liter|gallon)s?\\b"
+        ]
+
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+               let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+               let range = Range(match.range, in: text) {
+                return String(text[range])
+            }
+        }
+        return nil
+    }
+
+    /// Improve a generic name using OCR-detected text
+    private static func improveNameWithOCR(currentName: String, brand: String?, ocrLines: [String]) -> String {
+        let lowerName = currentName.lowercased()
+
+        // Only improve names that look generic
+        let genericPatterns = [
+            "white bottle", "small bottle", "blue bottle", "red container",
+            "white tube", "clear bottle", "black bottle", "purple bottle",
+            "small black", "small white", "small green", "small brown",
+            "white device", "white electronic", "clear plastic",
+            "small item", "blue bottle 1", "blue bottle 2",
+            "white bottle 1", "white bottle 2", "white label",
+            "red pill", "tan bottle", "light brown bottle"
+        ]
+
+        let isGeneric = genericPatterns.contains(where: { lowerName.contains($0) })
+            || (lowerName.hasPrefix("small ") && lowerName.count < 25)
+
+        guard isGeneric else { return currentName }
+
+        // Look for product-type keywords in OCR
+        let productTypes: [(keyword: String, label: String)] = [
+            ("shampoo", "Shampoo"),
+            ("conditioner", "Conditioner"),
+            ("deodorant", "Deodorant"),
+            ("toothpaste", "Toothpaste"),
+            ("tooth powder", "Tooth Powder"),
+            ("mouthwash", "Mouthwash"),
+            ("sunscreen", "Sunscreen"),
+            ("lotion", "Lotion"),
+            ("cream", "Cream"),
+            ("serum", "Serum"),
+            ("moisturizer", "Moisturizer"),
+            ("cleanser", "Cleanser"),
+            ("body wash", "Body Wash"),
+            ("face wash", "Face Wash"),
+            ("hand sanitizer", "Hand Sanitizer"),
+            ("itch relief", "Itch Relief"),
+            ("anti-itch", "Anti-Itch Treatment"),
+            ("pain relief", "Pain Relief"),
+            ("antibiotic", "Antibiotic"),
+            ("hydrocortisone", "Hydrocortisone Cream"),
+            ("fluoride", "Fluoride Toothpaste"),
+            ("sharps container", "Sharps Container"),
+            ("supplement", "Supplement"),
+            ("vitamin", "Vitamin"),
+            ("spray", "Spray"),
+            ("ointment", "Ointment"),
+            ("powder", "Powder"),
+            ("soap", "Soap"),
+            ("floss", "Dental Floss"),
+            ("bandage", "Bandage"),
+        ]
+
+        let allText = ocrLines.joined(separator: " ").lowercased()
+
+        for (keyword, label) in productTypes {
+            if allText.contains(keyword) {
+                if let brand = brand, !brand.isEmpty {
+                    return "\(brand) \(label)"
+                } else {
+                    return label
+                }
+            }
+        }
+
+        // If no product type found but we have a brand, prefix it
+        if let brand = brand, !brand.isEmpty,
+           !currentName.lowercased().contains(brand.lowercased()) {
+            return "\(brand) \(currentName)"
+        }
+
+        return currentName
     }
 }
 

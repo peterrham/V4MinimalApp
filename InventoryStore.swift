@@ -298,12 +298,14 @@ class InventoryStore: ObservableObject {
     /// Prepare photo data: crop to bounding box if available, otherwise scale full photo
     private func preparePhotoData(from photo: UIImage, boundingBox: (yMin: CGFloat, xMin: CGFloat, yMax: CGFloat, xMax: CGFloat)?) -> Data? {
         let maxWidth: CGFloat = 1200
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0  // 1:1 pixels, not screen scale
 
         if let box = boundingBox {
             let cropped = cropPhoto(photo, to: box)
             let scale = min(maxWidth / cropped.size.width, 1.0)
             let scaledSize = CGSize(width: cropped.size.width * scale, height: cropped.size.height * scale)
-            let renderer = UIGraphicsImageRenderer(size: scaledSize)
+            let renderer = UIGraphicsImageRenderer(size: scaledSize, format: format)
             let scaled = renderer.image { _ in
                 cropped.draw(in: CGRect(origin: .zero, size: scaledSize))
             }
@@ -311,7 +313,7 @@ class InventoryStore: ObservableObject {
         } else {
             let scale = min(maxWidth / photo.size.width, 1.0)
             let scaledSize = CGSize(width: photo.size.width * scale, height: photo.size.height * scale)
-            let renderer = UIGraphicsImageRenderer(size: scaledSize)
+            let renderer = UIGraphicsImageRenderer(size: scaledSize, format: format)
             let scaled = renderer.image { _ in
                 photo.draw(in: CGRect(origin: .zero, size: scaledSize))
             }
@@ -340,7 +342,9 @@ class InventoryStore: ObservableObject {
         )
 
         // Render at crop rect to handle orientation correctly
-        let renderer = UIGraphicsImageRenderer(size: cropRect.size)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1.0
+        let renderer = UIGraphicsImageRenderer(size: cropRect.size, format: format)
         return renderer.image { _ in
             photo.draw(at: CGPoint(x: -cropRect.origin.x, y: -cropRect.origin.y))
         }

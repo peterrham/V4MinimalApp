@@ -398,21 +398,21 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
 
 extension CameraManager {
     nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        // Get the callback handler
-        guard let handler = onFrameCaptured else { return }
-
-        // Convert CMSampleBuffer to UIImage
         guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
-        let ciImage = CIImage(cvPixelBuffer: imageBuffer)
+        // Raw pixel buffer path (YOLO / Vision ML) — no conversion overhead
+        if let pixelHandler = onPixelBufferCaptured {
+            pixelHandler(imageBuffer)
+        }
 
-        guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) else { return }
-
-        let image = UIImage(cgImage: cgImage, scale: 1.0, orientation: .right)
-
-        // Call the handler on main thread
-        Task { @MainActor in
-            handler(image)
+        // UIImage path (Gemini streaming)
+        if let handler = onFrameCaptured {
+            let ciImage = CIImage(cvPixelBuffer: imageBuffer)
+            guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent) else { return }
+            let image = UIImage(cgImage: cgImage, scale: 1.0, orientation: .right)
+            Task { @MainActor in
+                handler(image)
+            }
         }
     }
 }

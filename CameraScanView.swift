@@ -28,6 +28,7 @@ struct CameraScanView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var enableStreamingUpload = false
     @State private var showLiveDetection = false
+    @State private var showYOLODetection = false
     @State private var showInstructionOverlay = true
     @State private var multiItemResults: [PhotoIdentificationResult] = []
     @State private var libraryPhoto: UIImage?
@@ -166,6 +167,23 @@ struct CameraScanView: View {
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
                             .background(Capsule().fill(.red.opacity(0.8)))
+                        }
+
+                        // YOLO Detection test button
+                        Button {
+                            showYOLODetection = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "square.dashed")
+                                Text("YOLO")
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                            }
+                            .font(.caption)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .background(Capsule().fill(.orange.opacity(0.8)))
                         }
 
                         // Upload Queue Badge
@@ -722,6 +740,9 @@ struct CameraScanView: View {
             .videoSavedToast() // Add toast notification for video saves
             .fullScreenCover(isPresented: $showLiveDetection) {
                 LiveObjectDetectionView()
+            }
+            .fullScreenCover(isPresented: $showYOLODetection) {
+                YOLOLiveDetectionView()
             }
             .sheet(isPresented: $showingMultiItemSheet) {
                 multiItemSheet

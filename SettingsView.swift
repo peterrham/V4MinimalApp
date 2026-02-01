@@ -202,6 +202,12 @@ struct SettingsView: View {
                         } label: {
                             Label("API Logs", systemImage: "doc.plaintext")
                         }
+
+                        NavigationLink {
+                            EvaluationView()
+                        } label: {
+                            Label("Evaluation Harness", systemImage: "gauge.with.dots.needle.33percent")
+                        }
                     }
                 } header: {
                     Text("Advanced")
