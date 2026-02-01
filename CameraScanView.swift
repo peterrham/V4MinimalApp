@@ -855,26 +855,35 @@ struct CameraScanView: View {
     
     private func loadSelectedPhoto() async {
         guard let item = selectedPhotoItem else { return }
-        
+
         do {
             if let data = try await item.loadTransferable(type: Data.self),
                let image = UIImage(data: data) {
-                logger.info("Photo selected from library")
-                
-                // Process the selected photo (could add to detected items, etc.)
+                logger.info("Photo selected from library — analyzing with Gemini")
+
+                // Store image so the Save button can access it (same as camera capture)
+                cameraManager.lastCapturedImage = image
+
+                await MainActor.run {
+                    withAnimation { isIdentifyingPhoto = true }
+                }
+
+                let result = await GeminiVisionService.shared.identifyForInventory(image)
+
                 await MainActor.run {
                     withAnimation {
-                        detectedItems.append("Item from Photo \(detectedItems.count + 1)")
+                        isIdentifyingPhoto = false
+                        photoResult = result
                     }
                 }
-                
-                // Optionally, you could analyze this photo with AI/ML here
             }
         } catch {
             logger.error("Failed to load photo: \(error.localizedDescription)")
+            await MainActor.run {
+                withAnimation { isIdentifyingPhoto = false }
+            }
         }
-        
-        // Reset selection
+
         selectedPhotoItem = nil
     }
     
