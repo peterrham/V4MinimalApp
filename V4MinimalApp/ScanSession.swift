@@ -193,11 +193,49 @@ struct GroundTruthItem: Codable, Identifiable {
     let id: UUID
     var name: String
     var category: String?
+    var brand: String?
+    var color: String?
+    var size: String?
+    var estimatedValue: Double?
 
-    init(id: UUID = UUID(), name: String, category: String? = nil) {
+    init(
+        id: UUID = UUID(),
+        name: String,
+        category: String? = nil,
+        brand: String? = nil,
+        color: String? = nil,
+        size: String? = nil,
+        estimatedValue: Double? = nil
+    ) {
         self.id = id
         self.name = name
         self.category = category
+        self.brand = brand
+        self.color = color
+        self.size = size
+        self.estimatedValue = estimatedValue
+    }
+
+    /// CSV header matching the ground truth export/import format
+    static let csvHeader = "Name,Category,Brand,Color,Size,Estimated Value"
+
+    /// Format this item as a CSV row
+    var csvRow: String {
+        [
+            csvEscape(name),
+            csvEscape(category ?? ""),
+            csvEscape(brand ?? ""),
+            csvEscape(color ?? ""),
+            csvEscape(size ?? ""),
+            estimatedValue.map { String(format: "%.2f", $0) } ?? ""
+        ].joined(separator: ",")
+    }
+
+    private func csvEscape(_ value: String) -> String {
+        if value.contains(",") || value.contains("\"") || value.contains("\n") {
+            return "\"" + value.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+        }
+        return value
     }
 }
 

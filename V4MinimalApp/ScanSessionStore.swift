@@ -85,9 +85,24 @@ class ScanSessionStore: ObservableObject {
         }
     }
 
-    func addGroundTruthItem(to sessionId: UUID, name: String, category: String? = nil) {
+    func addGroundTruthItem(
+        to sessionId: UUID,
+        name: String,
+        category: String? = nil,
+        brand: String? = nil,
+        color: String? = nil,
+        size: String? = nil,
+        estimatedValue: Double? = nil
+    ) {
         if let idx = sessions.firstIndex(where: { $0.id == sessionId }) {
-            let item = GroundTruthItem(name: name, category: category)
+            let item = GroundTruthItem(
+                name: name,
+                category: category,
+                brand: brand,
+                color: color,
+                size: size,
+                estimatedValue: estimatedValue
+            )
             sessions[idx].groundTruth.items.append(item)
             saveSessions()
         }

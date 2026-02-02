@@ -34,6 +34,9 @@ struct EvaluationView: View {
     @State private var isExporting = false
     @State private var exportMessage = ""
     @State private var showExportAlert = false
+    @State private var selectedRunIds: Set<UUID> = []
+    @State private var showDeleteRunsConfirmation = false
+    @State private var deleteRunsAll = false
 
     var body: some View {
         List {
@@ -86,6 +89,32 @@ struct EvaluationView: View {
             Button("OK") {}
         } message: {
             Text(exportMessage)
+        }
+        .alert(
+            deleteRunsAll ? "Delete All Runs?" : "Delete \(selectedRunIds.count) Run\(selectedRunIds.count == 1 ? "" : "s")?",
+            isPresented: $showDeleteRunsConfirmation
+        ) {
+            Button("Delete", role: .destructive) {
+                guard let session = selectedSession else { return }
+                if deleteRunsAll {
+                    for run in session.pipelineRuns {
+                        store.removePipelineRun(from: session.id, runId: run.id)
+                    }
+                } else {
+                    for runId in selectedRunIds {
+                        store.removePipelineRun(from: session.id, runId: runId)
+                    }
+                }
+                selectedRunIds.removeAll()
+                if let updated = store.sessions.first(where: { $0.id == session.id }) {
+                    selectedSession = updated
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(deleteRunsAll
+                 ? "This will remove all pipeline runs from this session."
+                 : "This will remove the selected pipeline runs.")
         }
         .onDisappear {
             player?.pause()
@@ -236,22 +265,19 @@ struct EvaluationView: View {
                     }
                 }
 
-                // Action buttons
-                HStack(spacing: 12) {
-                    Button {
-                        saveVideoToPhotos(session)
-                    } label: {
-                        Label("Save to Photos", systemImage: "square.and.arrow.down")
-                            .font(.caption)
-                    }
+            }
 
-                    Button {
-                        shareVideo(session)
-                    } label: {
-                        Label("Share", systemImage: "square.and.arrow.up")
-                            .font(.caption)
-                    }
-                }
+            // Video action buttons — separate rows so List gives each its own tap target
+            Button {
+                saveVideoToPhotos(session)
+            } label: {
+                Label("Save to Photos", systemImage: "square.and.arrow.down")
+            }
+
+            Button {
+                shareVideo(session)
+            } label: {
+                Label("Share Video", systemImage: "square.and.arrow.up")
             }
             .onAppear {
                 loadVideoDuration(session)
@@ -389,54 +415,122 @@ struct EvaluationView: View {
                 }
             }
 
-            ForEach(session.pipelineRuns.sorted(by: { $0.runDate > $1.runDate })) { run in
-                Button {
-                    selectedRun = run
+            if !selectedRunIds.isEmpty {
+                Button(role: .destructive) {
+                    deleteRunsAll = false
+                    showDeleteRunsConfirmation = true
                 } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(run.pipeline.rawValue)
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.secondary)
-                                .font(.caption)
+                    Label("Delete Selected (\(selectedRunIds.count))", systemImage: "trash")
+                }
+            }
+
+            Button(role: .destructive) {
+                deleteRunsAll = true
+                showDeleteRunsConfirmation = true
+            } label: {
+                Label("Delete All Runs", systemImage: "trash.fill")
+            }
+
+            ForEach(session.pipelineRuns.sorted(by: { $0.runDate > $1.runDate })) { run in
+                HStack(spacing: 10) {
+                    // Selection checkbox
+                    Image(systemName: selectedRunIds.contains(run.id)
+                          ? "checkmark.circle.fill" : "circle")
+                        .foregroundColor(selectedRunIds.contains(run.id) ? .blue : .secondary)
+                        .font(.title3)
+                        .onTapGesture {
+                            if selectedRunIds.contains(run.id) {
+                                selectedRunIds.remove(run.id)
+                            } else {
+                                selectedRunIds.insert(run.id)
+                            }
                         }
 
-                        // Date/time and video range
-                        HStack(spacing: 6) {
-                            Text(run.runDate, format: .dateTime.month(.abbreviated).day().hour().minute())
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                            if run.videoStartTime > 0 || run.videoEndTime != nil {
-                                Text("[\(String(format: "%.0f", run.videoStartTime))s–\(run.videoEndTime.map { String(format: "%.0f", $0) } ?? "end")s]")
+                    // Run details (tap for detail view)
+                    Button {
+                        selectedRun = run
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(run.pipeline.rawValue)
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.secondary)
+                                    .font(.caption)
+                            }
+
+                            // Date/time and video range
+                            HStack(spacing: 6) {
+                                Text(run.runDate, format: .dateTime.month(.abbreviated).day().hour().minute())
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                if run.videoStartTime > 0 || run.videoEndTime != nil {
+                                    Text("[\(String(format: "%.0f", run.videoStartTime))s–\(run.videoEndTime.map { String(format: "%.0f", $0) } ?? "end")s]")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+
+                            HStack(spacing: 12) {
+                                statBadge("\(run.detectedItems.count)", label: "items", color: .blue)
+                                if let scores = run.scores {
+                                    statBadge(scores.recallPercent, label: "recall", color: .green)
+                                    statBadge(scores.precisionPercent, label: "prec", color: .orange)
+                                }
+                                statBadge(String(format: "%.1fs", run.durationSeconds), label: "time", color: .purple)
+                            }
+                            .font(.caption)
+
+                            if run.apiCallCount > 0 {
+                                Text("\(run.apiCallCount) API calls, \(run.framesProcessed) frames")
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                             }
                         }
-
-                        HStack(spacing: 12) {
-                            statBadge("\(run.detectedItems.count)", label: "items", color: .blue)
-                            if let scores = run.scores {
-                                statBadge(scores.recallPercent, label: "recall", color: .green)
-                                statBadge(scores.precisionPercent, label: "prec", color: .orange)
-                            }
-                            statBadge(String(format: "%.1fs", run.durationSeconds), label: "time", color: .purple)
-                        }
-                        .font(.caption)
-
-                        if run.apiCallCount > 0 {
-                            Text("\(run.apiCallCount) API calls, \(run.framesProcessed) frames")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
+                        .padding(.vertical, 4)
                     }
-                    .padding(.vertical, 4)
+                }
+                .swipeActions(edge: .trailing) {
+                    Button(role: .destructive) {
+                        store.removePipelineRun(from: session.id, runId: run.id)
+                        selectedRunIds.remove(run.id)
+                        if let updated = store.sessions.first(where: { $0.id == session.id }) {
+                            selectedSession = updated
+                        }
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+
+                    Button {
+                        Task { await exportRunAsGroundTruth(run: run, session: session) }
+                    } label: {
+                        Label("Export GT", systemImage: "square.and.arrow.up")
+                    }
+                    .tint(.orange)
                 }
             }
+
+            // Export as Ground Truth button
+            if let run = session.pipelineRuns.sorted(by: { $0.runDate > $1.runDate }).first {
+                Button {
+                    Task { await exportRunAsGroundTruth(run: run, session: session) }
+                } label: {
+                    HStack {
+                        Label("Export Latest Run as Ground Truth", systemImage: "square.and.arrow.up")
+                            .font(.subheadline)
+                        Spacer()
+                        if isExporting {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                    }
+                }
+                .disabled(isExporting)
+            }
         } header: {
-            Text("Results (tap for details)")
+            Text("Results (\(session.pipelineRuns.count) runs)")
         }
     }
 
@@ -715,8 +809,15 @@ struct EvaluationView: View {
         return folderId
     }
 
+    /// Upload CSV to Drive, converting to native Google Sheet.
+    /// Setting metadata mimeType to Sheets while uploading text/csv triggers auto-conversion.
     private func uploadCSVToDrive(csv: String, filename: String, folderId: String, token: String) async throws {
         guard let fileData = csv.data(using: .utf8) else { throw URLError(.cannotDecodeContentData) }
+
+        // Strip .csv extension since it becomes a Google Sheet
+        let sheetName = filename.hasSuffix(".csv")
+            ? String(filename.dropLast(4))
+            : filename
 
         let boundary = "Boundary-\(UUID().uuidString)"
         let url = URL(string: "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name")!
@@ -727,9 +828,10 @@ struct EvaluationView: View {
         request.setValue("multipart/related; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 30
 
+        // Setting mimeType to Google Sheets in metadata triggers auto-conversion from CSV
         let metadata: [String: Any] = [
-            "name": filename,
-            "mimeType": "text/csv",
+            "name": sheetName,
+            "mimeType": "application/vnd.google-apps.spreadsheet",
             "parents": [folderId]
         ]
         let metadataData = try JSONSerialization.data(withJSONObject: metadata)
@@ -750,6 +852,62 @@ struct EvaluationView: View {
             let code = (response as? HTTPURLResponse)?.statusCode ?? 0
             throw URLError(.badServerResponse, userInfo: [NSLocalizedDescriptionKey: "HTTP \(code)"])
         }
+    }
+
+    private func exportRunAsGroundTruth(run: PipelineRunResult, session: ScanSession) async {
+        guard let token = AuthManager.shared.getAccessToken(), !token.isEmpty else {
+            exportMessage = "Not signed in to Google. Sign in from Settings first."
+            showExportAlert = true
+            return
+        }
+
+        guard !run.detectedItems.isEmpty else {
+            exportMessage = "No items to export."
+            showExportAlert = true
+            return
+        }
+
+        isExporting = true
+        defer { isExporting = false }
+
+        // Build CSV in ground truth format: Name,Category,Brand,Color,Size,Estimated Value
+        var csv = GroundTruthItem.csvHeader + "\n"
+        for item in run.detectedItems {
+            let row = [
+                csvEscape(item.name),
+                csvEscape(item.category ?? ""),
+                csvEscape(item.brand ?? ""),
+                csvEscape(item.color ?? ""),
+                csvEscape(item.size ?? ""),
+                "" // estimatedValue not in EvalDetectedItem
+            ].joined(separator: ",")
+            csv += row + "\n"
+        }
+
+        // Find or create folder
+        let folderId: String
+        do {
+            folderId = try await findOrCreateDriveFolder(name: "EvalHarness", token: token)
+        } catch {
+            exportMessage = "Failed to create Drive folder: \(error.localizedDescription)"
+            showExportAlert = true
+            return
+        }
+
+        let dateFmt = DateFormatter()
+        dateFmt.dateFormat = "yyyy-MM-dd_HHmmss"
+        let timestamp = dateFmt.string(from: run.runDate)
+        let safePipeline = run.pipeline.rawValue.replacingOccurrences(of: " ", with: "_")
+        let safeSession = session.name.replacingOccurrences(of: " ", with: "_")
+        let filename = "GT_\(safeSession)_\(safePipeline)_\(timestamp).csv"
+
+        do {
+            try await uploadCSVToDrive(csv: csv, filename: filename, folderId: folderId, token: token)
+            exportMessage = "Exported \(run.detectedItems.count) items to Google Drive/EvalHarness/\(filename)\n\nEdit in Sheets then re-import as ground truth."
+        } catch {
+            exportMessage = "Upload failed: \(error.localizedDescription)"
+        }
+        showExportAlert = true
     }
 
     private func loadVideoDuration(_ session: ScanSession) {
@@ -1163,13 +1321,42 @@ struct GroundTruthEditorSheet: View {
                             .foregroundColor(.secondary)
                     } else {
                         ForEach(session.groundTruth.items) { item in
-                            HStack {
-                                Text(item.name)
-                                Spacer()
-                                if let cat = item.category {
-                                    Text(cat)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                            VStack(alignment: .leading, spacing: 3) {
+                                HStack {
+                                    Text(item.name)
+                                        .font(.subheadline.bold())
+                                    Spacer()
+                                    if let cat = item.category {
+                                        Text(cat)
+                                            .font(.caption2)
+                                            .padding(.horizontal, 4)
+                                            .padding(.vertical, 1)
+                                            .background(.purple.opacity(0.15))
+                                            .foregroundColor(.purple)
+                                            .clipShape(RoundedRectangle(cornerRadius: 3))
+                                    }
+                                }
+                                HStack(spacing: 8) {
+                                    if let brand = item.brand, !brand.isEmpty {
+                                        Text(brand)
+                                            .font(.caption2)
+                                            .foregroundColor(.blue)
+                                    }
+                                    if let color = item.color, !color.isEmpty {
+                                        Text(color)
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    if let size = item.size, !size.isEmpty {
+                                        Text(size)
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    if let value = item.estimatedValue, value > 0 {
+                                        Text(String(format: "$%.0f", value))
+                                            .font(.caption2)
+                                            .foregroundColor(.green)
+                                    }
                                 }
                             }
                         }
@@ -1183,6 +1370,9 @@ struct GroundTruthEditorSheet: View {
                     }
                 } header: {
                     Text("Items (\(session.groundTruth.items.count))")
+                } footer: {
+                    Text("CSV format: Name, Category, Brand, Color, Size, Estimated Value")
+                        .font(.caption2)
                 }
             }
             .navigationTitle("Ground Truth")
@@ -1212,22 +1402,43 @@ struct GoogleSheetsImportView: View {
     @Binding var session: ScanSession
     @Environment(\.dismiss) private var dismiss
 
-    @State private var searchQuery = "ground truth"
-    @State private var spreadsheets: [(id: String, name: String)] = []
+    @State private var searchQuery = "GT_"
+    @State private var spreadsheets: [(id: String, name: String, mimeType: String)] = []
     @State private var isSearching = false
+    @State private var isBrowsing = false
     @State private var isLoading = false
     @State private var statusMessage = ""
-    @State private var previewItems: [(name: String, category: String?)] = []
+    @State private var previewItems: [(name: String, category: String?, brand: String?, color: String?, size: String?, estimatedValue: Double?)] = []
     @State private var selectedSheetId: String?
     @State private var selectedSheetName: String?
 
     var body: some View {
         NavigationStack {
             List {
+                // Browse EvalHarness folder
+                Section {
+                    Button {
+                        Task { await browseEvalHarnessFolder() }
+                    } label: {
+                        HStack {
+                            Label("Browse EvalHarness Folder", systemImage: "folder")
+                            Spacer()
+                            if isBrowsing {
+                                ProgressView().controlSize(.small)
+                            }
+                        }
+                    }
+                    .disabled(isBrowsing)
+                } header: {
+                    Text("Exported Ground Truth")
+                } footer: {
+                    Text("Shows sheets exported from pipeline runs. Edit in Google Sheets, then tap to re-import.")
+                }
+
                 // Search
                 Section {
                     HStack {
-                        TextField("Search sheets...", text: $searchQuery)
+                        TextField("Search by name...", text: $searchQuery)
                             .textInputAutocapitalization(.never)
                         Button {
                             Task { await searchSheets() }
@@ -1244,7 +1455,7 @@ struct GoogleSheetsImportView: View {
                 } header: {
                     Text("Search Google Drive")
                 } footer: {
-                    Text("Searches your Google Drive for spreadsheets. Column A = item name, Column B = category (optional).")
+                    Text("Finds spreadsheets and CSVs by name. Columns: Name, Category, Brand, Color, Size, Value.")
                 }
 
                 // Results
@@ -1254,13 +1465,14 @@ struct GoogleSheetsImportView: View {
                             Button {
                                 selectedSheetId = sheet.id
                                 selectedSheetName = sheet.name
-                                Task { await loadSheet(id: sheet.id) }
+                                Task { await loadSheet(id: sheet.id, mimeType: sheet.mimeType) }
                             } label: {
                                 HStack {
-                                    Image(systemName: "tablecells")
-                                        .foregroundColor(.green)
+                                    Image(systemName: sheet.mimeType.contains("spreadsheet") ? "tablecells" : "doc.text")
+                                        .foregroundColor(sheet.mimeType.contains("spreadsheet") ? .green : .orange)
                                     Text(sheet.name)
                                         .foregroundColor(.primary)
+                                        .lineLimit(1)
                                     Spacer()
                                     if selectedSheetId == sheet.id {
                                         Image(systemName: "checkmark")
@@ -1270,7 +1482,7 @@ struct GoogleSheetsImportView: View {
                             }
                         }
                     } header: {
-                        Text("Spreadsheets")
+                        Text("Results (\(spreadsheets.count))")
                     }
                 }
 
@@ -1278,13 +1490,30 @@ struct GoogleSheetsImportView: View {
                 if !previewItems.isEmpty {
                     Section {
                         ForEach(Array(previewItems.enumerated()), id: \.offset) { _, item in
-                            HStack {
-                                Text(item.name)
-                                Spacer()
-                                if let cat = item.category {
-                                    Text(cat)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack {
+                                    Text(item.name)
+                                        .font(.subheadline)
+                                    Spacer()
+                                    if let cat = item.category {
+                                        Text(cat)
+                                            .font(.caption2)
+                                            .foregroundColor(.purple)
+                                    }
+                                }
+                                HStack(spacing: 6) {
+                                    if let brand = item.brand {
+                                        Text(brand).font(.caption2).foregroundColor(.blue)
+                                    }
+                                    if let color = item.color {
+                                        Text(color).font(.caption2).foregroundColor(.secondary)
+                                    }
+                                    if let size = item.size {
+                                        Text(size).font(.caption2).foregroundColor(.secondary)
+                                    }
+                                    if let value = item.estimatedValue {
+                                        Text(String(format: "$%.0f", value)).font(.caption2).foregroundColor(.green)
+                                    }
                                 }
                             }
                         }
@@ -1351,7 +1580,12 @@ struct GoogleSheetsImportView: View {
 
         let query = searchQuery.trimmingCharacters(in: .whitespaces)
         let escaped = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
-        let urlStr = "https://www.googleapis.com/drive/v3/files?q=mimeType%3D'application%2Fvnd.google-apps.spreadsheet'+and+name+contains+'\(escaped)'&orderBy=modifiedTime+desc&pageSize=10&fields=files(id%2Cname)"
+        // Search for spreadsheets AND CSVs by name
+        let mimeFilter = "(mimeType='application/vnd.google-apps.spreadsheet' or mimeType='text/csv')"
+        let nameFilter = "name contains '\(escaped)'"
+        let fullQuery = "\(mimeFilter) and \(nameFilter) and trashed=false"
+        let encodedQuery = fullQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? fullQuery
+        let urlStr = "https://www.googleapis.com/drive/v3/files?q=\(encodedQuery)&orderBy=modifiedTime+desc&pageSize=20&fields=files(id%2Cname%2CmimeType)"
 
         guard let url = URL(string: urlStr) else {
             statusMessage = "Invalid search query"
@@ -1388,10 +1622,11 @@ struct GoogleSheetsImportView: View {
                 spreadsheets = files.compactMap { file in
                     guard let id = file["id"] as? String,
                           let name = file["name"] as? String else { return nil }
-                    return (id: id, name: name)
+                    let mime = file["mimeType"] as? String ?? ""
+                    return (id: id, name: name, mimeType: mime)
                 }
                 if spreadsheets.isEmpty {
-                    statusMessage = "No spreadsheets found matching '\(query)'"
+                    statusMessage = "No files found matching '\(query)'"
                 }
             }
         } catch {
@@ -1401,7 +1636,74 @@ struct GoogleSheetsImportView: View {
         isSearching = false
     }
 
-    private func loadSheet(id: String) async {
+    private func browseEvalHarnessFolder() async {
+        guard let token = getAccessToken(), !token.isEmpty else {
+            statusMessage = "Not signed in to Google. Sign in from Settings first."
+            return
+        }
+
+        isBrowsing = true
+        statusMessage = ""
+        spreadsheets = []
+        previewItems = []
+        selectedSheetId = nil
+
+        // Step 1: Find the EvalHarness folder
+        let folderQuery = "mimeType='application/vnd.google-apps.folder' and name='EvalHarness' and trashed=false"
+        let encodedFQ = folderQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? folderQuery
+        let folderURL = URL(string: "https://www.googleapis.com/drive/v3/files?q=\(encodedFQ)&fields=files(id,name)")!
+
+        var folderReq = URLRequest(url: folderURL)
+        folderReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        folderReq.timeoutInterval = 15
+
+        do {
+            let (folderData, folderResp) = try await URLSession.shared.data(for: folderReq)
+            guard let httpResp = folderResp as? HTTPURLResponse, httpResp.statusCode == 200,
+                  let json = try? JSONSerialization.jsonObject(with: folderData) as? [String: Any],
+                  let files = json["files"] as? [[String: Any]],
+                  let folderId = files.first?["id"] as? String else {
+                statusMessage = "EvalHarness folder not found on Drive. Export a run first."
+                isBrowsing = false
+                return
+            }
+
+            // Step 2: List files in the folder
+            let listQuery = "'\(folderId)' in parents and trashed=false"
+            let encodedLQ = listQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? listQuery
+            let listURL = URL(string: "https://www.googleapis.com/drive/v3/files?q=\(encodedLQ)&orderBy=modifiedTime+desc&pageSize=30&fields=files(id%2Cname%2CmimeType)")!
+
+            var listReq = URLRequest(url: listURL)
+            listReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            listReq.timeoutInterval = 15
+
+            let (listData, listResp) = try await URLSession.shared.data(for: listReq)
+            guard let listHttp = listResp as? HTTPURLResponse, listHttp.statusCode == 200,
+                  let listJson = try? JSONSerialization.jsonObject(with: listData) as? [String: Any],
+                  let listFiles = listJson["files"] as? [[String: Any]] else {
+                statusMessage = "Failed to list EvalHarness folder contents"
+                isBrowsing = false
+                return
+            }
+
+            spreadsheets = listFiles.compactMap { file in
+                guard let id = file["id"] as? String,
+                      let name = file["name"] as? String else { return nil }
+                let mime = file["mimeType"] as? String ?? ""
+                return (id: id, name: name, mimeType: mime)
+            }
+
+            if spreadsheets.isEmpty {
+                statusMessage = "EvalHarness folder is empty. Export a run first."
+            }
+        } catch {
+            statusMessage = "Browse failed: \(error.localizedDescription)"
+        }
+
+        isBrowsing = false
+    }
+
+    private func loadSheet(id: String, mimeType: String = "application/vnd.google-apps.spreadsheet") async {
         guard let token = getAccessToken() else {
             statusMessage = "Not signed in"
             return
@@ -1410,8 +1712,15 @@ struct GoogleSheetsImportView: View {
         isLoading = true
         previewItems = []
 
-        // Read A:B from the first sheet
-        let urlStr = "https://sheets.googleapis.com/v4/spreadsheets/\(id)/values/Sheet1!A:B?key=&majorDimension=ROWS"
+        if mimeType == "text/csv" {
+            // Download CSV content directly via Drive API
+            await loadCSVFile(id: id, token: token)
+            isLoading = false
+            return
+        }
+
+        // Google Sheets: use Sheets API
+        let urlStr = "https://sheets.googleapis.com/v4/spreadsheets/\(id)/values/Sheet1!A:F?key=&majorDimension=ROWS"
         guard let url = URL(string: urlStr) else {
             statusMessage = "Invalid sheet URL"
             isLoading = false
@@ -1444,9 +1753,91 @@ struct GoogleSheetsImportView: View {
         isLoading = false
     }
 
+    private func loadCSVFile(id: String, token: String) async {
+        let urlStr = "https://www.googleapis.com/drive/v3/files/\(id)?alt=media"
+        guard let url = URL(string: urlStr) else {
+            statusMessage = "Invalid file URL"
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 15
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200,
+                  let csvString = String(data: data, encoding: .utf8) else {
+                statusMessage = "Failed to download CSV (HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0))"
+                return
+            }
+            parseCSVString(csvString)
+        } catch {
+            statusMessage = "Download failed: \(error.localizedDescription)"
+        }
+    }
+
+    private func parseCSVString(_ csv: String) {
+        let lines = csv.components(separatedBy: .newlines).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        var items: [(name: String, category: String?, brand: String?, color: String?, size: String?, estimatedValue: Double?)] = []
+
+        for (i, line) in lines.enumerated() {
+            let columns = parseCSVLine(line)
+            guard let name = columns.first, !name.isEmpty else { continue }
+
+            // Skip header row
+            if i == 0 {
+                let lower = name.lowercased()
+                if lower == "name" || lower == "item" || lower == "item name" || lower == "items" { continue }
+            }
+
+            func col(_ index: Int) -> String? {
+                guard columns.count > index else { return nil }
+                let val = columns[index].trimmingCharacters(in: .whitespaces)
+                return val.isEmpty ? nil : val
+            }
+
+            let estimatedValue: Double?
+            if let valStr = col(5) {
+                estimatedValue = Double(valStr.replacingOccurrences(of: "$", with: "").replacingOccurrences(of: ",", with: ""))
+            } else {
+                estimatedValue = nil
+            }
+
+            items.append((name: name, category: col(1), brand: col(2), color: col(3), size: col(4), estimatedValue: estimatedValue))
+        }
+
+        previewItems = items
+        if items.isEmpty {
+            statusMessage = "CSV has no valid items"
+        } else {
+            statusMessage = ""
+        }
+    }
+
+    /// Parse a single CSV line, handling quoted fields with commas
+    private func parseCSVLine(_ line: String) -> [String] {
+        var result: [String] = []
+        var current = ""
+        var inQuotes = false
+
+        for char in line {
+            if char == "\"" {
+                inQuotes.toggle()
+            } else if char == "," && !inQuotes {
+                result.append(current.trimmingCharacters(in: .whitespaces))
+                current = ""
+            } else {
+                current.append(char)
+            }
+        }
+        result.append(current.trimmingCharacters(in: .whitespaces))
+        return result
+    }
+
     private func loadSheetFallback(id: String, token: String) async -> Bool {
         // Try reading without specifying sheet name (uses first sheet)
-        let urlStr = "https://sheets.googleapis.com/v4/spreadsheets/\(id)/values/A:B?majorDimension=ROWS"
+        let urlStr = "https://sheets.googleapis.com/v4/spreadsheets/\(id)/values/A:F?majorDimension=ROWS"
         guard let url = URL(string: urlStr) else { return false }
 
         var request = URLRequest(url: url)
@@ -1469,7 +1860,7 @@ struct GoogleSheetsImportView: View {
             return
         }
 
-        var items: [(name: String, category: String?)] = []
+        var items: [(name: String, category: String?, brand: String?, color: String?, size: String?, estimatedValue: Double?)] = []
         for (i, row) in values.enumerated() {
             guard let name = row.first as? String else { continue }
             let trimmed = name.trimmingCharacters(in: .whitespaces)
@@ -1483,14 +1874,24 @@ struct GoogleSheetsImportView: View {
                 }
             }
 
-            let category: String?
-            if row.count > 1, let cat = row[1] as? String, !cat.trimmingCharacters(in: .whitespaces).isEmpty {
-                category = cat.trimmingCharacters(in: .whitespaces)
-            } else {
-                category = nil
+            func stringCol(_ index: Int) -> String? {
+                guard row.count > index, let s = row[index] as? String,
+                      !s.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+                return s.trimmingCharacters(in: .whitespaces)
             }
 
-            items.append((name: trimmed, category: category))
+            let category = stringCol(1)
+            let brand = stringCol(2)
+            let color = stringCol(3)
+            let size = stringCol(4)
+            let estimatedValue: Double?
+            if let valStr = stringCol(5) {
+                estimatedValue = Double(valStr.replacingOccurrences(of: "$", with: "").replacingOccurrences(of: ",", with: ""))
+            } else {
+                estimatedValue = nil
+            }
+
+            items.append((name: trimmed, category: category, brand: brand, color: color, size: size, estimatedValue: estimatedValue))
         }
 
         previewItems = items
@@ -1506,7 +1907,11 @@ struct GoogleSheetsImportView: View {
             store.addGroundTruthItem(
                 to: session.id,
                 name: item.name,
-                category: item.category
+                category: item.category,
+                brand: item.brand,
+                color: item.color,
+                size: item.size,
+                estimatedValue: item.estimatedValue
             )
         }
         // Refresh session binding

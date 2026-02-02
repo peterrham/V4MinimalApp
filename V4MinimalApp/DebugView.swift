@@ -18,6 +18,40 @@ struct DebugView: View {
         Card {
             VStack(spacing: 12) {
 
+                // Guided Recording - motion-coached video capture
+                NavigationLink(destination: GuidedRecordingView()) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.red.opacity(0.15))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "video.fill")
+                                .font(.system(size: 20))
+                                .foregroundStyle(.red)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Guided Recording")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
+                            Text("Motion-coached room video capture")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(12)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
                 // Debug Options - Tap tests, toggles
                 NavigationLink(destination: DebugOptionsView()) {
                     HStack(spacing: 12) {
