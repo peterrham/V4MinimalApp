@@ -163,7 +163,7 @@ struct InventoryListView: View {
 
                                 Spacer()
 
-                                Text(String(format: "$%.2f", totalValue))
+                                Text("$\(InventoryItem.dollarFormatter.string(from: NSNumber(value: totalValue.rounded(.up))) ?? "0")")
                                     .font(.callout)
                                     .fontWeight(.semibold)
                                     .foregroundStyle(AppTheme.Colors.success)

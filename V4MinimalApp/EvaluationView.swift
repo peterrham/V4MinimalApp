@@ -1353,7 +1353,7 @@ struct GroundTruthEditorSheet: View {
                                             .foregroundColor(.secondary)
                                     }
                                     if let value = item.estimatedValue, value > 0 {
-                                        Text(String(format: "$%.0f", value))
+                                        Text("$\(InventoryItem.dollarFormatter.string(from: NSNumber(value: value)) ?? "0")")
                                             .font(.caption2)
                                             .foregroundColor(.green)
                                     }
@@ -1512,7 +1512,7 @@ struct GoogleSheetsImportView: View {
                                         Text(size).font(.caption2).foregroundColor(.secondary)
                                     }
                                     if let value = item.estimatedValue {
-                                        Text(String(format: "$%.0f", value)).font(.caption2).foregroundColor(.green)
+                                        Text("$\(InventoryItem.dollarFormatter.string(from: NSNumber(value: value)) ?? "0")").font(.caption2).foregroundColor(.green)
                                     }
                                 }
                             }

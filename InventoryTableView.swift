@@ -252,7 +252,7 @@ struct InventoryTableView: View {
 
     private var totalValue: String {
         let sum = filteredItems.reduce(0.0) { $0 + ($1.purchasePrice ?? $1.estimatedValue ?? 0) }
-        return String(format: "$%.0f", sum)
+        return "$\(InventoryItem.dollarFormatter.string(from: NSNumber(value: sum)) ?? "0")"
     }
 
     private func shortDate(_ date: Date) -> String {

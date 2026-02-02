@@ -43,6 +43,7 @@
 		BE8C229D2F25E82400E32ACB /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C229C2F25E82400E32ACB /* Models.swift */; };
 		BE8C229F2F25E84B00E32ACB /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C229E2F25E84B00E32ACB /* HomeView.swift */; };
 		7980CA78A7215EE11216766D /* HomesManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 379F99C510793EE57EE81C36 /* HomesManagementView.swift */; };
+		A1B2C3D4E5F60718192A3B4C /* RoomsManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718192A3B40 /* RoomsManagementView.swift */; };
 		7BE50C1D0E0D3FFAA736602D /* HomePickerMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35B39374B8DC36F23B1BD6D /* HomePickerMenu.swift */; };
 		BE8C22A12F25E87200E32ACB /* InventoryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22A02F25E87200E32ACB /* InventoryListView.swift */; };
 		BE8C22A32F25E89600E32ACB /* ItemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22A22F25E89600E32ACB /* ItemDetailView.swift */; };
@@ -130,6 +131,7 @@
 		BE8C229C2F25E82400E32ACB /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		BE8C229E2F25E84B00E32ACB /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		379F99C510793EE57EE81C36 /* HomesManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomesManagementView.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718192A3B40 /* RoomsManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomsManagementView.swift; sourceTree = "<group>"; };
 		D35B39374B8DC36F23B1BD6D /* HomePickerMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomePickerMenu.swift; sourceTree = "<group>"; };
 		BE8C22A02F25E87200E32ACB /* InventoryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryListView.swift; sourceTree = "<group>"; };
 		BE8C22A22F25E89600E32ACB /* ItemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailView.swift; sourceTree = "<group>"; };
@@ -304,6 +306,7 @@
 				BE8C229C2F25E82400E32ACB /* Models.swift */,
 				BE8C229E2F25E84B00E32ACB /* HomeView.swift */,
 				379F99C510793EE57EE81C36 /* HomesManagementView.swift */,
+				A1B2C3D4E5F60718192A3B40 /* RoomsManagementView.swift */,
 				D35B39374B8DC36F23B1BD6D /* HomePickerMenu.swift */,
 				BE8C22A02F25E87200E32ACB /* InventoryListView.swift */,
 				BE8C22A22F25E89600E32ACB /* ItemDetailView.swift */,
@@ -563,6 +566,7 @@
 				BE8C229B2F25E80400E32ACB /* ImplementationPlan.swift in Sources */,
 				BE8C229F2F25E84B00E32ACB /* HomeView.swift in Sources */,
 				7980CA78A7215EE11216766D /* HomesManagementView.swift in Sources */,
+				A1B2C3D4E5F60718192A3B4C /* RoomsManagementView.swift in Sources */,
 				7BE50C1D0E0D3FFAA736602D /* HomePickerMenu.swift in Sources */,
 				BE8C22AF2F25F18900E32ACB /* CameraPreview.swift in Sources */,
 				BE8C229D2F25E82400E32ACB /* Models.swift in Sources */,

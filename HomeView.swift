@@ -14,7 +14,7 @@ struct HomeView: View {
     @EnvironmentObject var inventoryStore: InventoryStore
     @Binding var selectedTab: Int
     @AppStorage("showHomeDebugBar") private var showHomeDebugBar = false
-    @State private var rooms: [Room] = Room.sampleRooms
+    @AppStorage("homeUIConfig") private var homeUIConfig = "clean"
     @State private var showingScanView = false
     @State private var debugTapCount = 0
     @State private var seeAllTapCount = 0
@@ -31,11 +31,12 @@ struct HomeView: View {
     }
 
     var roomCount: Int {
-        Set(inventoryStore.currentHomeItems.map { $0.room }).filter { !$0.isEmpty }.count
+        inventoryStore.enabledRoomsForCurrentHome.count
     }
 
     var recentItems: [InventoryItem] {
-        Array(inventoryStore.currentHomeItems.sorted { $0.createdAt > $1.createdAt }.prefix(6))
+        let limit = homeUIConfig == "clean" ? 1 : 6
+        return Array(inventoryStore.currentHomeItems.sorted { $0.createdAt > $1.createdAt }.prefix(limit))
     }
 
     var body: some View {
@@ -98,53 +99,62 @@ struct HomeView: View {
                         VStack(spacing: AppTheme.Spacing.xl) {
                             // Welcome Header
                             VStack(alignment: .leading, spacing: AppTheme.Spacing.s) {
-                                HStack {
-                                    Text("Welcome Back")
-                                        .font(.title3)
-                                        .foregroundStyle(.secondary)
-                                    Spacer()
-                                    HomePickerMenu()
-                                }
+                                if homeUIConfig == "original" {
+                                    HStack {
+                                        Text("Welcome Back")
+                                            .font(.title3)
+                                            .foregroundStyle(.secondary)
+                                        Spacer()
+                                        HomePickerMenu()
+                                    }
 
-                                Text(inventoryStore.currentHome?.name ?? "Home Inventory")
-                                    .font(.largeTitle)
-                                    .fontWeight(.bold)
+                                    Text(inventoryStore.currentHome?.name ?? "Home Inventory")
+                                        .font(.largeTitle)
+                                        .fontWeight(.bold)
+                                } else {
+                                    HStack {
+                                        Spacer()
+                                        HomePickerMenu()
+                                    }
+                                }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, AppTheme.Spacing.l)
                             .padding(.top, AppTheme.Spacing.m)
 
-                            // Primary Scan Button
-                            Button {
-                                showingScanView = true
-                            } label: {
-                                HStack(spacing: AppTheme.Spacing.m) {
-                                    Image(systemName: "camera.fill")
-                                        .font(.title2)
+                            if homeUIConfig == "original" {
+                                // Primary Scan Button
+                                Button {
+                                    showingScanView = true
+                                } label: {
+                                    HStack(spacing: AppTheme.Spacing.m) {
+                                        Image(systemName: "camera.fill")
+                                            .font(.title2)
 
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Scan Room")
-                                            .font(.title3)
-                                            .fontWeight(.semibold)
-                                        Text("Add items with AI")
-                                            .font(.caption)
-                                            .opacity(0.9)
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Scan Room")
+                                                .font(.title3)
+                                                .fontWeight(.semibold)
+                                            Text("Add items with AI")
+                                                .font(.caption)
+                                                .opacity(0.9)
+                                        }
+
+                                        Spacer()
+
+                                        Image(systemName: "arrow.right.circle.fill")
+                                            .font(.title2)
                                     }
-
-                                    Spacer()
-
-                                    Image(systemName: "arrow.right.circle.fill")
-                                        .font(.title2)
+                                    .foregroundColor(.white)
+                                    .padding(AppTheme.Spacing.l)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: AppTheme.cornerRadius)
+                                            .fill(AppTheme.Colors.primary.gradient)
+                                            .shadow(color: AppTheme.Colors.primary.opacity(0.4), radius: 12, y: 6)
+                                    )
                                 }
-                                .foregroundColor(.white)
-                                .padding(AppTheme.Spacing.l)
-                                .background(
-                                    RoundedRectangle(cornerRadius: AppTheme.cornerRadius)
-                                        .fill(AppTheme.Colors.primary.gradient)
-                                        .shadow(color: AppTheme.Colors.primary.opacity(0.4), radius: 12, y: 6)
-                                )
+                                .padding(.horizontal, AppTheme.Spacing.l)
                             }
-                            .padding(.horizontal, AppTheme.Spacing.l)
 
                             // Statistics Cards
                             HStack(spacing: AppTheme.Spacing.m) {
@@ -154,10 +164,13 @@ struct HomeView: View {
                                     label: "Items",
                                     color: AppTheme.Colors.primary
                                 )
+                                .onTapGesture {
+                                    selectedTab = 2
+                                }
 
                                 StatCard(
                                     icon: "dollarsign.circle.fill",
-                                    value: String(format: "$%.0f", totalValue),
+                                    value: Self.formatDollar(totalValue),
                                     label: "Total Value",
                                     color: AppTheme.Colors.success
                                 )
@@ -205,7 +218,8 @@ struct HomeView: View {
                                         ForEach(recentItems) { item in
                                             ItemCardCompact(
                                                 item: item,
-                                                displayTitle: InventoryItem.disambiguatedTitle(for: item, in: recentItems)
+                                                displayTitle: InventoryItem.disambiguatedTitle(for: item, in: recentItems),
+                                                showPhoto: homeUIConfig == "original"
                                             )
                                         }
                                     }
@@ -213,20 +227,22 @@ struct HomeView: View {
                                 }
                             }
 
-                            // Rooms Section
-                            VStack(alignment: .leading, spacing: AppTheme.Spacing.m) {
-                                Text("Your Rooms")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                    .padding(.horizontal, AppTheme.Spacing.l)
+                            // Rooms Section — enabled rooms only
+                            if !inventoryStore.enabledRoomsForCurrentHome.isEmpty {
+                                VStack(alignment: .leading, spacing: AppTheme.Spacing.m) {
+                                    Text("Your Rooms")
+                                        .font(.title2)
+                                        .fontWeight(.bold)
+                                        .padding(.horizontal, AppTheme.Spacing.l)
 
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: AppTheme.Spacing.m) {
-                                        ForEach(rooms) { room in
-                                            RoomCard(room: room, itemCount: itemsInRoom(room.name))
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: AppTheme.Spacing.m) {
+                                            ForEach(inventoryStore.enabledRoomsForCurrentHome) { room in
+                                                HomeRoomCard(room: room, itemCount: itemsInRoom(room.name))
+                                            }
                                         }
+                                        .padding(.horizontal, AppTheme.Spacing.l)
                                     }
-                                    .padding(.horizontal, AppTheme.Spacing.l)
                                 }
                             }
 
@@ -235,6 +251,7 @@ struct HomeView: View {
                         }
                     }
 
+                    if homeUIConfig != "clean" {
                     // Floating "See All" button — OUTSIDE ScrollView for reliable taps
                     Button {
                         seeAllTapCount += 1
@@ -264,6 +281,7 @@ struct HomeView: View {
                         )
                     }
                     .padding(.bottom, 12)
+                    }
                 }
             }
             .background(AppTheme.Colors.background)
@@ -275,6 +293,19 @@ struct HomeView: View {
         .onAppear {
             haptic.prepare()
         }
+    }
+
+    private static let dollarFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.maximumFractionDigits = 0
+        f.usesGroupingSeparator = true
+        return f
+    }()
+
+    static func formatDollar(_ value: Double) -> String {
+        let rounded = value.rounded(.up)
+        return "$\(dollarFormatter.string(from: NSNumber(value: rounded)) ?? "0")"
     }
 
     private func itemsInRoom(_ roomName: String) -> Int {
@@ -318,11 +349,13 @@ struct StatCard: View {
 struct ItemCardCompact: View {
     let item: InventoryItem
     var displayTitle: String?
+    var showPhoto: Bool = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.s) {
             // Photo or placeholder
-            if let photoName = item.photos.first,
+            if showPhoto,
+               let photoName = item.photos.first,
                let uiImage = UIImage(contentsOfFile: InventoryStore.photoURL(for: photoName).path) {
                 Image(uiImage: uiImage)
                     .resizable()
@@ -351,10 +384,12 @@ struct ItemCardCompact: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                Text(item.displayValue)
-                    .font(.body)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(AppTheme.Colors.success)
+                if !item.displayValue.isEmpty {
+                    Text(item.displayValue)
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(AppTheme.Colors.success)
+                }
             }
             .padding(.horizontal, AppTheme.Spacing.m)
             .padding(.bottom, AppTheme.Spacing.m)
@@ -366,6 +401,33 @@ struct ItemCardCompact: View {
 }
 
 
+
+// MARK: - Home Room Card
+
+struct HomeRoomCard: View {
+    let room: HomeRoom
+    let itemCount: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.m) {
+            Image(systemName: room.icon)
+                .font(.title2)
+                .foregroundStyle(AppTheme.Colors.primary)
+
+            Text(room.name)
+                .font(.headline)
+
+            Text("\(itemCount) \(itemCount == 1 ? "item" : "items")")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(width: 160, alignment: .leading)
+        .padding(AppTheme.Spacing.l)
+        .background(AppTheme.Colors.surface)
+        .cornerRadius(AppTheme.cornerRadius)
+        .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
+    }
+}
 
 #Preview("Home View") {
     HomeView(selectedTab: .constant(0))

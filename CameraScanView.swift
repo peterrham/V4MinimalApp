@@ -302,7 +302,7 @@ struct CameraScanView: View {
                                     // Value + Save button row
                                     HStack {
                                         if let value = result.estimatedValue {
-                                            Text(String(format: "~$%.0f", value))
+                                            Text("$\(InventoryItem.dollarFormatter.string(from: NSNumber(value: value)) ?? "0")")
                                                 .font(.subheadline)
                                                 .fontWeight(.semibold)
                                                 .foregroundColor(.green)
@@ -809,7 +809,7 @@ struct CameraScanView: View {
                             Spacer()
 
                             if let value = result.estimatedValue {
-                                Text(String(format: "$%.0f", value))
+                                Text("$\(InventoryItem.dollarFormatter.string(from: NSNumber(value: value)) ?? "0")")
                                     .font(.subheadline)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.green)

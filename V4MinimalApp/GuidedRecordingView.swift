@@ -22,6 +22,11 @@ class RecordingMotionMonitor: ObservableObject {
     @Published var isRecording = false
     @Published var recordingDuration: TimeInterval = 0
 
+    // Pitch guide: gravity.z tells us tilt from horizontal
+    // ≈ 0 = looking straight ahead, negative = tilting up, positive = tilting down
+    @Published var pitchOffset: Double = 0       // smoothed gravity.z (-1 to 1)
+    @Published var pitchAligned: Bool = true      // within acceptable range
+
     // Coverage: 36 segments of 10° each = 360°
     static let segmentCount = 36
     @Published var coveredSegments: Set<Int> = []
@@ -47,7 +52,8 @@ class RecordingMotionMonitor: ObservableObject {
     private let motionManager = CMMotionManager()
     private var recordingStart: Date?
     private var durationTimer: Timer?
-    private var initialYaw: Double?
+    private var previousYaw: Double?
+    private var accumulatedYaw: Double = 0
 
     // Thresholds (degrees/sec)
     private let tooFastThreshold: Double = 60
@@ -79,7 +85,8 @@ class RecordingMotionMonitor: ObservableObject {
     func startRecording() {
         isRecording = true
         recordingStart = Date()
-        initialYaw = nil
+        previousYaw = nil
+        accumulatedYaw = 0
         coveredSegments.removeAll()
         coveragePercent = 0
         completedFullCircle = false
@@ -106,22 +113,31 @@ class RecordingMotionMonitor: ObservableObject {
         // Smooth with low-pass filter
         rotationRate = rotationRate * 0.7 + degPerSec * 0.3
 
+        // Pitch guide: gravity.z ≈ 0 when phone is upright looking ahead
+        // Negative = camera tilted up (ceiling), positive = tilted down (floor)
+        // Slight downward tilt (~0.1) is ideal for furniture level
+        let targetPitchZ = 0.1  // slightly tilted down
+        let rawOffset = motion.gravity.z - targetPitchZ
+        pitchOffset = pitchOffset * 0.8 + rawOffset * 0.2  // smooth
+        pitchAligned = abs(pitchOffset) < 0.15  // ~8° tolerance
+
         if !isRecording {
             speedLevel = .still
             hint = "Point at the room and tap Record"
             return
         }
 
-        // Track yaw coverage
+        // Track yaw coverage using relative deltas (drift-resistant)
         let yawRad = motion.attitude.yaw  // -π to π
-        if initialYaw == nil {
-            initialYaw = yawRad
-        }
+        var delta = yawRad - (previousYaw ?? yawRad)
+        // Handle wraparound at the -π/π boundary
+        if delta > .pi { delta -= 2 * .pi }
+        if delta < -.pi { delta += 2 * .pi }
+        previousYaw = yawRad
+        accumulatedYaw += delta
 
-        // Compute relative yaw from start (0-360)
-        let relativeYaw = (yawRad - (initialYaw ?? 0)) * (180.0 / .pi)
-        // Normalize to 0-360
-        let normalized = ((relativeYaw.truncatingRemainder(dividingBy: 360)) + 360)
+        let degrees = accumulatedYaw * (180.0 / .pi)
+        let normalized = ((degrees.truncatingRemainder(dividingBy: 360)) + 360)
             .truncatingRemainder(dividingBy: 360)
         let segment = Int(normalized / (360.0 / Double(Self.segmentCount)))
             % Self.segmentCount
@@ -170,13 +186,18 @@ struct GuidedRecordingView: View {
     @StateObject private var monitor = RecordingMotionMonitor()
     @StateObject private var cameraManager = CameraManager()
     @StateObject private var yoloDetector = YOLODetector()
+    @StateObject private var scanSessionStore = ScanSessionStore()
     @State private var isRecording = false
     @State private var uniqueClassNames: Set<String> = []
+    @State private var showSavedAlert = false
 
     var body: some View {
         ZStack {
             CameraPreview(session: cameraManager.session)
                 .ignoresSafeArea()
+
+            // Pitch guide line (panorama-style)
+            pitchGuide
 
             // HUD overlay
             VStack {
@@ -243,6 +264,20 @@ struct GuidedRecordingView: View {
                 uniqueClassNames.insert(det.className)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("VideoRecordingComplete"))) { notification in
+            guard let url = notification.userInfo?["url"] as? URL else { return }
+            let name = "Guided \(Date().formatted(date: .abbreviated, time: .shortened))"
+            if let fileName = scanSessionStore.saveVideo(from: url, sessionName: name) {
+                let session = ScanSession(name: name, videoFileName: fileName)
+                scanSessionStore.addSession(session)
+                showSavedAlert = true
+            }
+        }
+        .alert("Session Saved", isPresented: $showSavedAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Recording saved to Evaluation Harness.")
+        }
         .navigationTitle("Guided Recording")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -281,6 +316,54 @@ struct GuidedRecordingView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Pitch Guide
+
+    private var pitchGuide: some View {
+        GeometryReader { geo in
+            let centerY = geo.size.height / 2
+            // Map pitchOffset to screen points: ±0.5 gravity.z → ±150pt
+            let indicatorY = centerY + monitor.pitchOffset * 300
+            let guideColor: Color = monitor.pitchAligned ? .green : (abs(monitor.pitchOffset) < 0.3 ? .yellow : .red)
+
+            ZStack {
+                // Target line — thin horizontal line at center
+                Rectangle()
+                    .fill(.white.opacity(0.3))
+                    .frame(height: 1)
+                    .position(x: geo.size.width / 2, y: centerY)
+
+                // Small tick marks at center of the target line
+                HStack {
+                    Rectangle()
+                        .fill(.white.opacity(0.5))
+                        .frame(width: 1, height: 12)
+                    Spacer()
+                    Rectangle()
+                        .fill(.white.opacity(0.5))
+                        .frame(width: 1, height: 12)
+                }
+                .padding(.horizontal, 40)
+                .position(x: geo.size.width / 2, y: centerY)
+
+                // Moving indicator — a horizontal bar that follows pitch
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(guideColor)
+                    .frame(width: geo.size.width - 80, height: 3)
+                    .position(x: geo.size.width / 2, y: indicatorY)
+                    .animation(.easeOut(duration: 0.1), value: monitor.pitchOffset)
+
+                // Arrow hint when far off
+                if abs(monitor.pitchOffset) >= 0.15 {
+                    Image(systemName: monitor.pitchOffset < 0 ? "arrow.down" : "arrow.up")
+                        .font(.caption.bold())
+                        .foregroundColor(guideColor)
+                        .position(x: geo.size.width / 2, y: centerY + (monitor.pitchOffset < 0 ? 20 : -20))
+                }
+            }
+        }
+        .allowsHitTesting(false)
     }
 
     // MARK: - HUD Bar

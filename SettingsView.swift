@@ -111,6 +111,12 @@ struct SettingsView: View {
                         Label("Manage Homes", systemImage: "house.fill")
                     }
 
+                    NavigationLink {
+                        RoomsManagementView()
+                    } label: {
+                        Label("Manage Rooms", systemImage: "door.left.hand.open")
+                    }
+
                     Toggle(isOn: $autoSync) {
                         Label("Auto-Sync to Google Sheets", systemImage: "arrow.triangle.2.circlepath")
                     }

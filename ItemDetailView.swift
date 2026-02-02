@@ -105,7 +105,7 @@ struct ItemDetailView: View {
                                         .foregroundStyle(.secondary)
                                     
                                     Text(item.purchasePrice != nil ?
-                                         String(format: "$%.2f", item.purchasePrice!) :
+                                         "$\(InventoryItem.dollarFormatter.string(from: NSNumber(value: item.purchasePrice!)) ?? "0")" :
                                          "Not set")
                                         .font(.title2)
                                         .fontWeight(.bold)
@@ -120,7 +120,7 @@ struct ItemDetailView: View {
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                         
-                                        Text(String(format: "$%.2f", estimate))
+                                        Text("$\(InventoryItem.dollarFormatter.string(from: NSNumber(value: estimate)) ?? "0")")
                                             .font(.title3)
                                             .fontWeight(.semibold)
                                             .foregroundStyle(.secondary)

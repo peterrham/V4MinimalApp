@@ -13,6 +13,7 @@ import os.log
 struct DebugOptionsView: View {
     @AppStorage("showHomeDebugBar") private var showHomeDebugBar = false
     @AppStorage("verboseTapLogging") private var verboseTapLogging = false
+    @AppStorage("homeUIConfig") private var homeUIConfig = "clean"
 
     @State private var plainButtonTaps = 0
     @State private var scaleButtonTaps = 0
@@ -25,6 +26,24 @@ struct DebugOptionsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
+                // MARK: - Home UI Configuration
+                debugSection("Home UI Configuration") {
+                    VStack(spacing: 12) {
+                        Picker("UI Config", selection: $homeUIConfig) {
+                            Text("Original").tag("original")
+                            Text("Clean").tag("clean")
+                        }
+                        .pickerStyle(.segmented)
+
+                        Text(homeUIConfig == "original"
+                             ? "Full home screen: welcome message, home title, scan button, photo thumbnails"
+                             : "Minimal home screen: picker only, no scan button, category icons instead of photos")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+
                 // MARK: - Home Screen Debug Toggles
                 debugSection("Home Screen Debug") {
                     VStack(spacing: 12) {

@@ -170,13 +170,23 @@ struct InventoryItem: Identifiable, Codable, Hashable {
 
     // MARK: - Computed Display Properties
 
+    static let dollarFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.maximumFractionDigits = 0
+        f.usesGroupingSeparator = true
+        return f
+    }()
+
     var displayValue: String {
         if let price = purchasePrice {
-            return String(format: "$%.2f", price)
+            let rounded = price.rounded(.up)
+            return "$\(Self.dollarFormatter.string(from: NSNumber(value: rounded)) ?? "0")"
         } else if let estimate = estimatedValue {
-            return String(format: "~$%.2f", estimate)
+            let rounded = estimate.rounded(.up)
+            return "$\(Self.dollarFormatter.string(from: NSNumber(value: rounded)) ?? "0")"
         } else {
-            return "No value"
+            return ""
         }
     }
 
@@ -308,6 +318,35 @@ struct Room: Identifiable, Codable, Hashable {
         try container.encode(name, forKey: .name)
         try container.encode(icon, forKey: .icon)
         try container.encode("#6366F1", forKey: .colorHex) // Simplified for now
+    }
+}
+
+// MARK: - Home Room (per-home room with enabled state)
+
+struct HomeRoom: Identifiable, Codable, Hashable {
+    let id: UUID
+    var name: String
+    var icon: String
+    var isEnabled: Bool
+    var homeId: UUID
+
+    init(id: UUID = UUID(), name: String, icon: String, isEnabled: Bool = false, homeId: UUID) {
+        self.id = id
+        self.name = name
+        self.icon = icon
+        self.isEnabled = isEnabled
+        self.homeId = homeId
+    }
+
+    static func defaultRooms(for homeId: UUID) -> [HomeRoom] {
+        [
+            HomeRoom(name: "Living Room", icon: "sofa.fill", isEnabled: true, homeId: homeId),
+            HomeRoom(name: "Bathroom", icon: "shower.fill", homeId: homeId),
+            HomeRoom(name: "Kitchen", icon: "fork.knife", homeId: homeId),
+            HomeRoom(name: "Bedroom", icon: "bed.double.fill", homeId: homeId),
+            HomeRoom(name: "Basement", icon: "stairs", homeId: homeId),
+            HomeRoom(name: "Garage", icon: "car.fill", homeId: homeId),
+        ]
     }
 }
 

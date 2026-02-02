@@ -12,10 +12,12 @@ class InventoryStore: ObservableObject {
 
     @Published var items: [InventoryItem] = []
     @Published var homes: [Home] = []
+    @Published var homeRooms: [HomeRoom] = []
     @Published var currentHomeId: UUID = Home.defaultHomeId
 
     private let fileName = "inventory.json"
     private let homesFileName = "homes.json"
+    private let roomsFileName = "rooms.json"
 
     // MARK: - Computed Properties
 
@@ -27,6 +29,14 @@ class InventoryStore: ObservableObject {
         items.filter { ($0.homeId ?? Home.defaultHomeId) == currentHomeId }
     }
 
+    var currentHomeRooms: [HomeRoom] {
+        homeRooms.filter { $0.homeId == currentHomeId }
+    }
+
+    var enabledRoomsForCurrentHome: [HomeRoom] {
+        currentHomeRooms.filter { $0.isEnabled }
+    }
+
     // MARK: - Initialization
 
     init() {
@@ -36,6 +46,14 @@ class InventoryStore: ObservableObject {
            homes.contains(where: { $0.id == uuid }) {
             currentHomeId = uuid
         }
+        loadRooms()
+        // Ensure every home has rooms (handles first launch and newly added homes)
+        for home in homes {
+            if !homeRooms.contains(where: { $0.homeId == home.id }) {
+                homeRooms.append(contentsOf: HomeRoom.defaultRooms(for: home.id))
+            }
+        }
+        saveRooms()
         loadItems()
         cleanupCorruptedItems()
     }
@@ -56,6 +74,14 @@ class InventoryStore: ObservableObject {
             in: .userDomainMask
         ).first!
         return documentsDir.appendingPathComponent(homesFileName)
+    }
+
+    private var roomsFileURL: URL {
+        let documentsDir = FileManager.default.urls(
+            for: .documentDirectory,
+            in: .userDomainMask
+        ).first!
+        return documentsDir.appendingPathComponent(roomsFileName)
     }
 
     private var inventoryPhotosDir: URL {
@@ -515,6 +541,9 @@ class InventoryStore: ObservableObject {
     func addHome(_ home: Home) {
         homes.append(home)
         saveHomes()
+        // Create default rooms for the new home
+        homeRooms.append(contentsOf: HomeRoom.defaultRooms(for: home.id))
+        saveRooms()
     }
 
     func updateHome(_ home: Home) {
@@ -532,8 +561,10 @@ class InventoryStore: ObservableObject {
             items[i].homeId = currentHomeId
         }
         homes.removeAll { $0.id == id }
+        homeRooms.removeAll { $0.homeId == id }
         saveItems()
         saveHomes()
+        saveRooms()
     }
 
     /// Delete all items belonging to the current home
@@ -574,6 +605,57 @@ class InventoryStore: ObservableObject {
         } catch {
             print("Failed to load homes: \(error)")
             homes = [Home(id: Home.defaultHomeId, name: "My Home")]
+        }
+    }
+
+    // MARK: - Room Management
+
+    func addRoom(_ room: HomeRoom) {
+        homeRooms.append(room)
+        saveRooms()
+    }
+
+    func updateRoom(_ room: HomeRoom) {
+        if let index = homeRooms.firstIndex(where: { $0.id == room.id }) {
+            homeRooms[index] = room
+            saveRooms()
+        }
+    }
+
+    func toggleRoom(_ room: HomeRoom) {
+        if let index = homeRooms.firstIndex(where: { $0.id == room.id }) {
+            homeRooms[index].isEnabled.toggle()
+            saveRooms()
+        }
+    }
+
+    func deleteRoom(id: UUID) {
+        homeRooms.removeAll { $0.id == id }
+        saveRooms()
+    }
+
+    // MARK: - Rooms Persistence
+
+    func saveRooms() {
+        do {
+            let data = try JSONEncoder().encode(homeRooms)
+            try data.write(to: roomsFileURL, options: .atomic)
+        } catch {
+            print("Failed to save rooms: \(error)")
+        }
+    }
+
+    private func loadRooms() {
+        guard FileManager.default.fileExists(atPath: roomsFileURL.path) else {
+            homeRooms = []
+            return
+        }
+        do {
+            let data = try Data(contentsOf: roomsFileURL)
+            homeRooms = try JSONDecoder().decode([HomeRoom].self, from: data)
+        } catch {
+            print("Failed to load rooms: \(error)")
+            homeRooms = []
         }
     }
 

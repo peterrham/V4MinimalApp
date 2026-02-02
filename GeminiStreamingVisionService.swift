@@ -527,40 +527,6 @@ struct DetectedObject: Identifiable, Equatable {
             UIGraphicsBeginImageContextWithOptions(outSize, true, 1.0)
             croppedImage.draw(in: CGRect(origin: .zero, size: outSize))
 
-            // Draw green bounding box outline on the cropped thumbnail
-            if let ctx = UIGraphicsGetCurrentContext() {
-                // Box position relative to crop
-                let relX = (bx - cropRect.origin.x) * scale
-                let relY = (by - cropRect.origin.y) * scale
-                let relW = bw * scale
-                let relH = bh * scale
-                let boxRect = CGRect(x: relX, y: relY, width: relW, height: relH)
-
-                ctx.setStrokeColor(UIColor.green.cgColor)
-                ctx.setLineWidth(3.0)
-                ctx.stroke(boxRect)
-
-                // Label — large font
-                let label = box.label
-                let attrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.boldSystemFont(ofSize: 20),
-                    .foregroundColor: UIColor.white
-                ]
-                let textSize = (label as NSString).size(withAttributes: attrs)
-                let labelBg = CGRect(
-                    x: relX,
-                    y: max(relY - textSize.height - 6, 0),
-                    width: textSize.width + 10,
-                    height: textSize.height + 6
-                )
-                ctx.setFillColor(UIColor(red: 0, green: 0.5, blue: 0, alpha: 0.8).cgColor)
-                ctx.fill(labelBg)
-                (label as NSString).draw(
-                    at: CGPoint(x: labelBg.origin.x + 5, y: labelBg.origin.y + 3),
-                    withAttributes: attrs
-                )
-            }
-
             let result = UIGraphicsGetImageFromCurrentImageContext()
             UIGraphicsEndImageContext()
             return result?.jpegData(compressionQuality: 0.5)
@@ -571,28 +537,6 @@ struct DetectedObject: Identifiable, Equatable {
             let newSize = CGSize(width: imgW * scale, height: imgH * scale)
             UIGraphicsBeginImageContextWithOptions(newSize, true, 1.0)
             image.draw(in: CGRect(origin: .zero, size: newSize))
-
-            // Stamp "BOUNDING BOX MISSING" on the image
-            if let ctx = UIGraphicsGetCurrentContext() {
-                let msg = "BOUNDING BOX MISSING"
-                let attrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.boldSystemFont(ofSize: 18),
-                    .foregroundColor: UIColor.white
-                ]
-                let textSize = (msg as NSString).size(withAttributes: attrs)
-                let bgRect = CGRect(
-                    x: (newSize.width - textSize.width - 16) / 2,
-                    y: newSize.height - textSize.height - 20,
-                    width: textSize.width + 16,
-                    height: textSize.height + 10
-                )
-                ctx.setFillColor(UIColor.red.withAlphaComponent(0.7).cgColor)
-                ctx.fill(bgRect)
-                (msg as NSString).draw(
-                    at: CGPoint(x: bgRect.origin.x + 8, y: bgRect.origin.y + 5),
-                    withAttributes: attrs
-                )
-            }
 
             let resized = UIGraphicsGetImageFromCurrentImageContext()
             UIGraphicsEndImageContext()
