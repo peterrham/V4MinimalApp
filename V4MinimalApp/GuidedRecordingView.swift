@@ -9,6 +9,7 @@
 
 import SwiftUI
 import CoreMotion
+import Combine
 
 // MARK: - Motion Monitor
 
@@ -168,7 +169,9 @@ class RecordingMotionMonitor: ObservableObject {
 struct GuidedRecordingView: View {
     @StateObject private var monitor = RecordingMotionMonitor()
     @StateObject private var cameraManager = CameraManager()
+    @StateObject private var yoloDetector = YOLODetector()
     @State private var isRecording = false
+    @State private var uniqueClassNames: Set<String> = []
 
     var body: some View {
         ZStack {
@@ -189,14 +192,25 @@ struct GuidedRecordingView: View {
                             .frame(width: 140, height: 140)
                     }
 
-                    Text(monitor.hint)
-                        .font(.title3.bold())
-                        .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.8), radius: 4)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                        .animation(.easeInOut(duration: 0.3), value: monitor.hint)
-                        .offset(y: monitor.isRecording ? 100 : 0)
+                    VStack(spacing: 6) {
+                        Text(monitor.hint)
+                            .font(.title3.bold())
+                            .foregroundColor(.white)
+                            .shadow(color: .black.opacity(0.8), radius: 4)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                            .animation(.easeInOut(duration: 0.3), value: monitor.hint)
+
+                        if monitor.isRecording && !uniqueClassNames.isEmpty {
+                            Text(uniqueClassNames.sorted().joined(separator: ", "))
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.6))
+                                .lineLimit(2)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 32)
+                        }
+                    }
+                    .offset(y: monitor.isRecording ? 100 : 0)
                 }
 
                 Spacer()
@@ -211,13 +225,23 @@ struct GuidedRecordingView: View {
         .onAppear {
             cameraManager.startSession()
             monitor.startMonitoring()
+            cameraManager.enablePixelBufferCapture { [weak yoloDetector] buffer in
+                yoloDetector?.detect(in: buffer)
+            }
         }
         .onDisappear {
             if isRecording {
                 cameraManager.stopRecording()
             }
+            cameraManager.disableFrameCapture()
             monitor.stopMonitoring()
             cameraManager.stopSession()
+        }
+        .onReceive(yoloDetector.$detections) { newDetections in
+            guard monitor.isRecording else { return }
+            for det in newDetections {
+                uniqueClassNames.insert(det.className)
+            }
         }
         .navigationTitle("Guided Recording")
         .navigationBarTitleDisplayMode(.inline)
@@ -275,6 +299,17 @@ struct GuidedRecordingView: View {
                         .font(.caption.monospacedDigit())
                         .foregroundColor(.white)
                 }
+
+                HStack(spacing: 4) {
+                    Image(systemName: "cube.box.fill")
+                        .font(.caption2)
+                    Text("\(uniqueClassNames.count) items")
+                        .font(.caption.bold().monospacedDigit())
+                }
+                .foregroundColor(.cyan)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(.black.opacity(0.5)))
             }
 
             Spacer()
@@ -337,6 +372,7 @@ struct GuidedRecordingView: View {
                 cameraManager.stopRecording()
             } else {
                 isRecording = true
+                uniqueClassNames.removeAll()
                 monitor.startRecording()
                 cameraManager.startRecording()
             }
