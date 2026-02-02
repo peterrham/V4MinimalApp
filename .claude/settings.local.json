@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xcodebuild *)",
+      "Bash(xcrun *)",
+      "Bash(git *)",
+      "Bash(python3 *)",
+      "Bash(pandoc *)",
+      "Bash(pkill *)",
+      "Bash(kill *)",
+      "Bash(lsof *)",
+      "Bash(nohup *)",
+      "Bash(ls *)",
+      "Bash(ps *)",
+      "Bash(sleep *)",
+      "Bash(mkdir *)",
+      "Bash(tail *)",
+      "Bash(stat *)",
+      "Bash(cat *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(/usr/libexec/PlistBuddy *)",
+      "Bash(log *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(rm *)",
+      "Bash(sips *)",
+      "Bash(open *)",
+      "Bash(diff *)",
+      "Bash(wc *)",
+      "Bash(sort *)",
+      "Bash(uniq *)",
+      "Bash(head *)",
+      "Bash(swift *)",
+      "Read",
+      "Edit",
+      "Write",
+      "WebFetch",
+      "WebSearch"
+    ]
+  }
+}

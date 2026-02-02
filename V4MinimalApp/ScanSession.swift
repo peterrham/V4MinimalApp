@@ -14,6 +14,7 @@ enum DetectionPipeline: String, Codable, CaseIterable, Identifiable {
     case yoloPlusOCR = "YOLO + OCR"
     case geminiStreaming = "Gemini Streaming"
     case geminiMultiItem = "Gemini Multi-Item"
+    case geminiVideo = "Gemini Video"
 
     var id: String { rawValue }
 
@@ -23,13 +24,14 @@ enum DetectionPipeline: String, Codable, CaseIterable, Identifiable {
         case .yoloPlusOCR: return "YOLO detection + Vision OCR enrichment"
         case .geminiStreaming: return "Gemini API with streaming detection prompt"
         case .geminiMultiItem: return "Gemini API with full multi-item analysis + OCR"
+        case .geminiVideo: return "Upload entire video to Gemini File API (single call)"
         }
     }
 
     var isOnDevice: Bool {
         switch self {
         case .yoloOnly, .yoloPlusOCR: return true
-        case .geminiStreaming, .geminiMultiItem: return false
+        case .geminiStreaming, .geminiMultiItem, .geminiVideo: return false
         }
     }
 }
@@ -155,6 +157,8 @@ struct PipelineRunResult: Codable, Identifiable {
     let apiCallCount: Int
     let scores: SessionScores?
     let runDate: Date
+    let videoStartTime: Double
+    let videoEndTime: Double?
 
     init(
         id: UUID = UUID(),
@@ -165,7 +169,9 @@ struct PipelineRunResult: Codable, Identifiable {
         framesProcessed: Int,
         apiCallCount: Int,
         scores: SessionScores? = nil,
-        runDate: Date = Date()
+        runDate: Date = Date(),
+        videoStartTime: Double = 0,
+        videoEndTime: Double? = nil
     ) {
         self.id = id
         self.pipeline = pipeline
@@ -176,6 +182,8 @@ struct PipelineRunResult: Codable, Identifiable {
         self.apiCallCount = apiCallCount
         self.scores = scores
         self.runDate = runDate
+        self.videoStartTime = videoStartTime
+        self.videoEndTime = videoEndTime
     }
 }
 

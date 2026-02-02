@@ -7,7 +7,9 @@
 
 import SwiftUI
 import AVFoundation
+import AVKit
 import PhotosUI
+import Photos
 
 // MARK: - Main Evaluation View
 
@@ -20,8 +22,18 @@ struct EvaluationView: View {
     @State private var showGroundTruthEditor = false
     @State private var showComparisonView = false
     @State private var frameInterval: Double = 2.0
+    @State private var startSecond: String = ""
+    @State private var endSecond: String = ""
     @State private var selectedPipelines: Set<DetectionPipeline> = [.yoloOnly]
     @State private var selectedRun: PipelineRunResult?
+    @State private var videoDurationSeconds: Double?
+    @State private var thumbnailCache: [UUID: UIImage] = [:]
+    @State private var player: AVPlayer?
+    @State private var showingSaveConfirmation = false
+    @State private var saveMessage = ""
+    @State private var isExporting = false
+    @State private var exportMessage = ""
+    @State private var showExportAlert = false
 
     var body: some View {
         List {
@@ -65,6 +77,33 @@ struct EvaluationView: View {
         .sheet(item: $selectedRun) { run in
             PipelineRunDetailView(run: run)
         }
+        .alert("Save to Photos", isPresented: $showingSaveConfirmation) {
+            Button("OK") {}
+        } message: {
+            Text(saveMessage)
+        }
+        .alert("Export to Drive", isPresented: $showExportAlert) {
+            Button("OK") {}
+        } message: {
+            Text(exportMessage)
+        }
+        .onDisappear {
+            player?.pause()
+            player = nil
+        }
+        .onChange(of: selectedSession?.id) { _, _ in
+            player?.pause()
+            if let session = selectedSession {
+                let url = store.videoURL(for: session)
+                if FileManager.default.fileExists(atPath: url.path) {
+                    player = AVPlayer(url: url)
+                } else {
+                    player = nil
+                }
+            } else {
+                player = nil
+            }
+        }
     }
 
     // MARK: - Sessions Section
@@ -83,11 +122,44 @@ struct EvaluationView: View {
                 Label("Import from Photo Library", systemImage: "photo.on.rectangle")
             }
 
+            Button {
+                Task { await exportResultsToDrive() }
+            } label: {
+                HStack {
+                    Label("Export All Results to Drive", systemImage: "icloud.and.arrow.up")
+                    Spacer()
+                    if isExporting {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                }
+            }
+            .disabled(isExporting || store.sessions.flatMap(\.pipelineRuns).isEmpty)
+
             ForEach(store.sessions) { session in
                 Button {
                     selectedSession = session
+                    videoDurationSeconds = nil
+                    endSecond = ""
+                    loadVideoDuration(session)
                 } label: {
-                    HStack {
+                    HStack(spacing: 10) {
+                        // Thumbnail
+                        if let thumb = thumbnailCache[session.id] {
+                            Image(uiImage: thumb)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 44, height: 44)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                        } else {
+                            Image(systemName: "film")
+                                .font(.title3)
+                                .foregroundColor(.secondary)
+                                .frame(width: 44, height: 44)
+                                .background(Color(.systemGray5))
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                        }
+
                         VStack(alignment: .leading, spacing: 2) {
                             Text(session.name)
                                 .font(.headline)
@@ -111,6 +183,9 @@ struct EvaluationView: View {
                         }
                     }
                 }
+                .onAppear {
+                    loadThumbnail(for: session)
+                }
             }
             .onDelete { offsets in
                 let wasSelected = offsets.contains(where: { store.sessions[$0].id == selectedSession?.id })
@@ -126,14 +201,66 @@ struct EvaluationView: View {
 
     private func sessionDetailSection(_ session: ScanSession) -> some View {
         Section {
-            // Video info
-            HStack {
-                Label("Video", systemImage: "film")
-                Spacer()
-                Text(session.videoFileName)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+            // Video player
+            VStack(spacing: 8) {
+                if let player = player {
+                    VideoPlayer(player: player)
+                        .frame(height: 220)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                } else {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(.systemGray5))
+                        .frame(height: 220)
+                        .overlay {
+                            VStack(spacing: 4) {
+                                Image(systemName: "film")
+                                    .font(.largeTitle)
+                                    .foregroundColor(.secondary)
+                                Text("Video not found")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                }
+
+                HStack {
+                    Text(session.videoFileName)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                    Spacer()
+                    if let dur = videoDurationSeconds {
+                        Text(String(format: "%.1fs", dur))
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                }
+
+                // Action buttons
+                HStack(spacing: 12) {
+                    Button {
+                        saveVideoToPhotos(session)
+                    } label: {
+                        Label("Save to Photos", systemImage: "square.and.arrow.down")
+                            .font(.caption)
+                    }
+
+                    Button {
+                        shareVideo(session)
+                    } label: {
+                        Label("Share", systemImage: "square.and.arrow.up")
+                            .font(.caption)
+                    }
+                }
+            }
+            .onAppear {
+                loadVideoDuration(session)
+                if player == nil {
+                    let url = store.videoURL(for: session)
+                    if FileManager.default.fileExists(atPath: url.path) {
+                        player = AVPlayer(url: url)
+                    }
+                }
             }
 
             // Ground truth
@@ -165,32 +292,60 @@ struct EvaluationView: View {
                 .pickerStyle(.segmented)
             }
 
-            // Pipeline selection
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Pipelines")
-                    .font(.subheadline)
-                ForEach(DetectionPipeline.allCases) { pipeline in
-                    Button {
-                        if selectedPipelines.contains(pipeline) {
-                            selectedPipelines.remove(pipeline)
-                        } else {
-                            selectedPipelines.insert(pipeline)
-                        }
-                    } label: {
-                        HStack {
-                            Image(systemName: selectedPipelines.contains(pipeline)
-                                  ? "checkmark.square.fill" : "square")
-                                .foregroundColor(selectedPipelines.contains(pipeline) ? .blue : .secondary)
-                            VStack(alignment: .leading) {
-                                Text(pipeline.rawValue)
-                                    .font(.subheadline)
-                                    .foregroundColor(.primary)
-                                Text(pipeline.isOnDevice ? "On-device" : "API")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                        }
+            // Start/end time range
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Start (s)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    TextField("0", text: $startSecond)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 80)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("End (s)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    TextField(videoDurationSeconds.map { String(format: "%.1f", $0) } ?? "end", text: $endSecond)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 80)
+                }
+                Spacer()
+                if let dur = videoDurationSeconds {
+                    Text(String(format: "Video: %.1fs", dur))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                } else {
+                    Text("Leave blank for full video")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            // Pipeline selection — each pipeline is its own row so
+            // List gives each an independent tap target.
+            ForEach(DetectionPipeline.allCases) { pipeline in
+                HStack {
+                    Image(systemName: selectedPipelines.contains(pipeline)
+                          ? "checkmark.square.fill" : "square")
+                        .foregroundColor(selectedPipelines.contains(pipeline) ? .blue : .secondary)
+                    VStack(alignment: .leading) {
+                        Text(pipeline.rawValue)
+                            .font(.subheadline)
+                        Text(pipeline.isOnDevice ? "On-device" : "API")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if selectedPipelines.contains(pipeline) {
+                        selectedPipelines.remove(pipeline)
+                    } else {
+                        selectedPipelines.insert(pipeline)
                     }
                 }
             }
@@ -234,7 +389,7 @@ struct EvaluationView: View {
                 }
             }
 
-            ForEach(session.pipelineRuns) { run in
+            ForEach(session.pipelineRuns.sorted(by: { $0.runDate > $1.runDate })) { run in
                 Button {
                     selectedRun = run
                 } label: {
@@ -247,6 +402,18 @@ struct EvaluationView: View {
                             Image(systemName: "chevron.right")
                                 .foregroundColor(.secondary)
                                 .font(.caption)
+                        }
+
+                        // Date/time and video range
+                        HStack(spacing: 6) {
+                            Text(run.runDate, format: .dateTime.month(.abbreviated).day().hour().minute())
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            if run.videoStartTime > 0 || run.videoEndTime != nil {
+                                Text("[\(String(format: "%.0f", run.videoStartTime))s–\(run.videoEndTime.map { String(format: "%.0f", $0) } ?? "end")s]")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
                         }
 
                         HStack(spacing: 12) {
@@ -297,6 +464,311 @@ struct EvaluationView: View {
         )
     }
 
+    private func loadThumbnail(for session: ScanSession) {
+        guard thumbnailCache[session.id] == nil else { return }
+        let videoURL = store.videoURL(for: session)
+        guard FileManager.default.fileExists(atPath: videoURL.path) else { return }
+        Task.detached {
+            let asset = AVURLAsset(url: videoURL)
+            let generator = AVAssetImageGenerator(asset: asset)
+            generator.appliesPreferredTrackTransform = true
+            generator.maximumSize = CGSize(width: 120, height: 120)
+            if let cgImage = try? await generator.image(at: .zero).image {
+                let img = UIImage(cgImage: cgImage)
+                await MainActor.run { thumbnailCache[session.id] = img }
+            }
+        }
+    }
+
+    private func saveVideoToPhotos(_ session: ScanSession) {
+        let videoURL = store.videoURL(for: session)
+        guard FileManager.default.fileExists(atPath: videoURL.path) else {
+            saveMessage = "Video file not found"
+            showingSaveConfirmation = true
+            return
+        }
+
+        let status = PHPhotoLibrary.authorizationStatus(for: .addOnly)
+        switch status {
+        case .authorized, .limited:
+            performSaveToPhotos(url: videoURL)
+        case .notDetermined:
+            PHPhotoLibrary.requestAuthorization(for: .addOnly) { newStatus in
+                DispatchQueue.main.async {
+                    if newStatus == .authorized || newStatus == .limited {
+                        performSaveToPhotos(url: videoURL)
+                    } else {
+                        saveMessage = "Photo library access denied"
+                        showingSaveConfirmation = true
+                    }
+                }
+            }
+        default:
+            saveMessage = "Photo library access denied. Enable in Settings."
+            showingSaveConfirmation = true
+        }
+    }
+
+    private func performSaveToPhotos(url: URL) {
+        PHPhotoLibrary.shared().performChanges {
+            PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
+        } completionHandler: { success, error in
+            DispatchQueue.main.async {
+                if success {
+                    saveMessage = "Video saved to Photos"
+                } else {
+                    saveMessage = "Failed to save: \(error?.localizedDescription ?? "unknown error")"
+                }
+                showingSaveConfirmation = true
+            }
+        }
+    }
+
+    private func shareVideo(_ session: ScanSession) {
+        let videoURL = store.videoURL(for: session)
+        guard FileManager.default.fileExists(atPath: videoURL.path) else { return }
+        let activityVC = UIActivityViewController(activityItems: [videoURL], applicationActivities: nil)
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootVC = windowScene.windows.first?.rootViewController else { return }
+        // Find the topmost presented controller
+        var topVC = rootVC
+        while let presented = topVC.presentedViewController {
+            topVC = presented
+        }
+        activityVC.popoverPresentationController?.sourceView = topVC.view
+        topVC.present(activityVC, animated: true)
+    }
+
+    // MARK: - Export to Google Drive
+
+    private func exportResultsToDrive() async {
+        guard let token = AuthManager.shared.getAccessToken(), !token.isEmpty else {
+            exportMessage = "Not signed in to Google. Sign in from Settings first."
+            showExportAlert = true
+            return
+        }
+
+        isExporting = true
+        defer { isExporting = false }
+
+        let allRuns = store.sessions.flatMap { session in
+            session.pipelineRuns.map { (session, $0) }
+        }
+        guard !allRuns.isEmpty else {
+            exportMessage = "No pipeline runs to export."
+            showExportAlert = true
+            return
+        }
+
+        // Find or create export folder
+        let folderId: String
+        do {
+            folderId = try await findOrCreateDriveFolder(name: "EvalHarness", token: token)
+        } catch {
+            exportMessage = "Failed to create Drive folder: \(error.localizedDescription)"
+            showExportAlert = true
+            return
+        }
+
+        let dateFmt = DateFormatter()
+        dateFmt.dateFormat = "yyyy-MM-dd_HHmmss"
+        let timestamp = dateFmt.string(from: Date())
+
+        // --- Summary CSV ---
+        var summaryCSV = "Session,Pipeline,Date,Items Detected,Ground Truth,Matched,Recall,Precision,Name Quality,Duration (s),Frames,API Calls,Video Start,Video End\n"
+        for (session, run) in allRuns {
+            let row = [
+                csvEscape(session.name),
+                csvEscape(run.pipeline.rawValue),
+                run.runDate.ISO8601Format(),
+                "\(run.detectedItems.count)",
+                "\(session.groundTruth.items.count)",
+                "\(run.scores?.matchedCount ?? 0)",
+                run.scores.map { String(format: "%.1f%%", $0.recall * 100) } ?? "",
+                run.scores.map { String(format: "%.1f%%", $0.precision * 100) } ?? "",
+                run.scores.map { String(format: "%.1f", $0.avgNameQuality) } ?? "",
+                String(format: "%.1f", run.durationSeconds),
+                "\(run.framesProcessed)",
+                "\(run.apiCallCount)",
+                String(format: "%.1f", run.videoStartTime),
+                run.videoEndTime.map { String(format: "%.1f", $0) } ?? "end"
+            ].joined(separator: ",")
+            summaryCSV += row + "\n"
+        }
+
+        // --- Detailed Items CSV ---
+        var itemsCSV = "Session,Pipeline,Run Date,Frame,Item Name,Brand,Color,Size,Category,Confidence,Has BBox,OCR Text\n"
+        for (session, run) in allRuns {
+            for item in run.detectedItems {
+                let row = [
+                    csvEscape(session.name),
+                    csvEscape(run.pipeline.rawValue),
+                    run.runDate.ISO8601Format(),
+                    "\(item.frameIndex)",
+                    csvEscape(item.name),
+                    csvEscape(item.brand ?? ""),
+                    csvEscape(item.color ?? ""),
+                    csvEscape(item.size ?? ""),
+                    csvEscape(item.category ?? ""),
+                    item.confidence.map { String(format: "%.2f", $0) } ?? "",
+                    item.boundingBox != nil ? "Yes" : "No",
+                    csvEscape(item.ocrText?.joined(separator: "; ") ?? "")
+                ].joined(separator: ",")
+                itemsCSV += row + "\n"
+            }
+        }
+
+        // --- Match Details CSV ---
+        var matchCSV = "Session,Pipeline,Run Date,Ground Truth Item,Detected As,Match Type\n"
+        for (session, run) in allRuns {
+            if let scores = run.scores {
+                for detail in scores.matchDetails {
+                    let row = [
+                        csvEscape(session.name),
+                        csvEscape(run.pipeline.rawValue),
+                        run.runDate.ISO8601Format(),
+                        csvEscape(detail.groundTruthName),
+                        csvEscape(detail.detectedName ?? ""),
+                        detail.matchType.rawValue.uppercased()
+                    ].joined(separator: ",")
+                    matchCSV += row + "\n"
+                }
+            }
+        }
+
+        // Upload all three
+        var uploaded = 0
+        var errors: [String] = []
+
+        for (name, csv) in [
+            ("summary_\(timestamp).csv", summaryCSV),
+            ("items_\(timestamp).csv", itemsCSV),
+            ("matches_\(timestamp).csv", matchCSV)
+        ] {
+            do {
+                try await uploadCSVToDrive(csv: csv, filename: name, folderId: folderId, token: token)
+                uploaded += 1
+            } catch {
+                errors.append("\(name): \(error.localizedDescription)")
+            }
+        }
+
+        if errors.isEmpty {
+            exportMessage = "Exported \(uploaded) files to Google Drive/EvalHarness"
+        } else {
+            exportMessage = "Uploaded \(uploaded)/3. Errors: \(errors.joined(separator: "; "))"
+        }
+        showExportAlert = true
+    }
+
+    private func csvEscape(_ value: String) -> String {
+        if value.contains(",") || value.contains("\"") || value.contains("\n") {
+            return "\"" + value.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+        }
+        return value
+    }
+
+    private func findOrCreateDriveFolder(name: String, token: String) async throws -> String {
+        // Search for existing folder
+        let query = "mimeType='application/vnd.google-apps.folder' and name='\(name)' and trashed=false"
+        let escaped = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        let searchURL = URL(string: "https://www.googleapis.com/drive/v3/files?q=\(escaped)&fields=files(id,name)")!
+
+        var searchReq = URLRequest(url: searchURL)
+        searchReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        searchReq.timeoutInterval = 15
+
+        let (searchData, searchResp) = try await URLSession.shared.data(for: searchReq)
+        guard let httpResp = searchResp as? HTTPURLResponse, httpResp.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+
+        if let json = try? JSONSerialization.jsonObject(with: searchData) as? [String: Any],
+           let files = json["files"] as? [[String: Any]],
+           let firstId = files.first?["id"] as? String {
+            return firstId
+        }
+
+        // Create folder
+        let createURL = URL(string: "https://www.googleapis.com/drive/v3/files?fields=id")!
+        var createReq = URLRequest(url: createURL)
+        createReq.httpMethod = "POST"
+        createReq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        createReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        createReq.timeoutInterval = 15
+
+        let metadata: [String: Any] = [
+            "name": name,
+            "mimeType": "application/vnd.google-apps.folder"
+        ]
+        createReq.httpBody = try JSONSerialization.data(withJSONObject: metadata)
+
+        let (createData, createResp) = try await URLSession.shared.data(for: createReq)
+        guard let createHttp = createResp as? HTTPURLResponse, createHttp.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+
+        guard let createJson = try? JSONSerialization.jsonObject(with: createData) as? [String: Any],
+              let folderId = createJson["id"] as? String else {
+            throw URLError(.cannotParseResponse)
+        }
+        return folderId
+    }
+
+    private func uploadCSVToDrive(csv: String, filename: String, folderId: String, token: String) async throws {
+        guard let fileData = csv.data(using: .utf8) else { throw URLError(.cannotDecodeContentData) }
+
+        let boundary = "Boundary-\(UUID().uuidString)"
+        let url = URL(string: "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name")!
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("multipart/related; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 30
+
+        let metadata: [String: Any] = [
+            "name": filename,
+            "mimeType": "text/csv",
+            "parents": [folderId]
+        ]
+        let metadataData = try JSONSerialization.data(withJSONObject: metadata)
+
+        var body = Data()
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Type: application/json; charset=UTF-8\r\n\r\n".data(using: .utf8)!)
+        body.append(metadataData)
+        body.append("\r\n--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Type: text/csv\r\n\r\n".data(using: .utf8)!)
+        body.append(fileData)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+
+        request.httpBody = body
+
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let httpResp = response as? HTTPURLResponse, (200...299).contains(httpResp.statusCode) else {
+            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+            throw URLError(.badServerResponse, userInfo: [NSLocalizedDescriptionKey: "HTTP \(code)"])
+        }
+    }
+
+    private func loadVideoDuration(_ session: ScanSession) {
+        let videoURL = store.videoURL(for: session)
+        guard FileManager.default.fileExists(atPath: videoURL.path) else { return }
+        Task {
+            let asset = AVURLAsset(url: videoURL)
+            if let duration = try? await asset.load(.duration) {
+                let seconds = CMTimeGetSeconds(duration)
+                if seconds > 0 {
+                    videoDurationSeconds = seconds
+                    if endSecond.isEmpty {
+                        endSecond = String(format: "%.1f", seconds)
+                    }
+                }
+            }
+        }
+    }
+
     private func runSelectedPipelines(_ session: ScanSession) async {
         let videoURL = store.videoURL(for: session)
         guard FileManager.default.fileExists(atPath: videoURL.path) else {
@@ -304,12 +776,17 @@ struct EvaluationView: View {
             return
         }
 
+        let start = Double(startSecond) ?? 0
+        let end = Double(endSecond)
+
         for pipeline in selectedPipelines.sorted(by: { $0.rawValue < $1.rawValue }) {
             guard let result = await runner.runPipeline(
                 pipeline,
                 videoURL: videoURL,
                 sessionId: session.id,
                 intervalSeconds: frameInterval,
+                startTime: start,
+                endTime: end,
                 groundTruth: session.groundTruth
             ) else { continue }
 
@@ -334,9 +811,11 @@ struct PipelineRunDetailView: View {
                 // Summary
                 Section {
                     LabeledContent("Pipeline", value: run.pipeline.rawValue)
+                    LabeledContent("Run Date", value: run.runDate.formatted(.dateTime.month(.abbreviated).day().hour().minute().second()))
                     LabeledContent("Items Detected", value: "\(run.detectedItems.count)")
                     LabeledContent("Frames Processed", value: "\(run.framesProcessed)")
                     LabeledContent("Duration", value: String(format: "%.1fs", run.durationSeconds))
+                    LabeledContent("Video Range", value: "\(String(format: "%.1f", run.videoStartTime))s – \(run.videoEndTime.map { String(format: "%.1f", $0) } ?? "end")s")
                     if run.apiCallCount > 0 {
                         LabeledContent("API Calls", value: "\(run.apiCallCount)")
                     }
@@ -633,10 +1112,23 @@ struct GroundTruthEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var newItemName = ""
     @State private var newItemCategory = ""
+    @State private var showSheetsImport = false
 
     var body: some View {
         NavigationStack {
             List {
+                // Google Sheets import
+                Section {
+                    Button {
+                        showSheetsImport = true
+                    } label: {
+                        Label("Import from Google Sheets", systemImage: "tablecells.badge.ellipsis")
+                    }
+                } header: {
+                    Text("Import")
+                }
+
+                // Manual add
                 Section {
                     HStack {
                         TextField("Item name", text: $newItemName)
@@ -658,14 +1150,13 @@ struct GroundTruthEditorSheet: View {
                         .disabled(newItemName.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
 
-                    if !session.groundTruth.items.isEmpty {
-                        TextField("Category (optional)", text: $newItemCategory)
-                            .font(.caption)
-                    }
+                    TextField("Category (optional)", text: $newItemCategory)
+                        .font(.caption)
                 } header: {
-                    Text("Add Item")
+                    Text("Add Manually")
                 }
 
+                // Current items
                 Section {
                     if session.groundTruth.items.isEmpty {
                         Text("No ground truth items yet")
@@ -701,6 +1192,9 @@ struct GroundTruthEditorSheet: View {
                     Button("Done") { dismiss() }
                 }
             }
+            .sheet(isPresented: $showSheetsImport) {
+                GoogleSheetsImportView(store: store, session: $session)
+            }
         }
     }
 
@@ -708,6 +1202,318 @@ struct GroundTruthEditorSheet: View {
         if let updated = store.sessions.first(where: { $0.id == session.id }) {
             session = updated
         }
+    }
+}
+
+// MARK: - Google Sheets Import
+
+struct GoogleSheetsImportView: View {
+    @ObservedObject var store: ScanSessionStore
+    @Binding var session: ScanSession
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var searchQuery = "ground truth"
+    @State private var spreadsheets: [(id: String, name: String)] = []
+    @State private var isSearching = false
+    @State private var isLoading = false
+    @State private var statusMessage = ""
+    @State private var previewItems: [(name: String, category: String?)] = []
+    @State private var selectedSheetId: String?
+    @State private var selectedSheetName: String?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                // Search
+                Section {
+                    HStack {
+                        TextField("Search sheets...", text: $searchQuery)
+                            .textInputAutocapitalization(.never)
+                        Button {
+                            Task { await searchSheets() }
+                        } label: {
+                            if isSearching {
+                                ProgressView()
+                                    .controlSize(.small)
+                            } else {
+                                Image(systemName: "magnifyingglass")
+                            }
+                        }
+                        .disabled(searchQuery.trimmingCharacters(in: .whitespaces).isEmpty || isSearching)
+                    }
+                } header: {
+                    Text("Search Google Drive")
+                } footer: {
+                    Text("Searches your Google Drive for spreadsheets. Column A = item name, Column B = category (optional).")
+                }
+
+                // Results
+                if !spreadsheets.isEmpty {
+                    Section {
+                        ForEach(spreadsheets, id: \.id) { sheet in
+                            Button {
+                                selectedSheetId = sheet.id
+                                selectedSheetName = sheet.name
+                                Task { await loadSheet(id: sheet.id) }
+                            } label: {
+                                HStack {
+                                    Image(systemName: "tablecells")
+                                        .foregroundColor(.green)
+                                    Text(sheet.name)
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    if selectedSheetId == sheet.id {
+                                        Image(systemName: "checkmark")
+                                            .foregroundColor(.blue)
+                                    }
+                                }
+                            }
+                        }
+                    } header: {
+                        Text("Spreadsheets")
+                    }
+                }
+
+                // Preview
+                if !previewItems.isEmpty {
+                    Section {
+                        ForEach(Array(previewItems.enumerated()), id: \.offset) { _, item in
+                            HStack {
+                                Text(item.name)
+                                Spacer()
+                                if let cat = item.category {
+                                    Text(cat)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                    } header: {
+                        Text("Preview (\(previewItems.count) items from \(selectedSheetName ?? ""))")
+                    }
+
+                    Section {
+                        Button {
+                            importItems()
+                        } label: {
+                            Label("Import \(previewItems.count) Items", systemImage: "square.and.arrow.down")
+                                .fontWeight(.semibold)
+                        }
+                    }
+                }
+
+                // Status
+                if !statusMessage.isEmpty {
+                    Section {
+                        Text(statusMessage)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                if isLoading {
+                    Section {
+                        HStack {
+                            ProgressView()
+                                .controlSize(.small)
+                            Text("Loading sheet data...")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Import from Sheets")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func getAccessToken() -> String? {
+        AuthManager.shared.getAccessToken()
+    }
+
+    private func searchSheets() async {
+        guard let token = getAccessToken(), !token.isEmpty else {
+            statusMessage = "Not signed in to Google. Sign in from Settings first."
+            return
+        }
+
+        isSearching = true
+        statusMessage = ""
+        spreadsheets = []
+        previewItems = []
+        selectedSheetId = nil
+
+        let query = searchQuery.trimmingCharacters(in: .whitespaces)
+        let escaped = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        let urlStr = "https://www.googleapis.com/drive/v3/files?q=mimeType%3D'application%2Fvnd.google-apps.spreadsheet'+and+name+contains+'\(escaped)'&orderBy=modifiedTime+desc&pageSize=10&fields=files(id%2Cname)"
+
+        guard let url = URL(string: urlStr) else {
+            statusMessage = "Invalid search query"
+            isSearching = false
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 15
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResp = response as? HTTPURLResponse else {
+                statusMessage = "Invalid response"
+                isSearching = false
+                return
+            }
+
+            if httpResp.statusCode == 401 || httpResp.statusCode == 403 {
+                statusMessage = "Google auth expired. Re-sign in from Settings."
+                isSearching = false
+                return
+            }
+
+            guard httpResp.statusCode == 200 else {
+                statusMessage = "Drive API error: HTTP \(httpResp.statusCode)"
+                isSearching = false
+                return
+            }
+
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let files = json["files"] as? [[String: Any]] {
+                spreadsheets = files.compactMap { file in
+                    guard let id = file["id"] as? String,
+                          let name = file["name"] as? String else { return nil }
+                    return (id: id, name: name)
+                }
+                if spreadsheets.isEmpty {
+                    statusMessage = "No spreadsheets found matching '\(query)'"
+                }
+            }
+        } catch {
+            statusMessage = "Search failed: \(error.localizedDescription)"
+        }
+
+        isSearching = false
+    }
+
+    private func loadSheet(id: String) async {
+        guard let token = getAccessToken() else {
+            statusMessage = "Not signed in"
+            return
+        }
+
+        isLoading = true
+        previewItems = []
+
+        // Read A:B from the first sheet
+        let urlStr = "https://sheets.googleapis.com/v4/spreadsheets/\(id)/values/Sheet1!A:B?key=&majorDimension=ROWS"
+        guard let url = URL(string: urlStr) else {
+            statusMessage = "Invalid sheet URL"
+            isLoading = false
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 15
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200 else {
+                // Try without "Sheet1" in case the sheet has a different name
+                let fallbackResult = await loadSheetFallback(id: id, token: token)
+                if fallbackResult {
+                    isLoading = false
+                    return
+                }
+                statusMessage = "Failed to read sheet (HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0))"
+                isLoading = false
+                return
+            }
+
+            parseSheetData(data)
+        } catch {
+            statusMessage = "Failed to load: \(error.localizedDescription)"
+        }
+
+        isLoading = false
+    }
+
+    private func loadSheetFallback(id: String, token: String) async -> Bool {
+        // Try reading without specifying sheet name (uses first sheet)
+        let urlStr = "https://sheets.googleapis.com/v4/spreadsheets/\(id)/values/A:B?majorDimension=ROWS"
+        guard let url = URL(string: urlStr) else { return false }
+
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 15
+
+        guard let (data, response) = try? await URLSession.shared.data(for: request),
+              let httpResp = response as? HTTPURLResponse, httpResp.statusCode == 200 else {
+            return false
+        }
+
+        parseSheetData(data)
+        return !previewItems.isEmpty
+    }
+
+    private func parseSheetData(_ data: Data) {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let values = json["values"] as? [[Any]] else {
+            statusMessage = "No data found in sheet"
+            return
+        }
+
+        var items: [(name: String, category: String?)] = []
+        for (i, row) in values.enumerated() {
+            guard let name = row.first as? String else { continue }
+            let trimmed = name.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty { continue }
+
+            // Skip header row if it looks like one
+            if i == 0 {
+                let lower = trimmed.lowercased()
+                if lower == "name" || lower == "item" || lower == "item name" || lower == "items" {
+                    continue
+                }
+            }
+
+            let category: String?
+            if row.count > 1, let cat = row[1] as? String, !cat.trimmingCharacters(in: .whitespaces).isEmpty {
+                category = cat.trimmingCharacters(in: .whitespaces)
+            } else {
+                category = nil
+            }
+
+            items.append((name: trimmed, category: category))
+        }
+
+        previewItems = items
+        if items.isEmpty {
+            statusMessage = "Sheet has no valid items (expected names in column A)"
+        } else {
+            statusMessage = ""
+        }
+    }
+
+    private func importItems() {
+        for item in previewItems {
+            store.addGroundTruthItem(
+                to: session.id,
+                name: item.name,
+                category: item.category
+            )
+        }
+        // Refresh session binding
+        if let updated = store.sessions.first(where: { $0.id == session.id }) {
+            session = updated
+        }
+        dismiss()
     }
 }
 
@@ -830,6 +1636,7 @@ struct ComparisonView: View {
         case .yoloPlusOCR: return "YOLO+OCR"
         case .geminiStreaming: return "Gem.Stream"
         case .geminiMultiItem: return "Gem.Multi"
+        case .geminiVideo: return "Gem.Video"
         }
     }
 
