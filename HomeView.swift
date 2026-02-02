@@ -158,15 +158,17 @@ struct HomeView: View {
 
                             // Statistics Cards
                             HStack(spacing: AppTheme.Spacing.m) {
-                                StatCard(
-                                    icon: "cube.box.fill",
-                                    value: "\(itemCount)",
-                                    label: "Items",
-                                    color: AppTheme.Colors.primary
-                                )
-                                .onTapGesture {
+                                Button {
                                     selectedTab = 2
+                                } label: {
+                                    StatCard(
+                                        icon: "cube.box.fill",
+                                        value: "\(itemCount)",
+                                        label: "Items",
+                                        color: AppTheme.Colors.primary
+                                    )
                                 }
+                                .buttonStyle(.plain)
 
                                 StatCard(
                                     icon: "dollarsign.circle.fill",
@@ -219,7 +221,7 @@ struct HomeView: View {
                                             ItemCardCompact(
                                                 item: item,
                                                 displayTitle: InventoryItem.disambiguatedTitle(for: item, in: recentItems),
-                                                showPhoto: homeUIConfig == "original"
+                                                showPhoto: true
                                             )
                                         }
                                     }
@@ -357,10 +359,13 @@ struct ItemCardCompact: View {
             if showPhoto,
                let photoName = item.photos.first,
                let uiImage = UIImage(contentsOfFile: InventoryStore.photoURL(for: photoName).path) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
+                Color.clear
                     .frame(height: 120)
+                    .overlay(
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    )
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             } else {
                 ZStack {

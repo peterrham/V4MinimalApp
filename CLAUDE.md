@@ -111,6 +111,7 @@ iOS home inventory app that uses the camera to photograph/video items, AI (Gemin
 - Typo "Disconect" → "Disconnect" in GoogleSignInView
 - App display name → Added `CFBundleDisplayName = "Home Inventory"` to Info.plist
 - App icon AssetCatalogSimulatorAgent crash → Bypassed asset catalog icon processing entirely (set `ASSETCATALOG_COMPILER_APPICON_NAME = ""`); pre-rendered icon PNGs placed directly in bundle via `CFBundleIcons` in Info.plist
+- **ItemCardCompact kills all touch events when used outside a multi-column grid** → The image uses `.aspectRatio(contentMode: .fill)` + `.frame(height: 120)`. `.fill` renders the image larger than the frame; `.clipShape()` only clips visually, NOT the hit-testing area. In a 2-column `LazyVGrid`, the narrow column width limits overflow. Standalone or in a single-column grid (full screen width), the overflow is massive and blocks ALL ScrollView touches. **Rule: always use `ItemCardCompact` inside a multi-column `LazyVGrid` — never standalone.** Attempts to fix with `.clipped()`, `Color.clear.overlay()`, or wrapping in `Button` all failed. The grid column constraint is the only reliable fix.
 
 ## Current State (as of Jan 30, 2026 session)
 
