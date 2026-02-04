@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var selectedTab = 0
+    @ObservedObject private var settings = DetectionSettings.shared
 
     private let tabs: [(icon: String, label: String)] = [
         ("house.fill", "Home"),
@@ -41,10 +42,10 @@ struct MainTabView: View {
                     } label: {
                         VStack(spacing: 6) {
                             Image(systemName: tabs[index].icon)
-                                .font(.system(size: 26, weight: .medium))
+                                .font(.system(size: settings.tabIconPointSize, weight: .medium))
 
                             Text(tabs[index].label)
-                                .font(.system(size: 13, weight: selectedTab == index ? .semibold : .medium))
+                                .font(.system(size: settings.tabLabelFontSize, weight: selectedTab == index ? .semibold : .medium))
                         }
                         .foregroundStyle(selectedTab == index ? AppTheme.Colors.primary : .secondary)
                         .frame(maxWidth: .infinity)

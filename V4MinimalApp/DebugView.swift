@@ -8,9 +8,10 @@
 import SwiftUI
 
 struct DebugView: View {
-    
+    @EnvironmentObject var inventoryStore: InventoryStore
     @State private var isShowingShareSheet = false
-    
+    @State private var tidyResult: String?
+
     @StateObject private var googleSignInManager = GoogleSignInManager(clientID: "748381179204-hp1qqcpa5jr929nj0hs6sou0sb6df60a.apps.googleusercontent.com")
     
     var body: some View {
@@ -86,6 +87,142 @@ struct DebugView: View {
                 }
                 .buttonStyle(.plain)
 
+                // Pipeline Debug - Compare detection approaches
+                NavigationLink(destination: PipelineDebugView()) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.green.opacity(0.15))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "gauge.with.dots.needle.bottom.50percent")
+                                .font(.system(size: 20))
+                                .foregroundStyle(.green)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Pipeline Debug")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
+                            Text("Compare YOLO/Gemini/Hybrid pipelines")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(12)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
+                // Audio Recognition - Old speech recognition screen
+                NavigationLink(destination: ContentView()) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.purple.opacity(0.15))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "waveform")
+                                .font(.system(size: 20))
+                                .foregroundStyle(.purple)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Audio Recognition")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
+                            Text("Speech-to-text with live transcription")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(12)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
+                // OpenAI Chat - Talk to GPT
+                NavigationLink(destination: OpenAIChatView()) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.teal.opacity(0.15))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "bubble.left.and.text.bubble.right")
+                                .font(.system(size: 20))
+                                .foregroundStyle(.teal)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Talk to OpenAI")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
+                            Text("Chat with GPT-4o-mini via streaming")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(12)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
+                // OpenAI Realtime - Voice conversation with GPT-4o
+                NavigationLink(destination: OpenAIRealtimeView()) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.cyan.opacity(0.15))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "waveform.badge.mic")
+                                .font(.system(size: 20))
+                                .foregroundStyle(.cyan)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("OpenAI Realtime")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
+                            Text("Voice conversation with GPT-4o Realtime")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(12)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
                 // Network Diagnostics - Featured Entry
                 NavigationLink(destination: NetworkDiagnosticsView()) {
                     HStack(spacing: 12) {
@@ -113,6 +250,41 @@ struct DebugView: View {
                         Image(systemName: "chevron.right")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
+                    }
+                    .padding(12)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
+                Divider()
+                    .padding(.vertical, 4)
+
+                // Tidy Database
+                Button {
+                    tidyResult = inventoryStore.tidyDatabase()
+                } label: {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.purple.opacity(0.15))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "wand.and.stars")
+                                .font(.system(size: 20))
+                                .foregroundStyle(.purple)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Tidy Database")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
+                            Text(tidyResult ?? "Remove bad items, auto-assign rooms")
+                                .font(.caption)
+                                .foregroundStyle(tidyResult != nil ? .green : .secondary)
+                        }
+
+                        Spacer()
                     }
                     .padding(12)
                     .background(Color(.secondarySystemBackground))

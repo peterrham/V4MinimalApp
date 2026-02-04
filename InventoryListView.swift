@@ -8,18 +8,40 @@
 import SwiftUI
 import UIKit
 
+enum InventorySortOrder: String, CaseIterable, Identifiable {
+    case newest = "Newest First"
+    case oldest = "Oldest First"
+    case nameAZ = "Name A-Z"
+    case nameZA = "Name Z-A"
+    case valueHigh = "Value: High-Low"
+    case valueLow = "Value: Low-High"
+
+    var id: String { rawValue }
+}
+
+enum InventoryTab: String, CaseIterable {
+    case items = "Items"
+    case sessions = "Sessions"
+}
+
 struct InventoryListView: View {
     @EnvironmentObject var inventoryStore: InventoryStore
+    @EnvironmentObject var sessionStore: DetectionSessionStore
     var embedded = false  // true when already inside a NavigationStack
+    var initialSort: InventorySortOrder? = nil
+    var initialCategory: ItemCategory? = nil
+    var initialRoom: String? = nil
     @State private var searchText = ""
     @State private var selectedCategory: ItemCategory?
     @State private var selectedRoom: String?
+    @State private var sortOrder: InventorySortOrder = .nameAZ
     @State private var isGridView = true
     @State private var showingDeleteAllAlert = false
     @State private var displayLimit = 50
+    @State private var inventoryTab: InventoryTab = .items
 
     var filteredItems: [InventoryItem] {
-        inventoryStore.currentHomeItems.filter { item in
+        let items = inventoryStore.currentHomeItems.filter { item in
             let matchesSearch = searchText.isEmpty ||
                 item.name.localizedCaseInsensitiveContains(searchText) ||
                 item.brand?.localizedCaseInsensitiveContains(searchText) ?? false ||
@@ -29,6 +51,21 @@ struct InventoryListView: View {
             let matchesRoom = selectedRoom == nil || item.room == selectedRoom
 
             return matchesSearch && matchesCategory && matchesRoom
+        }
+
+        switch sortOrder {
+        case .newest:
+            return items.sorted { $0.createdAt > $1.createdAt }
+        case .oldest:
+            return items.sorted { $0.createdAt < $1.createdAt }
+        case .nameAZ:
+            return items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        case .nameZA:
+            return items.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedDescending }
+        case .valueHigh:
+            return items.sorted { ($0.purchasePrice ?? $0.estimatedValue ?? 0) > ($1.purchasePrice ?? $1.estimatedValue ?? 0) }
+        case .valueLow:
+            return items.sorted { ($0.purchasePrice ?? $0.estimatedValue ?? 0) < ($1.purchasePrice ?? $1.estimatedValue ?? 0) }
         }
     }
 
@@ -78,6 +115,20 @@ struct InventoryListView: View {
 
     private var inventoryContent: some View {
             VStack(spacing: 0) {
+                // Segmented Picker
+                Picker("View", selection: $inventoryTab) {
+                    ForEach(InventoryTab.allCases, id: \.self) { tab in
+                        Text(tab.rawValue).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, AppTheme.Spacing.l)
+                .padding(.vertical, AppTheme.Spacing.s)
+
+                if inventoryTab == .sessions {
+                    SessionsListView()
+                } else {
+
                 // Filter Chips
                 if !inventoryStore.currentHomeItems.isEmpty {
                     let activeCategories = Set(inventoryStore.currentHomeItems.map(\.category))
@@ -231,6 +282,8 @@ struct InventoryListView: View {
                         }
                     }
                 }
+
+                } // end else (items tab)
             }
             .navigationTitle("Inventory")
             .navigationBarTitleDisplayMode(.inline)
@@ -240,7 +293,7 @@ struct InventoryListView: View {
             .onChange(of: selectedRoom) { _, _ in displayLimit = 50 }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    if !inventoryStore.currentHomeItems.isEmpty {
+                    if inventoryTab == .items && !inventoryStore.currentHomeItems.isEmpty {
                         Button(role: .destructive) {
                             showingDeleteAllAlert = true
                         } label: {
@@ -253,14 +306,42 @@ struct InventoryListView: View {
                     HomePickerMenu()
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        withAnimation {
-                            isGridView.toggle()
+                    if inventoryTab == .items {
+                        HStack(spacing: 12) {
+                            Menu {
+                                ForEach(InventorySortOrder.allCases) { sort in
+                                    Button {
+                                        withAnimation { sortOrder = sort }
+                                    } label: {
+                                        Label(sort.rawValue, systemImage: sortOrder == sort ? "checkmark" : "")
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: "arrow.up.arrow.down")
+                                    .imageScale(.large)
+                            }
+
+                            Button {
+                                withAnimation {
+                                    isGridView.toggle()
+                                }
+                            } label: {
+                                Image(systemName: isGridView ? "list.bullet" : "square.grid.2x2")
+                                    .imageScale(.large)
+                            }
                         }
-                    } label: {
-                        Image(systemName: isGridView ? "list.bullet" : "square.grid.2x2")
-                            .imageScale(.large)
                     }
+                }
+            }
+            .onAppear {
+                if let initial = initialSort {
+                    sortOrder = initial
+                }
+                if let cat = initialCategory {
+                    selectedCategory = cat
+                }
+                if let room = initialRoom {
+                    selectedRoom = room
                 }
             }
             .alert("Delete All Items", isPresented: $showingDeleteAllAlert) {
@@ -405,4 +486,5 @@ struct RoomCard: View {
 #Preview {
     InventoryListView()
         .environmentObject(InventoryStore())
+        .environmentObject(DetectionSessionStore())
 }

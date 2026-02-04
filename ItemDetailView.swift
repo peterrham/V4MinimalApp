@@ -265,7 +265,7 @@ struct ItemDetailView: View {
             ItemEditView(item: item)
         }
         .fullScreenCover(item: $selectedPhoto) { photo in
-            ZoomablePhotoView(photoFilename: photo)
+            ZoomablePhotoView(photoFilename: photo, item: item)
         }
     }
 }
@@ -275,74 +275,122 @@ extension String: @retroactive Identifiable {
     public var id: String { self }
 }
 
-// MARK: - Zoomable Photo View
+// MARK: - Zoomable Photo View (3 modes)
+
+enum PhotoViewMode: String, CaseIterable {
+    case item = "Item"
+    case frameAllBoxes = "All Boxes"
+    case frameWithBox = "Box"
+    case frame = "Frame"
+}
 
 struct ZoomablePhotoView: View {
     let photoFilename: String
+    let item: InventoryItem
     @Environment(\.dismiss) private var dismiss
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
+    @State private var viewMode: PhotoViewMode = .item
+
+    /// Whether this item has a source frame to show
+    private var hasFrame: Bool {
+        item.sourceFramePhoto != nil && item.boundingBox != nil
+    }
+
+    private var frameImage: UIImage? {
+        guard let frameFile = item.sourceFramePhoto else { return nil }
+        return UIImage(contentsOfFile: InventoryStore.photoURL(for: frameFile).path)
+    }
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            if let uiImage = UIImage(contentsOfFile: InventoryStore.photoURL(for: photoFilename).path) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .scaleEffect(scale)
-                    .offset(offset)
-                    .gesture(
-                        MagnifyGesture()
-                            .onChanged { value in
-                                scale = lastScale * value.magnification
-                            }
-                            .onEnded { value in
-                                lastScale = scale
-                                if scale < 1.0 {
-                                    withAnimation {
-                                        scale = 1.0
-                                        lastScale = 1.0
-                                        offset = .zero
-                                        lastOffset = .zero
-                                    }
-                                }
-                            }
-                    )
-                    .simultaneousGesture(
-                        DragGesture()
-                            .onChanged { value in
-                                offset = CGSize(
-                                    width: lastOffset.width + value.translation.width,
-                                    height: lastOffset.height + value.translation.height
-                                )
-                            }
-                            .onEnded { _ in
-                                lastOffset = offset
-                            }
-                    )
-                    .onTapGesture(count: 2) {
-                        withAnimation {
-                            if scale > 1.0 {
+            Group {
+                switch viewMode {
+                case .item:
+                    itemView
+                case .frameAllBoxes:
+                    frameView(showAllBoxes: true)
+                case .frameWithBox:
+                    frameView(showAllBoxes: false)
+                case .frame:
+                    frameView(showAllBoxes: nil)
+                }
+            }
+            .scaleEffect(scale)
+            .offset(offset)
+            .gesture(
+                MagnifyGesture()
+                    .onChanged { value in
+                        scale = lastScale * value.magnification
+                    }
+                    .onEnded { _ in
+                        lastScale = scale
+                        if scale < 0.5 {
+                            withAnimation {
                                 scale = 1.0
                                 lastScale = 1.0
                                 offset = .zero
                                 lastOffset = .zero
-                            } else {
-                                scale = 3.0
-                                lastScale = 3.0
                             }
                         }
                     }
+            )
+            .simultaneousGesture(
+                DragGesture()
+                    .onChanged { value in
+                        offset = CGSize(
+                            width: lastOffset.width + value.translation.width,
+                            height: lastOffset.height + value.translation.height
+                        )
+                    }
+                    .onEnded { _ in
+                        lastOffset = offset
+                    }
+            )
+            .onTapGesture(count: 2) {
+                withAnimation {
+                    if scale > 1.0 {
+                        scale = 1.0
+                        lastScale = 1.0
+                        offset = .zero
+                        lastOffset = .zero
+                    } else {
+                        scale = 3.0
+                        lastScale = 3.0
+                    }
+                }
             }
 
-            // Close button
+            // Controls overlay
             VStack {
                 HStack {
+                    // Mode picker (only when frame is available)
+                    if hasFrame {
+                        Picker("View", selection: $viewMode) {
+                            ForEach(PhotoViewMode.allCases, id: \.self) { mode in
+                                Text(mode.rawValue).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(maxWidth: 260)
+                        .padding(.leading)
+                        .onChange(of: viewMode) { _, _ in
+                            // Reset zoom when switching modes
+                            withAnimation {
+                                scale = 1.0
+                                lastScale = 1.0
+                                offset = .zero
+                                lastOffset = .zero
+                            }
+                        }
+                    }
+
                     Spacer()
+
                     Button {
                         dismiss()
                     } label: {
@@ -353,8 +401,92 @@ struct ZoomablePhotoView: View {
                     }
                 }
                 Spacer()
+
+                // Item name label at bottom
+                Text(item.name)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(8)
+                    .padding(.bottom, 40)
             }
         }
+    }
+
+    // MARK: - Item view (cropped photo)
+
+    @ViewBuilder
+    private var itemView: some View {
+        if let uiImage = UIImage(contentsOfFile: InventoryStore.photoURL(for: photoFilename).path) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+        }
+    }
+
+    // MARK: - Frame view
+    // showAllBoxes: true = all items' boxes, false = just this item's box, nil = no boxes
+
+    @ViewBuilder
+    private func frameView(showAllBoxes: Bool?) -> some View {
+        if let uiImage = frameImage {
+            GeometryReader { geo in
+                let imageSize = uiImage.size
+                let fitScale = min(geo.size.width / imageSize.width, geo.size.height / imageSize.height)
+                let displayW = imageSize.width * fitScale
+                let displayH = imageSize.height * fitScale
+
+                ZStack {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+
+                    if let showAll = showAllBoxes {
+                        // This item's box (yellow, always shown when boxes enabled)
+                        if let box = item.boundingBox {
+                            boxOverlay(box: box, name: item.name, color: .yellow, lineWidth: 3, displayW: displayW, displayH: displayH)
+                        }
+
+                        // Sibling boxes (green, only in "All Boxes" mode)
+                        if showAll, let siblings = item.frameSiblings {
+                            ForEach(Array(siblings.enumerated()), id: \.offset) { _, sibling in
+                                boxOverlay(box: sibling.boundingBox, name: sibling.name, color: .green, lineWidth: 2, displayW: displayW, displayH: displayH)
+                            }
+                        }
+                    }
+                }
+                .frame(width: displayW, height: displayH)
+                .position(x: geo.size.width / 2, y: geo.size.height / 2)
+            }
+        } else {
+            itemView
+        }
+    }
+
+    @ViewBuilder
+    private func boxOverlay(box: CodableBoundingBox, name: String, color: Color, lineWidth: CGFloat, displayW: CGFloat, displayH: CGFloat) -> some View {
+        let x = CGFloat(box.xMin) * displayW
+        let y = CGFloat(box.yMin) * displayH
+        let w = CGFloat(box.xMax - box.xMin) * displayW
+        let h = CGFloat(box.yMax - box.yMin) * displayH
+
+        Rectangle()
+            .stroke(color, lineWidth: lineWidth)
+            .frame(width: w, height: h)
+            .position(x: x + w / 2, y: y + h / 2)
+
+        Text(name)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundColor(.black)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.85))
+            .cornerRadius(3)
+            .fixedSize()
+            .position(x: x + w / 2, y: max(10, y - 12))
     }
 }
 

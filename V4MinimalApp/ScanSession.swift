@@ -38,7 +38,7 @@ enum DetectionPipeline: String, Codable, CaseIterable, Identifiable {
 
 // MARK: - Bounding Box (Codable)
 
-struct CodableBoundingBox: Codable, Equatable {
+struct CodableBoundingBox: Codable, Equatable, Hashable {
     let yMin: Double
     let xMin: Double
     let yMax: Double

@@ -8,6 +8,7 @@
 import Foundation
 import UIKit
 import AVFoundation
+import os.log
 
 /// Service for real-time object detection from video frames using Gemini
 @MainActor
@@ -40,7 +41,7 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
     private var isCurrentlyAnalyzing = false
 
     /// Last analyzed frame — stored so we can grab a thumbnail when the user saves
-    private(set) var lastAnalyzedFrame: UIImage?
+    var lastAnalyzedFrame: UIImage?
     
     // MARK: - Initialization
     
@@ -84,16 +85,24 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
     // MARK: - Public Methods
     
     /// Start analyzing video frames
+    /// Timestamp when startAnalyzing() was called — used to measure time-to-first-detection
+    var analysisStartTime: CFAbsoluteTime = 0
+    var hasLoggedFirstDetection = false
+
     func startAnalyzing() {
         guard !apiKey.isEmpty else {
             error = "API key not configured"
             return
         }
-        
+
         isAnalyzing = true
         error = nil
         detectedObjects.removeAll()
-        print("🎥 Started real-time object detection")
+        analysisStartTime = CFAbsoluteTimeGetCurrent()
+        hasLoggedFirstDetection = false
+        NetworkLogger.shared.info("TIMING: detection started (t=0ms)", category: "Detection")
+        os_log("TIMING: detection started (t=0ms)")
+        print("🎥 Started real-time object detection (t=0ms)")
     }
     
     /// Stop analyzing video frames
@@ -118,6 +127,13 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
 
         lastAnalysisTime = now
         isCurrentlyAnalyzing = true
+
+        let sinceStart = Int((CFAbsoluteTimeGetCurrent() - analysisStartTime) * 1000)
+        if totalAnalyses == 0 {
+            NetworkLogger.shared.info("TIMING: first frame to Gemini at t=\(sinceStart)ms", category: "Detection")
+            os_log("TIMING: first frame to Gemini at t=%dms", sinceStart)
+            print("⏱️ First frame sent to Gemini at t=\(sinceStart)ms")
+        }
 
         // Store frame for thumbnail creation later (on save)
         lastAnalyzedFrame = image
@@ -188,6 +204,14 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
                 let responseText = content.text.trimmingCharacters(in: .whitespacesAndNewlines)
                 print("📦 Response: \(responseText.prefix(400))")
 
+                // Reject refusal/error responses entirely
+                if Self.isRefusalResponse(responseText) {
+                    NetworkLogger.shared.warning("Gemini returned refusal text, skipping: \(responseText.prefix(100))", category: "Detection")
+                    print("⚠️ Gemini refusal detected, skipping response")
+                    isCurrentlyAnalyzing = false
+                    return
+                }
+
                 // Try JSON parse (with bounding boxes)
                 let parsedWithBoxes = Self.parseDetectionsWithBoxes(from: responseText, timestamp: Date())
 
@@ -214,6 +238,15 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
                         detection.sourceFrame = image
                         detectedObjects.append(detection)
                         print("✅ Detected: \(detection.name)\(detection.boundingBoxes != nil ? " [bbox]" : "")")
+
+                        // Log time-to-first-detection
+                        if !hasLoggedFirstDetection {
+                            let totalMs = Int((CFAbsoluteTimeGetCurrent() - analysisStartTime) * 1000)
+                            NetworkLogger.shared.info("TIMING: FIRST DETECTION at t=\(totalMs)ms — \(detection.name) (API: \(elapsedMs)ms)", category: "Detection")
+                            os_log("TIMING: FIRST DETECTION at t=%dms — %{public}@ (API: %dms)", totalMs, detection.name, elapsedMs)
+                            print("⏱️ FIRST DETECTION at t=\(totalMs)ms: \(detection.name) (API call: \(elapsedMs)ms)")
+                            hasLoggedFirstDetection = true
+                        }
                     }
                 }
 
@@ -251,6 +284,43 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
         }
     }
 
+    // MARK: - Response Validation
+
+    /// Check if the entire response looks like a refusal or error rather than detection results
+    static func isRefusalResponse(_ text: String) -> Bool {
+        let lower = text.lowercased()
+        let refusalPhrases = [
+            "i cannot", "i can't", "i'm sorry", "i am sorry", "i'm unable",
+            "i am unable", "unable to", "cannot provide", "cannot detect",
+            "no physical items", "no items detected", "i don't see",
+            "i do not see", "not able to", "there are no items",
+            "i apologize", "as an ai", "as a language model"
+        ]
+        return refusalPhrases.contains { lower.contains($0) }
+    }
+
+    /// Check if a detection name looks valid (not an error message or sentence)
+    static func isValidDetectionName(_ name: String) -> Bool {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        // Too long — likely a sentence, not an item name
+        if trimmed.count > 60 { return false }
+        // Too many words — item names are typically 1-5 words
+        let wordCount = trimmed.split(separator: " ").count
+        if wordCount > 7 { return false }
+        // Contains JSON artifacts
+        if trimmed.contains("{") || trimmed.contains("[") || trimmed.contains("\"") { return false }
+        // Contains refusal/error phrases
+        let lower = trimmed.lowercased()
+        let badPhrases = [
+            "cannot", "can't", "sorry", "unable", "i don't", "i do not",
+            "no items", "not able", "apologize", "as an ai", "detect any",
+            "provide a list", "language model"
+        ]
+        if badPhrases.contains(where: { lower.contains($0) }) { return false }
+        return true
+    }
+
     // MARK: - Response Parsing
 
     /// Parse JSON response with bounding boxes into DetectedObjects
@@ -279,8 +349,7 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
         var results: [DetectedObject] = []
         for entry in array {
             guard let name = entry["name"] as? String, !name.isEmpty else { continue }
-            // Filter out garbage names
-            if name.contains("{") || name.contains("[") || name.contains("\"") { continue }
+            guard isValidDetectionName(name) else { continue }
 
             var detection = DetectedObject(name: name, timestamp: timestamp)
 
@@ -306,7 +375,7 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
         return text
             .components(separatedBy: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty && !$0.contains("\"") }
+            .filter { isValidDetectionName($0) }
             .map { DetectedObject(name: $0, timestamp: timestamp) }
     }
 
@@ -349,6 +418,86 @@ class GeminiStreamingVisionService: NSObject, ObservableObject {
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
         return request
+    }
+
+    // MARK: - YOLO Crop Enrichment
+
+    /// Enrichment result from Gemini for a cropped YOLO detection
+    struct CropEnrichmentResult {
+        let name: String
+        let brand: String?
+        let color: String?
+        let size: String?
+        let category: String?
+        let estimatedValue: String?
+    }
+
+    /// Send a cropped image (from YOLO bounding box) to Gemini for specific identification.
+    /// Returns enriched name + details, or nil on failure.
+    func enrichCrop(_ croppedImage: UIImage, yoloClassName: String) async -> CropEnrichmentResult? {
+        guard !apiKey.isEmpty else { return nil }
+
+        let resized = Self.resizeForAnalysis(croppedImage)
+        let quality = DetectionSettings.shared.jpegQuality
+        guard let imageData = resized.jpegData(compressionQuality: quality) else { return nil }
+        let base64Image = imageData.base64EncodedString()
+
+        let prompt = """
+        Identify this specific item (detected as "\(yoloClassName)" by object detection).
+        Be specific: brand, model, color, size when visible.
+        Return JSON only: {"name":"Specific Item Name","brand":"...","color":"...","size":"...","category":"...","estimatedValue":"..."}
+        Use null for unknown fields. category: Electronics, Furniture, Appliance, Decor, Kitchen, Clothing, Books, Tools, Sports, Toys, Valuables, Other.
+        2-4 words for name. JSON only, no markdown.
+        """
+
+        do {
+            let request = try createRequest(base64Image: base64Image, prompt: prompt, maxOutputTokens: 200, timeout: 10)
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                return nil
+            }
+
+            let geminiResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
+            guard let candidate = geminiResponse.candidates.first,
+                  let content = candidate.content.parts.first else { return nil }
+
+            let text = content.text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            // Parse JSON
+            var cleaned = text
+            if let range = cleaned.range(of: "```json") {
+                cleaned = String(cleaned[range.upperBound...])
+            } else if let range = cleaned.range(of: "```") {
+                cleaned = String(cleaned[range.upperBound...])
+            }
+            if let range = cleaned.range(of: "```") {
+                cleaned = String(cleaned[..<range.lowerBound])
+            }
+            cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard let startIdx = cleaned.firstIndex(of: "{"),
+                  let endIdx = cleaned.lastIndex(of: "}") else { return nil }
+
+            let jsonStr = String(cleaned[startIdx...endIdx])
+            guard let jsonData = jsonStr.data(using: .utf8),
+                  let dict = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else { return nil }
+
+            guard let name = dict["name"] as? String, !name.isEmpty,
+                  !name.contains("{"), !name.contains("[") else { return nil }
+
+            return CropEnrichmentResult(
+                name: name,
+                brand: (dict["brand"] as? String).flatMap { $0 == "null" ? nil : $0 },
+                color: (dict["color"] as? String).flatMap { $0 == "null" ? nil : $0 },
+                size: (dict["size"] as? String).flatMap { $0 == "null" ? nil : $0 },
+                category: (dict["category"] as? String).flatMap { $0 == "null" ? nil : $0 },
+                estimatedValue: (dict["estimatedValue"] as? String).flatMap { $0 == "null" ? nil : $0 }
+            )
+        } catch {
+            print("🔬 Crop enrichment error: \(error.localizedDescription)")
+            return nil
+        }
     }
 
     // MARK: - Bounding Box Enrichment
@@ -479,7 +628,7 @@ struct BoundingBox {
 
 struct DetectedObject: Identifiable, Equatable {
     let id = UUID()
-    let name: String
+    var name: String
     let timestamp: Date
     var color: String?
     var brand: String?
@@ -488,11 +637,19 @@ struct DetectedObject: Identifiable, Equatable {
     var sourceFrame: UIImage?  // Reference to the camera frame (thumbnail created on save)
     var boundingBoxes: [BoundingBox]?
 
+    // YOLO hybrid pipeline fields
+    var yoloClassName: String?    // Original COCO class (e.g., "laptop")
+    var isEnriched: Bool = false  // True after Gemini enrichment
+
     /// Create JPEG thumbnail on demand (called when saving to inventory).
     /// If bounding box available: crops to the box with padding + draws green outline.
     /// Otherwise: returns scaled full frame.
     func createThumbnailData() -> Data? {
-        guard let image = sourceFrame else { return nil }
+        guard let image = sourceFrame else {
+            NetworkLogger.shared.error("createThumbnailData: sourceFrame is nil for '\(name)' (yolo=\(yoloClassName ?? "none"), enriched=\(isEnriched))", category: "Thumbnail")
+            return nil
+        }
+        NetworkLogger.shared.info("createThumbnailData: sourceFrame OK for '\(name)' — \(Int(image.size.width))x\(Int(image.size.height)), boxes=\(boundingBoxes?.count ?? 0)", category: "Thumbnail")
         let imgW = image.size.width
         let imgH = image.size.height
 

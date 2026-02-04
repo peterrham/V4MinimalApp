@@ -97,8 +97,9 @@ struct ContentView: View {
     ) private var recognizedTexts: FetchedResults<RecognizedTextEntity>
     
     @StateObject private var speechManager = SpeechRecognitionManager(context: DynamicPersistenceController.shared.container.viewContext)
-    
-  
+    @StateObject private var realtimeService = OpenAIRealtimeService()
+    @State private var pipeToOpenAI = false
+
     
     init() {
         
@@ -139,7 +140,55 @@ struct ContentView: View {
                             .font(.body)
                     }
                 }
-                
+
+                // Pipe Audio to OpenAI Realtime
+                Card {
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.s) {
+                        Toggle(isOn: $pipeToOpenAI) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "waveform.badge.mic")
+                                    .foregroundStyle(.cyan)
+                                Text("Pipe Audio to OpenAI Realtime")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                            }
+                        }
+                        .tint(.cyan)
+                        .onChange(of: pipeToOpenAI) { newValue in
+                            if newValue {
+                                realtimeService.connect()
+                                speechManager.externalAudioConsumer = { [weak realtimeService] buffer, _ in
+                                    Task { @MainActor in
+                                        realtimeService?.sendAudioBuffer(buffer)
+                                    }
+                                }
+                            } else {
+                                speechManager.externalAudioConsumer = nil
+                                realtimeService.disconnect()
+                            }
+                        }
+
+                        if pipeToOpenAI {
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(realtimeService.connectionState == .connected ? Color.green : Color.orange)
+                                    .frame(width: 8, height: 8)
+                                Text(realtimeService.connectionState.rawValue)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                Spacer()
+
+                                if let ttfb = realtimeService.timingMetrics.ttfbMs {
+                                    Text("TTFB: \(ttfb)ms")
+                                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                        .foregroundStyle(.cyan)
+                                }
+                            }
+                        }
+                    }
+                }
+
                 Card {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 10) {

@@ -10,8 +10,7 @@ import SwiftUI
 struct StreamingObjectDetectionView: View {
     let detectedObjects: [DetectedObject]
     let isAnalyzing: Bool
-    var onSaveItem: ((DetectedObject) -> Void)? = nil
-    var onSaveAll: (() -> Void)? = nil
+    var sessionItemCount: Int = 0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -29,21 +28,21 @@ struct StreamingObjectDetectionView: View {
 
                 Spacer()
 
-                if let onSaveAll = onSaveAll, !detectedObjects.isEmpty {
-                    Button {
-                        onSaveAll()
-                    } label: {
-                        Text("Save All")
+                if sessionItemCount > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "tray.full.fill")
+                            .font(.caption2)
+                        Text("\(sessionItemCount) collected")
                             .font(.caption2)
                             .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                Capsule()
-                                    .fill(Color.blue.opacity(0.6))
-                            )
                     }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(Color.blue.opacity(0.5))
+                    )
                 }
 
                 Text("\(detectedObjects.count)")
@@ -91,10 +90,8 @@ struct StreamingObjectDetectionView: View {
                         } else {
                             // Show detected objects
                             ForEach(detectedObjects.reversed()) { object in
-                                ObjectDetectionRow(object: object) {
-                                    onSaveItem?(object)
-                                }
-                                .id(object.id)
+                                ObjectDetectionRow(object: object)
+                                    .id(object.id)
                             }
                         }
                     }
@@ -129,24 +126,40 @@ struct StreamingObjectDetectionView: View {
 
 struct ObjectDetectionRow: View {
     let object: DetectedObject
-    var onSave: (() -> Void)? = nil
     @State private var appeared = false
-    @State private var saved = false
+
+    /// Indicator color: yellow = YOLO only (awaiting enrichment), green = Gemini enriched, orange = legacy bbox
+    private var indicatorColor: Color {
+        if object.yoloClassName != nil {
+            return object.isEnriched ? .green : .yellow
+        }
+        // Legacy Gemini-only: orange if bbox, green otherwise
+        return object.boundingBoxes != nil ? .orange : .green
+    }
 
     var body: some View {
         HStack(spacing: 8) {
-            // Indicator dot — orange if bounding boxes loaded
+            // Indicator dot
             Circle()
-                .fill(object.boundingBoxes != nil ? .orange : (saved ? .blue : .green))
+                .fill(indicatorColor)
                 .frame(width: 6, height: 6)
 
             // Object name and details
             VStack(alignment: .leading, spacing: 1) {
-                Text(object.name)
-                    .font(.callout)
-                    .fontWeight(.medium)
-                    .foregroundColor(.white)
-                    .lineLimit(1)
+                HStack(spacing: 4) {
+                    Text(object.name)
+                        .font(.callout)
+                        .fontWeight(object.isEnriched || object.yoloClassName == nil ? .medium : .regular)
+                        .foregroundColor(object.isEnriched || object.yoloClassName == nil ? .white : .white.opacity(0.7))
+                        .lineLimit(1)
+
+                    // Show YOLO class hint when enriched (so user knows what was detected)
+                    if object.isEnriched, let yolo = object.yoloClassName {
+                        Text("(\(yolo))")
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.35))
+                    }
+                }
 
                 let details = [object.brand, object.color, object.size]
                     .compactMap { $0 }
@@ -159,21 +172,6 @@ struct ObjectDetectionRow: View {
             }
 
             Spacer()
-
-            // Save button
-            if let onSave = onSave {
-                Button {
-                    onSave()
-                    withAnimation {
-                        saved = true
-                    }
-                } label: {
-                    Image(systemName: saved ? "checkmark.circle.fill" : "plus.circle.fill")
-                        .font(.body)
-                        .foregroundColor(saved ? .blue : .green)
-                }
-                .disabled(saved)
-            }
 
             // Live timestamp
             TimelineView(.periodic(from: .now, by: 1)) { context in

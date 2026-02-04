@@ -13,6 +13,7 @@ import PhotosUI
 struct CameraScanView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var inventoryStore: InventoryStore
+    @EnvironmentObject var sessionStore: DetectionSessionStore
     @StateObject private var cameraManager = CameraManager()
 
     @State private var isRecording = false
@@ -671,7 +672,7 @@ struct CameraScanView: View {
                     }
                 }
                 
-                // Listen for photo capture completion → trigger structured identification
+                // Listen for photo capture completion → trigger multi-item identification
                 NotificationCenter.default.addObserver(
                     forName: NSNotification.Name("PhotoCaptureComplete"),
                     object: nil,
@@ -680,10 +681,30 @@ struct CameraScanView: View {
                     guard let image = notification.userInfo?["image"] as? UIImage else { return }
                     Task {
                         withAnimation { isIdentifyingPhoto = true }
-                        let result = await GeminiVisionService.shared.identifyForInventory(image)
+                        let results = await GeminiVisionService.shared.identifyAllItems(image)
+                        let apiError = await GeminiVisionService.shared.error
+                        // Auto-save to a detection session
+                        if !results.isEmpty {
+                            savePhotoResultsToSession(results, image: image)
+                        }
                         withAnimation {
                             isIdentifyingPhoto = false
-                            photoResult = result
+                            if results.isEmpty {
+                                if let err = apiError {
+                                    analysisError = err
+                                } else {
+                                    analysisError = "No items found in this photo."
+                                }
+                            } else if results.count == 1 {
+                                // Single item — show the existing single-item result UI
+                                photoResult = results.first
+                            } else {
+                                // Multiple items — show multi-item sheet
+                                multiItemResults = results
+                                libraryPhoto = image
+                                savedItemIds = []
+                                showingMultiItemSheet = true
+                            }
                         }
                     }
                 }
@@ -867,6 +888,13 @@ struct CameraScanView: View {
         }
     }
 
+    /// Save photo analysis results as a complete detection session.
+    private func savePhotoResultsToSession(_ results: [PhotoIdentificationResult], image: UIImage) {
+        sessionStore.createSession()
+        sessionStore.addPhotoResults(results, sourceImage: image)
+        sessionStore.endSession()
+    }
+
     private func saveMultiItemResult(_ result: PhotoIdentificationResult) {
         guard let photo = libraryPhoto else { return }
         inventoryStore.addItemFromPhotoAnalysis(result, photo: photo)
@@ -1029,16 +1057,23 @@ struct CameraScanView: View {
             if let data = try await item.loadTransferable(type: Data.self),
                let image = UIImage(data: data) {
                 let mp = image.size.width * image.size.height / 1_000_000
-                print("📷 Photo loaded from library: \(Int(image.size.width))x\(Int(image.size.height)) (\(String(format: "%.1f", mp))MP)")
+                NetworkLogger.shared.info("Photo loaded from library: \(Int(image.size.width))x\(Int(image.size.height)) (\(String(format: "%.1f", mp))MP)", category: "Photo")
 
                 await MainActor.run {
                     withAnimation { isIdentifyingPhoto = true }
                 }
 
-                print("📷 Calling identifyAllItems...")
+                NetworkLogger.shared.info("Calling identifyAllItems...", category: "Photo")
                 let results = await GeminiVisionService.shared.identifyAllItems(image)
                 let apiError = await GeminiVisionService.shared.error
-                print("📷 identifyAllItems returned \(results.count) results, error: \(apiError ?? "none")")
+                NetworkLogger.shared.info("identifyAllItems returned \(results.count) results, error: \(apiError ?? "none")", category: "Photo")
+
+                // Auto-save to a detection session
+                if !results.isEmpty {
+                    await MainActor.run {
+                        savePhotoResultsToSession(results, image: image)
+                    }
+                }
 
                 await MainActor.run {
                     withAnimation {
@@ -1050,7 +1085,7 @@ struct CameraScanView: View {
                                 analysisError = "No items found in this photo."
                             }
                         } else {
-                            print("📷 Showing multi-item sheet with \(results.count) items")
+                            NetworkLogger.shared.info("Showing multi-item sheet with \(results.count) items", category: "Photo")
                             multiItemResults = results
                             libraryPhoto = image
                             savedItemIds = []
@@ -1060,7 +1095,7 @@ struct CameraScanView: View {
                 }
             }
         } catch {
-            print("📷 Failed to load photo: \(error.localizedDescription)")
+            NetworkLogger.shared.error("Failed to load photo: \(error.localizedDescription)", category: "Photo")
             await MainActor.run {
                 withAnimation { isIdentifyingPhoto = false }
             }

@@ -12,6 +12,7 @@ import Vision
 /// Append a diagnostic line to Documents/debug_log.txt for debugging
 nonisolated func geminiDebugLog(_ msg: String) {
     print(msg)
+    NetworkLogger.shared.info(msg, category: "Gemini")
     let ts = ISO8601DateFormatter().string(from: Date())
     let line = "[\(ts)] \(msg)\n"
     if let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {

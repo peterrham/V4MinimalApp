@@ -158,8 +158,8 @@ struct HomeView: View {
 
                             // Statistics Cards
                             HStack(spacing: AppTheme.Spacing.m) {
-                                Button {
-                                    selectedTab = 2
+                                NavigationLink {
+                                    InventoryListView(embedded: true)
                                 } label: {
                                     StatCard(
                                         icon: "cube.box.fill",
@@ -170,28 +170,56 @@ struct HomeView: View {
                                 }
                                 .buttonStyle(.plain)
 
-                                StatCard(
-                                    icon: "dollarsign.circle.fill",
-                                    value: Self.formatDollar(totalValue),
-                                    label: "Total Value",
-                                    color: AppTheme.Colors.success
-                                )
+                                NavigationLink {
+                                    InventoryListView(embedded: true, initialSort: .valueHigh)
+                                } label: {
+                                    StatCard(
+                                        icon: "dollarsign.circle.fill",
+                                        value: Self.formatDollar(totalValue),
+                                        label: "Total Value",
+                                        color: AppTheme.Colors.success
+                                    )
+                                }
+                                .buttonStyle(.plain)
 
-                                StatCard(
-                                    icon: "door.left.hand.open",
-                                    value: "\(roomCount)",
-                                    label: "Rooms",
-                                    color: AppTheme.Colors.warning
-                                )
+                                NavigationLink {
+                                    RoomsListView()
+                                } label: {
+                                    StatCard(
+                                        icon: "door.left.hand.open",
+                                        value: "\(roomCount)",
+                                        label: "Rooms",
+                                        color: AppTheme.Colors.warning
+                                    )
+                                }
+                                .buttonStyle(.plain)
                             }
                             .padding(.horizontal, AppTheme.Spacing.l)
 
                             // Recent Items
                             VStack(alignment: .leading, spacing: AppTheme.Spacing.m) {
-                                Text("Recent Items")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                    .padding(.horizontal, AppTheme.Spacing.l)
+                                NavigationLink {
+                                    InventoryListView(embedded: true, initialSort: .newest)
+                                        .environmentObject(inventoryStore)
+                                } label: {
+                                    HStack {
+                                        Text("Recent Items")
+                                            .font(.title2)
+                                            .fontWeight(.bold)
+                                            .foregroundStyle(.primary)
+                                        Spacer()
+                                        if !recentItems.isEmpty {
+                                            HStack(spacing: 4) {
+                                                Text("See All")
+                                                    .font(.subheadline)
+                                                Image(systemName: "chevron.right")
+                                                    .font(.caption)
+                                            }
+                                            .foregroundStyle(AppTheme.Colors.primary)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, AppTheme.Spacing.l)
 
                                 if recentItems.isEmpty {
                                     Card {
@@ -218,11 +246,16 @@ struct HomeView: View {
                                         GridItem(.flexible(), spacing: AppTheme.Spacing.m)
                                     ], spacing: AppTheme.Spacing.m) {
                                         ForEach(recentItems) { item in
-                                            ItemCardCompact(
-                                                item: item,
-                                                displayTitle: InventoryItem.disambiguatedTitle(for: item, in: recentItems),
-                                                showPhoto: true
-                                            )
+                                            NavigationLink {
+                                                ItemDetailView(item: item)
+                                            } label: {
+                                                ItemCardCompact(
+                                                    item: item,
+                                                    displayTitle: InventoryItem.disambiguatedTitle(for: item, in: recentItems),
+                                                    showPhoto: true
+                                                )
+                                            }
+                                            .buttonStyle(.plain)
                                         }
                                     }
                                     .padding(.horizontal, AppTheme.Spacing.l)
@@ -240,7 +273,12 @@ struct HomeView: View {
                                     ScrollView(.horizontal, showsIndicators: false) {
                                         HStack(spacing: AppTheme.Spacing.m) {
                                             ForEach(inventoryStore.enabledRoomsForCurrentHome) { room in
-                                                HomeRoomCard(room: room, itemCount: itemsInRoom(room.name))
+                                                NavigationLink {
+                                                    InventoryListView(embedded: true, initialRoom: room.name)
+                                                } label: {
+                                                    HomeRoomCard(room: room, itemCount: itemsInRoom(room.name))
+                                                }
+                                                .buttonStyle(.plain)
                                             }
                                         }
                                         .padding(.horizontal, AppTheme.Spacing.l)

@@ -89,11 +89,32 @@ struct NetworkDiagnosticsView: View {
             description: "Internet connectivity"
         ),
         Endpoint(
-            name: "Gemini API",
+            name: "Gemini Batch",
             host: "generativelanguage.googleapis.com",
             port: 443,
             icon: "brain",
-            description: "AI vision service"
+            description: "Gemini REST API (detection)"
+        ),
+        Endpoint(
+            name: "Gemini Live",
+            host: "generativelanguage.googleapis.com",
+            port: 443,
+            icon: "waveform",
+            description: "Gemini WebSocket (planned)"
+        ),
+        Endpoint(
+            name: "OpenAI Chat",
+            host: "api.openai.com",
+            port: 443,
+            icon: "brain.head.profile",
+            description: "Chat Completions REST API"
+        ),
+        Endpoint(
+            name: "OpenAI Realtime",
+            host: "api.openai.com",
+            port: 443,
+            icon: "waveform.badge.mic",
+            description: "Realtime Audio WebSocket"
         )
     ]
 
@@ -873,7 +894,7 @@ struct NetworkDiagnosticsView: View {
     // MARK: - Settings Persistence
 
     private func loadSavedSettings() {
-        logServerHost = UserDefaults.standard.string(forKey: "logServerHost") ?? ""
+        logServerHost = UserDefaults.standard.string(forKey: "logServerHost") ?? "10.0.141.70"
         logServerPort = UserDefaults.standard.string(forKey: "logServerPort") ?? "9999"
     }
 

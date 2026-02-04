@@ -85,9 +85,26 @@ class InventoryStore: ObservableObject {
     }
 
     private var inventoryPhotosDir: URL {
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("inventory_photos")
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let fm = FileManager.default
+        let docs = fm.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let dir = docs.appendingPathComponent("item_photos")
+
+        if !fm.fileExists(atPath: dir.path) {
+            do {
+                try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+            } catch {
+                NetworkLogger.shared.error("FAILED to create item_photos dir: \(error)", category: "Save")
+                // Fall back to Documents root
+                return docs
+            }
+        }
+
+        // Verify writable
+        if !fm.isWritableFile(atPath: dir.path) {
+            NetworkLogger.shared.error("item_photos dir NOT writable, using Documents root", category: "Save")
+            return docs
+        }
+
         return dir
     }
 
@@ -96,19 +113,46 @@ class InventoryStore: ObservableObject {
         inventoryPhotosDir.appendingPathComponent(filename)
     }
 
-    /// Static version for use in views without InventoryStore reference
+    /// Static version for use in views without InventoryStore reference.
+    /// Checks new dir (item_photos), legacy dir (inventory_photos), and Documents root.
     static func photoURL(for filename: String) -> URL {
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("inventory_photos")
-        return dir.appendingPathComponent(filename)
+        let fm = FileManager.default
+        let docs = fm.urls(for: .documentDirectory, in: .userDomainMask).first!
+
+        // Check new directory first
+        let newPath = docs.appendingPathComponent("item_photos").appendingPathComponent(filename)
+        if fm.fileExists(atPath: newPath.path) { return newPath }
+
+        // Check legacy directory
+        let legacyPath = docs.appendingPathComponent("inventory_photos").appendingPathComponent(filename)
+        if fm.fileExists(atPath: legacyPath.path) { return legacyPath }
+
+        // Check Documents root (fallback writes went here)
+        let rootPath = docs.appendingPathComponent(filename)
+        if fm.fileExists(atPath: rootPath.path) { return rootPath }
+
+        // Default to new directory (for path construction even if file doesn't exist yet)
+        return newPath
     }
 
-    /// Save image data to disk, returns the filename
+    /// Save image data to disk, returns the filename (public for session merge)
+    @discardableResult
+    func saveImagePublic(_ data: Data, for itemId: UUID) -> String {
+        saveImage(data, for: itemId)
+    }
+
+    /// Save image data to disk, returns the filename. Each call generates a unique filename.
     @discardableResult
     private func saveImage(_ data: Data, for itemId: UUID) -> String {
-        let filename = "\(itemId.uuidString).jpg"
+        let suffix = UUID().uuidString.prefix(8)
+        let filename = "\(itemId.uuidString)_\(suffix).jpg"
         let url = inventoryPhotosDir.appendingPathComponent(filename)
-        try? data.write(to: url, options: .atomic)
+        do {
+            try data.write(to: url)
+            NetworkLogger.shared.info("saveImage: wrote \(data.count) bytes to \(url.lastPathComponent) in \(url.deletingLastPathComponent().lastPathComponent)/", category: "Save")
+        } catch {
+            NetworkLogger.shared.error("saveImage: FAILED to write \(filename): \(error)", category: "Save")
+        }
         return filename
     }
 
@@ -133,17 +177,144 @@ class InventoryStore: ObservableObject {
         }
     }
 
+    // MARK: - Database Tidy
+
+    /// Clean up bad items and auto-assign rooms based on item name/category heuristics.
+    /// Returns a summary string.
+    @discardableResult
+    func tidyDatabase() -> String {
+        var removedCount = 0
+        var assignedCount = 0
+
+        // 1. Remove items with AI refusal text or garbage names
+        let refusalPatterns = [
+            "I cannot", "I can't", "I'm unable", "I am unable",
+            "I do not see", "I don't see", "but I cannot",
+            "provide a list", "physical items", "cannot detect",
+            "cannot identify", "not able to"
+        ]
+        let beforeCount = items.count
+        items.removeAll { item in
+            let lower = item.name.lowercased()
+            // Remove refusal text
+            if refusalPatterns.contains(where: { lower.contains($0.lowercased()) }) { return true }
+            // Remove very long names (likely full sentences)
+            if item.name.count > 60 { return true }
+            // Remove names with JSON fragments
+            if item.name.contains("{") || item.name.contains("[") || item.name.contains("\"") { return true }
+            return false
+        }
+        removedCount = beforeCount - items.count
+
+        // 2. Auto-assign rooms based on keywords
+        let roomRules: [(room: String, keywords: [String])] = [
+            ("Kitchen", [
+                "mug", "cup", "plate", "bowl", "fork", "knife", "spoon", "pan", "pot",
+                "kettle", "toaster", "blender", "microwave", "oven", "fridge", "refrigerator",
+                "dishwasher", "cutting board", "colander", "spatula", "whisk", "rolling pin",
+                "coffee", "tea", "food", "cereal", "tupperware", "container", "jar",
+                "wine", "glass", "pitcher", "bottle opener", "can opener", "mixer",
+                "dish", "saucer", "platter"
+            ]),
+            ("Living Room", [
+                "sofa", "couch", "tv", "television", "remote", "lamp", "cushion", "pillow",
+                "rug", "carpet", "bookshelf", "shelf", "speaker", "soundbar", "console",
+                "coffee table", "end table", "side table", "vase", "candle", "frame",
+                "picture", "painting", "clock", "plant", "magazine", "throw", "blanket",
+                "curtain", "drape", "ottoman"
+            ]),
+            ("Bedroom", [
+                "bed", "mattress", "pillow", "sheet", "comforter", "duvet", "blanket",
+                "nightstand", "dresser", "wardrobe", "closet", "hanger", "alarm clock",
+                "lamp", "mirror", "pajama", "sleep", "clothing", "shirt", "pants",
+                "dress", "jacket", "coat", "hat", "shoe", "boot", "sneaker",
+                "suitcase", "luggage"
+            ]),
+            ("Bathroom", [
+                "towel", "soap", "shampoo", "conditioner", "toothbrush", "toothpaste",
+                "razor", "shower", "bath", "toilet", "tissue", "lotion", "sunscreen",
+                "hair dryer", "hairdryer", "brush", "comb", "scale", "mirror",
+                "washcloth", "robe", "deodorant", "perfume", "cologne"
+            ]),
+            ("Garage", [
+                "tool", "drill", "hammer", "screwdriver", "wrench", "plier", "saw",
+                "ladder", "bike", "bicycle", "helmet", "car", "tire", "jack",
+                "lawnmower", "hose", "rake", "shovel", "wheelbarrow", "workbench",
+                "toolbox", "nail", "screw", "bolt", "tape measure", "level",
+                "extension cord", "generator", "compressor"
+            ]),
+            ("Basement", [
+                "storage bin", "storage box", "tote", "holiday", "christmas", "decoration",
+                "seasonal", "furnace", "water heater", "dehumidifier", "washer", "dryer",
+                "laundry", "iron", "ironing board", "vacuum", "mop", "broom"
+            ])
+        ]
+
+        // Also map categories to default rooms
+        let categoryRoomFallback: [ItemCategory: String] = [
+            .kitchenware: "Kitchen",
+            .tools: "Garage",
+            .clothing: "Bedroom",
+            .furniture: "Living Room",
+            .electronics: "Living Room",
+            .decor: "Living Room",
+            .books: "Living Room",
+            .appliances: "Kitchen"
+        ]
+
+        for i in items.indices {
+            guard items[i].room.isEmpty else { continue }
+            let lower = items[i].name.lowercased()
+
+            // Try keyword matching first
+            var matched = false
+            for rule in roomRules {
+                if rule.keywords.contains(where: { lower.contains($0) }) {
+                    items[i].room = rule.room
+                    items[i].updatedAt = Date()
+                    assignedCount += 1
+                    matched = true
+                    break
+                }
+            }
+
+            // Fall back to category-based assignment
+            if !matched, let fallbackRoom = categoryRoomFallback[items[i].category] {
+                items[i].room = fallbackRoom
+                items[i].updatedAt = Date()
+                assignedCount += 1
+            }
+        }
+
+        // 3. Enable rooms that now have items
+        let usedRooms = Set(items.filter { $0.homeId == currentHomeId || $0.homeId == nil }.compactMap { $0.room.isEmpty ? nil : $0.room })
+        for i in homeRooms.indices where homeRooms[i].homeId == currentHomeId {
+            if usedRooms.contains(homeRooms[i].name) && !homeRooms[i].isEnabled {
+                homeRooms[i].isEnabled = true
+            }
+        }
+
+        saveItems()
+        saveRooms()
+
+        let summary = "Tidy: removed \(removedCount) bad items, assigned rooms to \(assignedCount) items. \(items.count) items remain."
+        NetworkLogger.shared.info(summary, category: "Tidy")
+        return summary
+    }
+
     // MARK: - CRUD Operations
 
     /// Add a single detected object, deduplicating against existing inventory
     func addItem(from detection: DetectedObject) {
-        if let existingIndex = findExistingItem(matchingName: detection.name) {
+        NetworkLogger.shared.info("addItem: '\(detection.name)' sourceFrame=\(detection.sourceFrame != nil ? "YES" : "NIL")", category: "Save")
+        if let existingIndex = findExistingItemByName( detection.name) {
             // Update existing item with new data
             mergeDetection(detection, into: &items[existingIndex])
             // Add photo if item doesn't already have one
             if items[existingIndex].photos.isEmpty, let imageData = detection.createThumbnailData() {
                 let filename = saveImage(imageData, for: items[existingIndex].id)
                 items[existingIndex].photos.append(filename)
+                NetworkLogger.shared.info("addItem: saved photo '\(filename)' for existing item '\(detection.name)'", category: "Save")
             }
         } else {
             var item = InventoryItem(
@@ -158,6 +329,9 @@ class InventoryStore: ObservableObject {
             if let imageData = detection.createThumbnailData() {
                 let filename = saveImage(imageData, for: item.id)
                 item.photos.append(filename)
+                NetworkLogger.shared.info("addItem: saved photo '\(filename)' for new item '\(detection.name)' (\(imageData.count) bytes)", category: "Save")
+            } else {
+                NetworkLogger.shared.error("addItem: NO THUMBNAIL for '\(detection.name)'", category: "Save")
             }
             items.append(item)
         }
@@ -166,6 +340,7 @@ class InventoryStore: ObservableObject {
 
     /// Add multiple detected objects, deduplicating within the batch and against existing inventory
     func addItems(from detections: [DetectedObject]) {
+        NetworkLogger.shared.info("addItems: \(detections.count) detections, \(detections.filter { $0.sourceFrame != nil }.count) have sourceFrame", category: "Save")
         // Deduplicate within batch: keep the one with the longer name per normalized key
         var batchMap: [String: DetectedObject] = [:]
         for detection in detections {
@@ -178,14 +353,23 @@ class InventoryStore: ObservableObject {
                 batchMap[key] = detection
             }
         }
+        NetworkLogger.shared.info("addItems: \(batchMap.count) unique after batch dedup", category: "Save")
 
         // Add each unique detection, deduplicating against existing inventory
+        var savedPhotos = 0
+        var noPhotos = 0
         for detection in batchMap.values {
-            if let existingIndex = findExistingItem(matchingName: detection.name) {
+            if let existingIndex = findExistingItemByName( detection.name) {
                 mergeDetection(detection, into: &items[existingIndex])
                 if items[existingIndex].photos.isEmpty, let imageData = detection.createThumbnailData() {
                     let filename = saveImage(imageData, for: items[existingIndex].id)
                     items[existingIndex].photos.append(filename)
+                    savedPhotos += 1
+                } else if !items[existingIndex].photos.isEmpty {
+                    // Already has photo — skip
+                } else {
+                    noPhotos += 1
+                    NetworkLogger.shared.error("addItems: NO THUMBNAIL for existing item '\(detection.name)' (sourceFrame=\(detection.sourceFrame != nil))", category: "Save")
                 }
             } else {
                 var item = InventoryItem(
@@ -200,10 +384,15 @@ class InventoryStore: ObservableObject {
                 if let imageData = detection.createThumbnailData() {
                     let filename = saveImage(imageData, for: item.id)
                     item.photos.append(filename)
+                    savedPhotos += 1
+                } else {
+                    noPhotos += 1
+                    NetworkLogger.shared.error("addItems: NO THUMBNAIL for new item '\(detection.name)' (sourceFrame=\(detection.sourceFrame != nil))", category: "Save")
                 }
                 items.append(item)
             }
         }
+        NetworkLogger.shared.info("addItems: done — \(savedPhotos) photos saved, \(noPhotos) missing", category: "Save")
         saveItems()
     }
 
@@ -221,7 +410,7 @@ class InventoryStore: ObservableObject {
 
         let category = ItemCategory.from(rawString: result.category ?? "")
 
-        if let existingIndex = findExistingItem(matchingName: result.name) {
+        if let existingIndex = findExistingItemByName( result.name) {
             // Merge into existing item
             items[existingIndex].updatedAt = Date()
             if items[existingIndex].brand == nil, let brand = result.brand { items[existingIndex].brand = brand }
@@ -264,7 +453,7 @@ class InventoryStore: ObservableObject {
 
         let category = ItemCategory.from(rawString: result.category ?? "")
 
-        if let existingIndex = findExistingItem(matchingName: result.name) {
+        if let existingIndex = findExistingItemByName( result.name) {
             mergePhotoResult(result, category: category, into: &items[existingIndex])
             let filename = savePhotoWithUniqueId(photoData, for: items[existingIndex].id)
             items[existingIndex].photos.append(filename)
@@ -296,7 +485,7 @@ class InventoryStore: ObservableObject {
 
             let category = ItemCategory.from(rawString: result.category ?? "")
 
-            if let existingIndex = findExistingItem(matchingName: result.name) {
+            if let existingIndex = findExistingItemByName( result.name) {
                 mergePhotoResult(result, category: category, into: &items[existingIndex])
                 let filename = savePhotoWithUniqueId(photoData, for: items[existingIndex].id)
                 items[existingIndex].photos.append(filename)
@@ -408,7 +597,7 @@ class InventoryStore: ObservableObject {
     }
 
     /// Find an existing item whose name matches (exact or containment), scoped to current home
-    private func findExistingItem(matchingName name: String) -> Int? {
+    func findExistingItemByName(_ name: String) -> Int? {
         let normalized = Self.normalizedName(name)
         return items.firstIndex { existing in
             let sameHome = (existing.homeId ?? Home.defaultHomeId) == currentHomeId
@@ -439,6 +628,27 @@ class InventoryStore: ObservableObject {
         // Use the longer/more specific name
         if detection.name.count > item.name.count {
             item.name = detection.name
+        }
+    }
+
+    /// Merge a SessionItem's fields into an existing inventory item at the given index.
+    func mergeSessionItem(_ sessionItem: SessionItem, at existingIndex: Int) {
+        items[existingIndex].updatedAt = Date()
+        if items[existingIndex].brand == nil, let brand = sessionItem.brand {
+            items[existingIndex].brand = brand
+        }
+        if items[existingIndex].itemColor == nil, let color = sessionItem.color {
+            items[existingIndex].itemColor = color
+        }
+        if items[existingIndex].size == nil, let size = sessionItem.size {
+            items[existingIndex].size = size
+        }
+        if items[existingIndex].category == .other, let hint = sessionItem.categoryHint {
+            let mapped = ItemCategory.from(rawString: hint)
+            if mapped != .other { items[existingIndex].category = mapped }
+        }
+        if sessionItem.name.count > items[existingIndex].name.count {
+            items[existingIndex].name = sessionItem.name
         }
     }
 

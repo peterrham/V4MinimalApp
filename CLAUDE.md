@@ -58,6 +58,17 @@ iOS home inventory app that uses the camera to photograph/video items, AI (Gemin
 - **Debug admin**: Delete-all button in InventoryListView toolbar + SavedInventorySheet
 - **Bounding box logging**: Lines starting with `📦` show request/response/parse/match status
 
+### Claude Code Log Monitoring (IMPORTANT)
+The app streams logs to a Python TCP server on the Mac. **Always use this for debugging instead of `devicectl --console`.**
+- **Start server**: `python3 tools/log-server/log_server.py -o /tmp/app_logs.txt` (usually already running)
+- **Check if running**: `lsof -i :9999` — should show a Python process
+- **Read logs**: `tail -50 /tmp/app_logs.txt` or use Read tool on `/tmp/app_logs.txt`
+- **Monitor live**: Run `tail -f /tmp/app_logs.txt` in background to watch incoming logs
+- **All new logging code** must use `NetworkLogger.shared.info()` (or .debug/.error etc.) so logs appear in `/tmp/app_logs.txt`. Using only `os_log()` or `print()` will NOT send logs to the TCP server.
+- **API**: `NetworkLogger.shared.info("message", category: "Category")` — also `.debug()`, `.error()`, `.warning()`, `.notice()`, `.fault()`
+- **Global convenience**: `appLog("message", level: .info, category: "Category")`
+- **Dual logging pattern** (NewMain.swift): `appBootLog.infoWithContext("msg")` sends to both os_log AND NetworkLogger
+
 ### Authentication Flow
 - **Google Sign-In** via GIDSignIn SDK
 - **AppState.swift** — `@Published var isAuthenticated`. `checkAuthStatus()` checks `GIDSignIn.sharedInstance.currentUser != nil`. Called at init and after sign-in/sign-out.
@@ -84,6 +95,71 @@ iOS home inventory app that uses the camera to photograph/video items, AI (Gemin
 - **Endpoint**: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent`
 - **Detection prompt**: Combined names + bounding boxes, maxOutputTokens: 400, temperature: 0.2
 - **Timeout**: 10s for detection, frame analysis every 2s
+
+## UI Specification & Feedback (Feb 2, 2026)
+
+### 1. Homepage Cards — All Clickable
+Every card/UI element on the homepage should be tappable. Most taps open filtered views over the inventory.
+
+| Card Type | Tap Action |
+|-----------|------------|
+| Recently Added | Items added in last 7 days |
+| Total Items | Full inventory list |
+| Rooms/Locations | Items filtered by selected location |
+| Categories | Items filtered by category |
+| Unidentified Items | Items pending recognition/classification |
+| Search/Quick Actions | Open search or action modal |
+| Statistics/Insights | Detailed analytics dashboard |
+
+### 2. Tab Bar Icon Sizing
+Experiment with larger bottom tab bar icons:
+- **Option A (Current):** Default size
+- **Option B:** 1.5x
+- **Option C:** 2x (accessibility-friendly)
+
+Add a settings toggle or A/B test flag to switch between sizes.
+
+### 3. UI Theme Options
+Add a third "Bug" option for experimental UI features:
+1. Option 1 (default)
+2. Option 2 (alternative)
+3. Bug/Experimental — contains features under development
+
+### 4. Scan Page Button Audit
+
+| Button | Status | Issue / Action |
+|--------|--------|----------------|
+| **Red Eye** | Unclear purpose, disliked appearance | Clarify intent: if live AI indicator → replace with subtle animated badge/dot; if red-eye reduction → remove |
+| **Orange** | Experimental flow | Move to Bug UI only (hide from default) |
+| **Video** | Unknown if MVP | Decide: remove, move to Bug UI, or redesign as "Scan Room" walkthrough |
+| **Flash** | Toggle torch | Keep if users scan in low light; remove if not needed |
+| **Cloud** | Unclear (sync status? manual upload? settings?) | Clarify: if status indicator, make subtle (not a button); if auto-sync, remove |
+| **X (Close)** | "Doesn't always do anything" | **Fix:** must always dismiss scan view. Debug inconsistent state management |
+
+### 5. Immediate Actions
+
+**Move to Bug UI:**
+- [ ] Orange button/flow
+
+**Fix:**
+- [ ] X button — make dismissal consistent
+
+**Decide & Document:**
+- [ ] Red eye button — define purpose or remove
+- [ ] Video button — define purpose or remove
+- [ ] Flash button — keep or remove
+- [ ] Cloud button — clarify purpose
+
+**Implement:**
+- [ ] Make all homepage cards clickable with filtered inventory views
+- [ ] Add 2 additional tab icon size options
+- [ ] Add "Bug" UI theme option
+
+### 6. Open Questions
+1. **Red eye button:** What was the original intent?
+2. **Video mode:** Is room walkthrough video capture a planned feature?
+3. **Cloud button:** Manual sync, status display, or something else?
+4. **Flash:** Do users actually need flash control?
 
 ## Device & Build
 - **Test device**: iPhone (ID: E2E96980-5078-5FAF-8A49-EBE55CF72365, USB ID: 00008110-000A3DCC0C32401E)
@@ -227,3 +303,149 @@ Issues observed by recording a full app usage session via broadcast extension:
 - All logging should go to both unified logging AND network logger
 - Fast scanning feedback is the #1 priority — background enrichment is acceptable
 - Keep detection prompt simple/fast; do heavy processing asynchronously
+
+---
+
+## High-Level Codebase Summary
+
+**Scale:** ~26,400 lines of Swift across 92 files, single Xcode target (plus a ReplayKit broadcast extension).
+
+**What the app does:** Point your phone camera at household items, Gemini identifies them in real-time (~2s cycles), you save them to a local JSON-backed inventory. Photos are cropped to bounding boxes. Items can be organized by room and home. Speech recognition, Google Drive upload, and Google Sheets sync exist but are secondary features.
+
+**Core data flow:**
+```
+Camera frames (CameraManager)
+  → Gemini API (GeminiStreamingVisionService, every 2s)
+  → Parsed DetectedObject list (name + bounding box)
+  → User taps Save / Save All
+  → InventoryStore persists to inventory.json + crops photo to inventory_photos/
+  → HomeView / InventoryListView display items
+```
+
+**File layout (no folder structure enforced):**
+- 52 Swift files in the project root (views, services, models mixed together)
+- 40 Swift files in `V4MinimalApp/` subdirectory (debug views, evaluation harness, YOLO, sessions)
+- 1 broadcast extension file, 3 unused `NewTarget/` files
+
+**Largest files (complexity hotspots):**
+| File | LOC | Role |
+|------|-----|------|
+| EvaluationView.swift | 2,091 | Evaluation harness UI + logic |
+| CameraScanView.swift | 1,209 | Camera UI + capture + upload |
+| InventoryStore.swift | 1,123 | JSON persistence + dedup + rooms + homes |
+| PipelineRunner.swift | 1,045 | Multi-algorithm detection orchestration |
+| GeminiVisionService.swift | 1,045 | Single-image Gemini API + parsing |
+| LiveObjectDetectionView.swift | 918 | Real-time detection + 6 @StateObjects |
+
+**Key services:** GeminiStreamingVisionService (live detection), GeminiVisionService (single-photo), CameraManager (AVCaptureSession), InventoryStore (persistence), BackgroundEnrichmentService (async enrichment), YOLODetector + AppleVisionClassifier (on-device fallbacks), NetworkLogger (TCP log streaming).
+
+**Authentication:** Google Sign-In SDK with "Continue without signing in" bypass. ZStack overlay pattern in MainApp.swift.
+
+**Test coverage:** Zero. No test targets, no test files, no mocks.
+
+---
+
+## Architecture Evaluation
+
+### 1. Separation of Concerns — Poor
+
+Views contain business logic directly. `LiveObjectDetectionView` instantiates 6 `@StateObject` services (camera, Gemini, enrichment, YOLO, Apple Vision, motion monitor), manages 11 `@State` variables, and orchestrates detection pipelines — all in a single SwiftUI struct. There is no ViewModel layer anywhere in the codebase. Every view that does anything non-trivial (CameraScanView, EvaluationView, LiveObjectDetectionView) is a god object mixing UI layout with service orchestration, state management, and persistence calls.
+
+**Recommendation:** Introduce a ViewModel layer. Each complex view should have a corresponding `ObservableObject` class that owns the business logic and exposes `@Published` state. Views should only bind to ViewModel properties and call ViewModel methods.
+
+### 2. Duplicate Implementations — Significant
+
+| Area | Files | Problem |
+|------|-------|---------|
+| Speech recognition | 4 files (SpeechRecognition.swift, SpeechRecognitionManager.swift, SpeechRecognitionManager 2.swift, SpeechRecognitionExtension.swift) | 3 overlapping implementations, one commented out, one is a backup copy |
+| Google Drive upload | 5 files (GoogleDriveService, +Authentication, GoogleDriveUploader, StreamingVideoUploader, GoogleCloudStorageUploader) | Unclear hierarchy, overlapping responsibilities |
+| Google Sheets | 2 files (GoogleSheetsAPI, GoogleSheetsClient) | Similar purpose, unclear division |
+| Auth | 6 files (GoogleSignInManager, GoogleSignInView, GoogleAuthenticatorView, GoogleAuthenticateViaSafari, GoogleoAuth, AuthManager) | Multiple auth mechanisms, unclear which is active |
+| API key loading | Duplicated identically in GeminiVisionService and GeminiStreamingVisionService | Same `loadFromConfig()`, `loadFromInfoPlist()` code copy-pasted |
+| Gemini response parsing | Duplicated across both Gemini services | Same JSON parse + fallback logic |
+
+**Recommendation:** Consolidate each area to a single canonical implementation. Delete dead files (SpeechRecognitionManager.swift is commented out, "SpeechRecognitionManager 2.swift" is a stale copy, Vision.swift is empty). Extract shared logic (API key loading, response parsing) into shared utilities.
+
+### 3. Dependency Management — Singleton-Heavy, No Injection
+
+9 singletons identified (`GeminiVisionService.shared`, `DetectionSettings.shared`, `NetworkLogger.shared`, `AppHelper.shared`, `VideoUploadQueue.shared`, `Persistence.shared`, `DynamicPersistenceController.shared`, `ScreenshotStreamer.shared`, plus `InventoryStore` passed as `@EnvironmentObject`). Views instantiate services directly (`let driveUploader = GoogleDriveUploader()`) rather than receiving them through injection.
+
+**Recommendation:** Define protocols for each service (e.g., `protocol VisionServiceProtocol`), inject dependencies via initializers or `@EnvironmentObject`, and reserve singletons for truly global concerns (logging, app configuration).
+
+### 4. God Object: InventoryStore (1,123 LOC)
+
+InventoryStore handles: JSON file I/O for 3 files (inventory, homes, rooms), item CRUD, room management, home management, deduplication by name similarity, photo file management, CoreData integration, item cleanup/validation, and export. This is too many responsibilities for one class.
+
+**Recommendation:** Split into focused components: `InventoryRepository` (CRUD + file I/O), `RoomManager`, `HomeManager`, `InventoryDeduplicator`, `PhotoStorageManager`.
+
+### 5. Testing — Non-existent
+
+There are zero tests. No test target in the Xcode project. No mock objects. No test data factories. The architecture actively prevents testing because:
+- Business logic lives in SwiftUI views (can't unit test)
+- Services are singletons or directly instantiated (can't mock)
+- File I/O uses `FileManager` directly (can't stub)
+- Network calls are hardcoded (can't intercept)
+
+**Recommendation (priority order):**
+1. Add a test target to the Xcode project
+2. Write unit tests for `Models.swift` (pure data, easy to test now)
+3. Write unit tests for `ItemCategory.from(rawString:)` alias mapping
+4. Extract Gemini response parsing into a pure function, test edge cases (refusals, malformed JSON, markdown fences)
+5. Extract deduplication logic from InventoryStore into a testable pure function
+6. Define service protocols, create mock implementations, write integration tests for save/load flows
+7. Add UI tests for critical paths (scan → detect → save → verify in inventory)
+
+### 6. File Organization — Flat and Disorganized
+
+92 Swift files split between two directories with no consistent grouping. Views, models, services, and utilities are interleaved. There is no folder structure enforcing architectural boundaries.
+
+**Recommended folder structure:**
+```
+V4MinimalApp/
+├── App/           (MainApp, AppState, AppDelegate/NewMain)
+├── Models/        (Models, DetectionSession, ScanSession)
+├── Views/
+│   ├── Home/      (HomeView, HomePickerMenu, RoomsSummaryView)
+│   ├── Camera/    (CameraScanView, CameraSettingsView, CameraPreview)
+│   ├── Detection/ (LiveObjectDetectionView, StreamingObjectDetectionView)
+│   ├── Inventory/ (InventoryListView, ItemDetailView, InventoryTableView)
+│   ├── Settings/  (SettingsView, DebugView, NetworkDiagnosticsView)
+│   └── Auth/      (GoogleSignInView)
+├── ViewModels/    (new — extracted from views)
+├── Services/
+│   ├── Vision/    (GeminiVisionService, GeminiStreamingVisionService)
+│   ├── Detection/ (YOLODetector, AppleVisionClassifier, PipelineRunner)
+│   ├── Storage/   (InventoryStore, GoogleDriveService)
+│   ├── Camera/    (CameraManager + extensions)
+│   └── Network/   (NetworkLogger, ScreenshotStreamer)
+├── Utilities/     (Theme, Styles, Extensions)
+└── Tests/
+    ├── Unit/
+    └── Integration/
+```
+
+### 7. Dead Code to Remove
+
+| File | Reason |
+|------|--------|
+| `NewTarget/` (3 files) | Unused experimental target |
+| `SpeechRecognitionManager.swift` | Entirely commented out |
+| `SpeechRecognitionManager 2.swift` | Stale backup copy |
+| `Vision.swift` | 2 lines, just `import Foundation` |
+| `AppendExtention.swift` | 1 line, empty |
+| `INTEGRATION_EXAMPLE.swift` | Documentation, not code |
+| `QUICK_START_GUIDE.swift` | Documentation, not code |
+
+### 8. Performance Concern: Eager Initialization
+
+`LiveObjectDetectionView` creates all 6 detection services as `@StateObject` on init, even when the user only uses one pipeline mode. YOLO model loading and Apple Vision classifier setup run regardless of whether those pipelines are selected.
+
+**Recommendation:** Lazy-initialize detectors based on the active pipeline setting. Only create the services that will actually be used.
+
+### Summary: Top 5 Actions to Improve This Codebase
+
+1. **Extract ViewModels** from the 3 largest views (LiveObjectDetectionView, CameraScanView, EvaluationView) — this is the single highest-impact change
+2. **Delete dead code** (7+ files identified above) and consolidate duplicate implementations (speech, auth, Drive)
+3. **Add a test target** and write tests for pure logic first (models, parsing, deduplication)
+4. **Split InventoryStore** into focused components with protocols
+5. **Organize files into folders** matching architectural layers

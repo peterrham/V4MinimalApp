@@ -29,7 +29,7 @@ class ScreenshotStreamer {
 
     /// Server settings from UserDefaults (set in NetworkDiagnosticsView)
     private var serverHost: String {
-        UserDefaults.standard.string(forKey: "logServerHost") ?? ""
+        UserDefaults.standard.string(forKey: "logServerHost") ?? "10.0.141.70"
     }
     private var serverPort: UInt16 {
         UInt16(UserDefaults.standard.string(forKey: "screenshotServerPort") ?? "9998") ?? 9998

@@ -14,7 +14,7 @@ class BackgroundEnrichmentService: ObservableObject {
     @Published var enrichedCount: Int = 0
     @Published var queueCount: Int = 0
 
-    private var queue: [(objectID: UUID, name: String, frame: UIImage)] = []
+    private var queue: [(objectID: UUID, name: String, frame: UIImage, isCrop: Bool)] = []
     private var isProcessing = false
     private var processingTask: Task<Void, Never>?
 
@@ -45,9 +45,21 @@ class BackgroundEnrichmentService: ObservableObject {
         guard let frame = object.sourceFrame else { return }
         guard !apiKey.isEmpty else { return }
 
-        queue.append((objectID: object.id, name: object.name, frame: frame))
+        queue.append((objectID: object.id, name: object.name, frame: frame, isCrop: false))
         queueCount = queue.count
         print("🔬 Enrichment queued: \(object.name) (queue: \(queue.count))")
+
+        startProcessingIfNeeded()
+    }
+
+    /// Enqueue a pre-cropped image for YOLO→Gemini enrichment. Updates name + details.
+    func enqueueCrop(_ object: DetectedObject, croppedImage: UIImage) {
+        guard DetectionSettings.shared.enableBackgroundEnrichment else { return }
+        guard !apiKey.isEmpty else { return }
+
+        queue.append((objectID: object.id, name: object.name, frame: croppedImage, isCrop: true))
+        queueCount = queue.count
+        print("🔬 Crop enrichment queued: \(object.name) (queue: \(queue.count))")
 
         startProcessingIfNeeded()
     }
@@ -71,7 +83,41 @@ class BackgroundEnrichmentService: ObservableObject {
         }
     }
 
-    private func processItem(_ item: (objectID: UUID, name: String, frame: UIImage)) async {
+    private func processItem(_ item: (objectID: UUID, name: String, frame: UIImage, isCrop: Bool)) async {
+        if item.isCrop {
+            await processCropItem(item)
+        } else {
+            await processFullFrameItem(item)
+        }
+    }
+
+    /// Crop-based enrichment: identify the specific item from a YOLO bbox crop, update name + details
+    private func processCropItem(_ item: (objectID: UUID, name: String, frame: UIImage, isCrop: Bool)) async {
+        guard let service = visionService else { return }
+
+        let result = await service.enrichCrop(item.frame, yoloClassName: item.name)
+
+        guard let result else {
+            print("🔬 Crop enrichment returned nil for \(item.name)")
+            return
+        }
+
+        if let idx = service.detectedObjects.firstIndex(where: { $0.id == item.objectID }) {
+            service.detectedObjects[idx].name = result.name
+            service.detectedObjects[idx].isEnriched = true
+            if let brand = result.brand { service.detectedObjects[idx].brand = brand }
+            if let color = result.color { service.detectedObjects[idx].color = color }
+            if let size = result.size { service.detectedObjects[idx].size = size }
+            if let category = result.category { service.detectedObjects[idx].categoryHint = category }
+            enrichedCount += 1
+            let totalMs = Int((CFAbsoluteTimeGetCurrent() - service.analysisStartTime) * 1000)
+            NetworkLogger.shared.info("TIMING: ENRICHED \(item.name) → \(result.name) at t=\(totalMs)ms", category: "Detection")
+            print("🔬 Crop enriched: \(item.name) → \(result.name), brand=\(result.brand ?? "nil")")
+        }
+    }
+
+    /// Full-frame enrichment: add details to an existing Gemini-detected object
+    private func processFullFrameItem(_ item: (objectID: UUID, name: String, frame: UIImage, isCrop: Bool)) async {
         // Resize frame to small size for enrichment
         let resized = GeminiStreamingVisionService.resizeForAnalysis(item.frame)
         let quality = DetectionSettings.shared.jpegQuality

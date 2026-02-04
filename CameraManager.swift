@@ -26,6 +26,7 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
     private var currentDevice: AVCaptureDevice?
     private var audioInput: AVCaptureDeviceInput?
     private var isSessionConfigured = false
+    let detectionOnly: Bool
 
     // Cached CIContext — creating per-frame is expensive
     // nonisolated(unsafe) because captureOutput is called from a non-main queue
@@ -46,7 +47,8 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
     @Published var photoIdentification: String = ""
     @Published var isIdentifyingPhoto = false
     
-    override init() {
+    init(detectionOnly: Bool = false) {
+        self.detectionOnly = detectionOnly
         super.init()
         Task {
             await checkAuthorization()
@@ -137,19 +139,25 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
             
             session.beginConfiguration()
 
-            // Use preset from DetectionSettings (default .hd1280x720 — much smaller than .photo 4032x3024)
-            let presetString = DetectionSettings.shared.sessionPreset
-            let preset: AVCaptureSession.Preset = {
-                switch presetString {
-                case "vga640x480": return .vga640x480
-                case "hd1280x720": return .hd1280x720
-                case "hd1920x1080": return .hd1920x1080
-                case "photo": return .photo
-                default: return .hd1280x720
-                }
-            }()
-            session.sessionPreset = preset
-            appBootLog.infoWithContext("Session preset: \(presetString)")
+            // Detection-only mode uses vga for speed (frames get resized to 640px anyway)
+            if detectionOnly {
+                session.sessionPreset = .vga640x480
+                appBootLog.infoWithContext("Session preset: vga640x480 (detection-only)")
+            } else {
+                // Use preset from DetectionSettings (default .hd1280x720 — much smaller than .photo 4032x3024)
+                let presetString = DetectionSettings.shared.sessionPreset
+                let preset: AVCaptureSession.Preset = {
+                    switch presetString {
+                    case "vga640x480": return .vga640x480
+                    case "hd1280x720": return .hd1280x720
+                    case "hd1920x1080": return .hd1920x1080
+                    case "photo": return .photo
+                    default: return .hd1280x720
+                    }
+                }()
+                session.sessionPreset = preset
+                appBootLog.infoWithContext("Session preset: \(presetString)")
+            }
             
             if session.canAddInput(videoInput) {
                 session.addInput(videoInput)
@@ -164,35 +172,37 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
                 return
             }
             
-            // Setup photo output
-            if session.canAddOutput(photoOutput) {
-                session.addOutput(photoOutput)
-                photoOutput.isHighResolutionCaptureEnabled = true
-                photoOutput.maxPhotoQualityPrioritization = .quality
-                appBootLog.infoWithContext("Photo output added")
-            } else {
-                appBootLog.errorWithContext("Cannot add photo output")
-            }
-            
-            // Setup movie output for video recording
-            if session.canAddOutput(movieOutput) {
-                session.addOutput(movieOutput)
-                appBootLog.infoWithContext("Movie output added")
-            } else {
-                appBootLog.errorWithContext("Cannot add movie output")
-            }
-            
-            // Setup audio input for video recording
-            if let audioDevice = AVCaptureDevice.default(for: .audio) {
-                do {
-                    let audioDeviceInput = try AVCaptureDeviceInput(device: audioDevice)
-                    if session.canAddInput(audioDeviceInput) {
-                        session.addInput(audioDeviceInput)
-                        self.audioInput = audioDeviceInput
-                        appBootLog.infoWithContext("Audio input added")
+            if !detectionOnly {
+                // Setup photo output
+                if session.canAddOutput(photoOutput) {
+                    session.addOutput(photoOutput)
+                    photoOutput.isHighResolutionCaptureEnabled = true
+                    photoOutput.maxPhotoQualityPrioritization = .quality
+                    appBootLog.infoWithContext("Photo output added")
+                } else {
+                    appBootLog.errorWithContext("Cannot add photo output")
+                }
+
+                // Setup movie output for video recording
+                if session.canAddOutput(movieOutput) {
+                    session.addOutput(movieOutput)
+                    appBootLog.infoWithContext("Movie output added")
+                } else {
+                    appBootLog.errorWithContext("Cannot add movie output")
+                }
+
+                // Setup audio input for video recording
+                if let audioDevice = AVCaptureDevice.default(for: .audio) {
+                    do {
+                        let audioDeviceInput = try AVCaptureDeviceInput(device: audioDevice)
+                        if session.canAddInput(audioDeviceInput) {
+                            session.addInput(audioDeviceInput)
+                            self.audioInput = audioDeviceInput
+                            appBootLog.infoWithContext("Audio input added")
+                        }
+                    } catch {
+                        appBootLog.errorWithContext("Could not add audio input: \(error.localizedDescription)")
                     }
-                } catch {
-                    appBootLog.errorWithContext("Could not add audio input: \(error.localizedDescription)")
                 }
             }
             
@@ -209,6 +219,19 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
             
             session.commitConfiguration()
             isSessionConfigured = true
+
+            // Apply video stabilization if enabled
+            if DetectionSettings.shared.useVideoStabilization {
+                if let connection = videoOutput.connection(with: .video) {
+                    if connection.isVideoStabilizationSupported {
+                        connection.preferredVideoStabilizationMode = .cinematic
+                        appBootLog.infoWithContext("Video stabilization: cinematic (active: \(connection.activeVideoStabilizationMode.rawValue))")
+                    } else {
+                        appBootLog.warningWithContext("Video stabilization not supported on this connection")
+                    }
+                }
+            }
+
             appBootLog.infoWithContext("Camera session configured successfully")
             
             // Automatically start the session after configuration

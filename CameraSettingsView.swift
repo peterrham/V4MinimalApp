@@ -38,6 +38,16 @@ struct CameraSettingsView: View {
 
             // Section B: Configuration
             Section {
+                // Detection Pipeline
+                Picker("Detection Pipeline", selection: $settings.detectionPipeline) {
+                    ForEach(LiveDetectionPipeline.allCases) { pipeline in
+                        VStack(alignment: .leading) {
+                            Text(pipeline.displayName)
+                        }
+                        .tag(pipeline)
+                    }
+                }
+
                 // Session Preset
                 Picker("Camera Resolution", selection: $settings.sessionPreset) {
                     Text("VGA (640x480)").tag("vga640x480")
@@ -98,7 +108,20 @@ struct CameraSettingsView: View {
                 Text("Lower analysis interval = faster detection but more API calls. Smaller width = faster uploads. Camera changes take effect on next session start.")
             }
 
-            // Section C: Physical Upgrades
+            // Section C: UI Settings
+            Section {
+                Picker("Tab Bar Icon Size", selection: $settings.tabIconSize) {
+                    Text("Default (26pt)").tag(0)
+                    Text("Large (34pt)").tag(1)
+                    Text("Extra Large (42pt)").tag(2)
+                }
+            } header: {
+                Text("UI")
+            } footer: {
+                Text("Larger icons and labels are easier to tap. Changes apply immediately.")
+            }
+
+            // Section D: Physical Upgrades
             Section {
                 VStack(alignment: .leading, spacing: 8) {
                     Label("Clip-on Wide-Angle Lens", systemImage: "camera.aperture")

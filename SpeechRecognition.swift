@@ -38,6 +38,9 @@ class SpeechRecognitionManager: ObservableObject {
     private var driveBaseFilename: String = "rawAudio-\(Int(Date().timeIntervalSince1970))"
     private var lastDriveFlushTime: Date = Date()
     
+    // External audio consumer (e.g., OpenAI Realtime pipe)
+    var externalAudioConsumer: ((AVAudioPCMBuffer, AVAudioTime) -> Void)?
+
     // Verbose logging control for audio tap
     private let enableAudioTapVerboseLogging: Bool = false
 
@@ -428,6 +431,7 @@ class SpeechRecognitionManager: ObservableObject {
     }
     
     private func handleAudioTap(buffer: AVAudioPCMBuffer, when: AVAudioTime) {
+        externalAudioConsumer?(buffer, when)
         self.recognitionRequest?.append(buffer)
 
         if let fileHandle = self.audioFileHandle, let channelData = buffer.floatChannelData {

@@ -22,6 +22,8 @@ class YOLODetector: ObservableObject {
     @Published var detections: [YOLODetection] = []
     @Published var inferenceTime: Double = 0  // milliseconds
     @Published var isReady = false
+    /// Monotonically increasing counter — incremented each detection cycle for change tracking
+    @Published var detectionCycle: Int = 0
 
     private var visionModel: VNCoreMLModel?
     private var lastInferenceTime = Date.distantPast
@@ -83,6 +85,7 @@ class YOLODetector: ObservableObject {
             Task { @MainActor in
                 self.detections = detections
                 self.inferenceTime = elapsed
+                self.detectionCycle += 1
             }
         }
         request.imageCropAndScaleOption = .scaleFill

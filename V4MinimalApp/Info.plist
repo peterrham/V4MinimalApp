@@ -25,6 +25,8 @@
 	<true/>
 	<key>GeminiAPIKey</key>
 	<string>$(GEMINI_API_KEY)</string>
+	<key>OpenAIAPIKey</key>
+	<string>$(OPENAI_API_KEY)</string>
 	<key>CFBundleDisplayName</key>
 	<string>Home Inventory</string>
 	<key>CFBundleIcons</key>

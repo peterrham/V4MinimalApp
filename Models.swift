@@ -112,6 +112,12 @@ extension ItemCategory {
 
 // MARK: - Inventory Item
 
+/// Another item detected in the same source frame, stored for context viewing.
+struct FrameSibling: Codable, Hashable {
+    let name: String
+    let boundingBox: CodableBoundingBox
+}
+
 struct InventoryItem: Identifiable, Codable, Hashable {
     let id: UUID
     var name: String
@@ -129,6 +135,9 @@ struct InventoryItem: Identifiable, Codable, Hashable {
     var size: String?
     var notes: String
     var photos: [String]
+    var sourceFramePhoto: String?
+    var boundingBox: CodableBoundingBox?
+    var frameSiblings: [FrameSibling]?
     var voiceTranscripts: [String]
     let createdAt: Date
     var updatedAt: Date
@@ -140,7 +149,9 @@ struct InventoryItem: Identifiable, Codable, Hashable {
         case id, name, category, room, container
         case quantity, upc, isEmptyBox
         case estimatedValue, purchasePrice, purchaseDate
-        case brand, itemColor, size, notes, photos, voiceTranscripts
+        case brand, itemColor, size, notes, photos
+        case sourceFramePhoto, boundingBox, frameSiblings
+        case voiceTranscripts
         case createdAt, updatedAt, homeId
     }
 
@@ -162,6 +173,9 @@ struct InventoryItem: Identifiable, Codable, Hashable {
         size = try c.decodeIfPresent(String.self, forKey: .size)
         notes = try c.decode(String.self, forKey: .notes)
         photos = try c.decode([String].self, forKey: .photos)
+        sourceFramePhoto = try c.decodeIfPresent(String.self, forKey: .sourceFramePhoto)
+        boundingBox = try c.decodeIfPresent(CodableBoundingBox.self, forKey: .boundingBox)
+        frameSiblings = try c.decodeIfPresent([FrameSibling].self, forKey: .frameSiblings)
         voiceTranscripts = try c.decode([String].self, forKey: .voiceTranscripts)
         createdAt = try c.decode(Date.self, forKey: .createdAt)
         updatedAt = try c.decode(Date.self, forKey: .updatedAt)
@@ -240,6 +254,9 @@ struct InventoryItem: Identifiable, Codable, Hashable {
         size: String? = nil,
         notes: String = "",
         photos: [String] = [],
+        sourceFramePhoto: String? = nil,
+        boundingBox: CodableBoundingBox? = nil,
+        frameSiblings: [FrameSibling]? = nil,
         voiceTranscripts: [String] = [],
         homeId: UUID? = nil
     ) {
@@ -259,6 +276,9 @@ struct InventoryItem: Identifiable, Codable, Hashable {
         self.size = size
         self.notes = notes
         self.photos = photos
+        self.sourceFramePhoto = sourceFramePhoto
+        self.boundingBox = boundingBox
+        self.frameSiblings = frameSiblings
         self.voiceTranscripts = voiceTranscripts
         self.createdAt = Date()
         self.updatedAt = Date()
