@@ -9,12 +9,14 @@ import SwiftUI
 
 struct SessionsListView: View {
     @EnvironmentObject var sessionStore: DetectionSessionStore
+    @State private var showDeleteAllConfirmation = false
 
     var sortedSessions: [DetectionSession] {
         sessionStore.sessions.sorted { $0.startedAt > $1.startedAt }
     }
 
     var body: some View {
+        Group {
         if sortedSessions.isEmpty {
             VStack(spacing: AppTheme.Spacing.l) {
                 Spacer()
@@ -52,6 +54,34 @@ struct SessionsListView: View {
                 }
             }
             .listStyle(.plain)
+        }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if !sortedSessions.isEmpty {
+                    Button {
+                        showDeleteAllConfirmation = true
+                    } label: {
+                        Image(systemName: "trash")
+                            .foregroundColor(.red)
+                    }
+                }
+            }
+        }
+        .alert("Delete All Sessions?", isPresented: $showDeleteAllConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete All", role: .destructive) {
+                deleteAllSessions()
+            }
+        } message: {
+            Text("This will permanently delete all \(sortedSessions.count) sessions and their photos. This cannot be undone.")
+        }
+    }
+
+    private func deleteAllSessions() {
+        let allIds = sessionStore.sessions.map { $0.id }
+        for id in allIds {
+            sessionStore.deleteSession(id)
         }
     }
 }
