@@ -15,21 +15,32 @@ func logWithTimestamp(_ string: String) {
 
 @MainActor
 class SpeechRecognitionManager: ObservableObject {
-    private var audioEngine = AVAudioEngine()
-    private var speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    // LAZY INITIALIZATION: These are created on first access, not at object creation
+    // This prevents crashes from audio session conflicts
+    private lazy var audioEngine: AVAudioEngine = {
+        appBootLog.infoWithContext("[SpeechRecognition] Creating AVAudioEngine (lazy)")
+        return AVAudioEngine()
+    }()
+    private lazy var speechRecognizer: SFSpeechRecognizer? = {
+        appBootLog.infoWithContext("[SpeechRecognition] Creating SFSpeechRecognizer (lazy)")
+        return SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    }()
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let context: NSManagedObjectContext
-    
+
     // Persistent audio file storage
     private var audioFileURL: URL?
     private var audioFileHandle: FileHandle?
 
     private var wavFileURL: URL?
     private var wavAudioFile: AVAudioFile?
-    
-    // Google Drive incremental upload support
-    private var driveUploader = GoogleDriveUploader()
+
+    // Google Drive incremental upload support - also lazy
+    private lazy var driveUploader: GoogleDriveUploader = {
+        appBootLog.infoWithContext("[SpeechRecognition] Creating GoogleDriveUploader (lazy)")
+        return GoogleDriveUploader()
+    }()
     private var driveChunkBuffer = Data()
     // Increased to produce much longer Google Drive audio file uploads (streaming style)
     private let driveChunkSizeBytes: Int = 5 * 1024 * 1024 // 5 MB for longer audio chunks
@@ -84,13 +95,35 @@ class SpeechRecognitionManager: ObservableObject {
      passing the appropriate sample rate.
      */
     init(context: NSManagedObjectContext) {
-        
+
         appBootLog.infoWithContext("App launched: SpeechRecognitionManager initialized")
-        
+
         appBootLog.infoWithContext("inside init()")
         self.context = context
+        // Request permissions but DON'T start listening automatically in init
+        // startListening() should be called from onAppear or after permissions are confirmed
         requestMicrophonePermission()
-        startListening()
+    }
+
+    /// Call this from the view's onAppear to start audio listening after permissions are ready
+    func startListeningIfReady() {
+        // Small delay to ensure audio session is ready and permissions have been processed
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 second delay
+            appBootLog.infoWithContext("startListeningIfReady: checking permissions...")
+
+            guard SFSpeechRecognizer.authorizationStatus() == .authorized else {
+                appBootLog.infoWithContext("startListeningIfReady: speech not authorized yet")
+                return
+            }
+            guard AVAudioSession.sharedInstance().recordPermission == .granted else {
+                appBootLog.infoWithContext("startListeningIfReady: microphone not granted yet")
+                return
+            }
+
+            appBootLog.infoWithContext("startListeningIfReady: permissions OK, starting...")
+            self.startListening()
+        }
     }
     
     func setupAudioSessionObserver() {
@@ -317,8 +350,7 @@ class SpeechRecognitionManager: ObservableObject {
         do {
             try audioSession.setCategory(.playAndRecord, mode: .measurement, options: .duckOthers)
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-            // try audioSession.setPreferredIOBufferDuration(0.01)  // Set a lower buffer duration for real-time processing
-            try audioSession.setPreferredIOBufferDuration(100)
+            try audioSession.setPreferredIOBufferDuration(0.01)  // 10ms buffer for real-time processing
         } catch {
             appBootLog.debugWithContext("Audio session setup error: \(error)")
             return
@@ -431,8 +463,18 @@ class SpeechRecognitionManager: ObservableObject {
     }
     
     private func handleAudioTap(buffer: AVAudioPCMBuffer, when: AVAudioTime) {
-        externalAudioConsumer?(buffer, when)
+        // IMPORTANT: Append to recognition request FIRST for real-time transcription
+        // External consumers (like OpenAI pipe) should not delay local recognition
         self.recognitionRequest?.append(buffer)
+
+        // Call external consumer asynchronously to avoid blocking the audio thread
+        if let consumer = externalAudioConsumer {
+            let bufferCopy = buffer // AVAudioPCMBuffer is a reference type, but it's okay here
+            let whenCopy = when
+            DispatchQueue.global(qos: .userInitiated).async {
+                consumer(bufferCopy, whenCopy)
+            }
+        }
 
         if let fileHandle = self.audioFileHandle, let channelData = buffer.floatChannelData {
             let frames = Int(buffer.frameLength)

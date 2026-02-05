@@ -8,20 +8,39 @@
 import SwiftUI
 import GoogleSignIn
 
+enum SettingsPage: String, Hashable, Codable {
+    // Settings pages
+    case homes, rooms, backup, cameraSettings, exportCSV
+    case inventoryTable, normalization, debugView, apiLogs, evaluation
+    // Debug subpages
+    case guidedRecording, debugOptions, pipelineDebug, audioRecognition, audioDiagnostics
+    case openAIChat, openAIRealtime, networkDiagnostics
+    case googleSignIn, googleAuthSafari, deleteAllText
+    case debugExportCSV, textFileSharer, textFileCreator, secondView
+}
+
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @State private var autoSync = true
     @State private var aiConfidenceThreshold = 0.7
-    @State private var developerMode = false
+    @AppStorage("developerMode") private var developerMode = false
     @State private var showingSignOut = false
     @State private var isSignedIn = GIDSignIn.sharedInstance.currentUser != nil
+    // Navigation path - DO NOT persist to avoid type mismatch crashes
+    // Bug: SwiftUI.AnyNavigationPath.Error.comparisonTypeMismatch when restoring stale paths
+    @State private var path: [SettingsPage] = []
+
+    init() {
+        // Clear any stale navigation path data on init
+        UserDefaults.standard.removeObject(forKey: "settingsNavPath")
+    }
 
     var currentUser: GIDGoogleUser? {
         isSignedIn ? GIDSignIn.sharedInstance.currentUser : nil
     }
-    
+
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Form {
                 // Account Section
                 Section {
@@ -102,18 +121,14 @@ struct SettingsView: View {
                         }
                     }
                 }
-                
+
                 // Sync & Backup
                 Section {
-                    NavigationLink {
-                        HomesManagementView()
-                    } label: {
+                    NavigationLink(value: SettingsPage.homes) {
                         Label("Manage Homes", systemImage: "house.fill")
                     }
 
-                    NavigationLink {
-                        RoomsManagementView()
-                    } label: {
+                    NavigationLink(value: SettingsPage.rooms) {
                         Label("Manage Rooms", systemImage: "door.left.hand.open")
                     }
 
@@ -121,9 +136,7 @@ struct SettingsView: View {
                         Label("Auto-Sync to Google Sheets", systemImage: "arrow.triangle.2.circlepath")
                     }
 
-                    NavigationLink {
-                        Text("Backup view placeholder")
-                    } label: {
+                    NavigationLink(value: SettingsPage.backup) {
                         Label("Backup & Restore", systemImage: "cloud.fill")
                     }
 
@@ -137,12 +150,10 @@ struct SettingsView: View {
                 } footer: {
                     Text("Automatically backup your inventory to Google Sheets")
                 }
-                
+
                 // Camera & Detection Settings
                 Section {
-                    NavigationLink {
-                        CameraSettingsView()
-                    } label: {
+                    NavigationLink(value: SettingsPage.cameraSettings) {
                         Label("Camera & Detection", systemImage: "camera.aperture")
                     }
 
@@ -154,21 +165,19 @@ struct SettingsView: View {
                 } footer: {
                     Text("Configure camera resolution, detection speed, and enrichment")
                 }
-                
+
                 // Export Options
                 Section {
-                    NavigationLink {
-                        ExportToCSVView()
-                    } label: {
+                    NavigationLink(value: SettingsPage.exportCSV) {
                         Label("Export to CSV", systemImage: "doc.text")
                     }
-                    
+
                     Button {
                         // Export to PDF
                     } label: {
                         Label("Generate Insurance Report", systemImage: "doc.richtext")
                     }
-                    
+
                     Button {
                         // Share all data
                     } label: {
@@ -177,48 +186,41 @@ struct SettingsView: View {
                 } header: {
                     Text("Export & Share")
                 }
-                
+
                 // Developer Options
                 Section {
                     Toggle(isOn: $developerMode) {
                         Label("Developer Mode", systemImage: "hammer.fill")
                     }
-                    
+
                     if developerMode {
-                        NavigationLink {
-                            InventoryTableView()
-                        } label: {
+                        NavigationLink(value: SettingsPage.inventoryTable) {
                             Label("Inventory Table", systemImage: "tablecells")
                         }
 
-                        NavigationLink {
-                            NormalizationView()
-                        } label: {
+                        NavigationLink(value: SettingsPage.normalization) {
                             Label("Normalize Inventory", systemImage: "wand.and.stars")
                         }
 
-                        NavigationLink {
-                            DebugView()
-                        } label: {
+                        NavigationLink(value: SettingsPage.debugView) {
                             Label("Debug View", systemImage: "ant.fill")
                         }
+                        .simultaneousGesture(TapGesture().onEnded {
+                            appBootLog.infoWithContext("[Nav] Debug View tapped, path=\(path)")
+                        })
 
-                        NavigationLink {
-                            Text("API logs placeholder")
-                        } label: {
+                        NavigationLink(value: SettingsPage.apiLogs) {
                             Label("API Logs", systemImage: "doc.plaintext")
                         }
 
-                        NavigationLink {
-                            EvaluationView()
-                        } label: {
+                        NavigationLink(value: SettingsPage.evaluation) {
                             Label("Evaluation Harness", systemImage: "gauge.with.dots.needle.33percent")
                         }
                     }
                 } header: {
                     Text("Advanced")
                 }
-                
+
                 // About
                 Section {
                     HStack {
@@ -227,11 +229,11 @@ struct SettingsView: View {
                         Text("1.0.0")
                             .foregroundStyle(.secondary)
                     }
-                    
+
                     Link(destination: URL(string: "https://support.apple.com")!) {
                         Label("Help & Support", systemImage: "questionmark.circle")
                     }
-                    
+
                     Link(destination: URL(string: "https://www.apple.com/legal/privacy/")!) {
                         Label("Privacy Policy", systemImage: "hand.raised.fill")
                     }
@@ -241,6 +243,36 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(for: SettingsPage.self) { page in
+                switch page {
+                case .homes: HomesManagementView()
+                case .rooms: RoomsManagementView()
+                case .backup: Text("Backup view placeholder")
+                case .cameraSettings: CameraSettingsView()
+                case .exportCSV: ExportToCSVView()
+                case .inventoryTable: InventoryTableView()
+                case .normalization: NormalizationView()
+                case .debugView: DebugView()
+                        .onAppear { appBootLog.infoWithContext("[Nav] DebugView appeared") }
+                case .apiLogs: Text("API logs placeholder")
+                case .evaluation: EvaluationView()
+                case .guidedRecording: GuidedRecordingView()
+                case .debugOptions: DebugOptionsView()
+                case .pipelineDebug: PipelineDebugView()
+                case .audioRecognition: ContentView()
+                case .openAIChat: OpenAIChatView()
+                case .openAIRealtime: OpenAIRealtimeView()
+                case .networkDiagnostics: NetworkDiagnosticsView()
+                case .audioDiagnostics: AudioDiagnosticsView()
+                case .googleSignIn: GoogleSignInView()
+                case .googleAuthSafari: GoogleAuthenticateViaSafariView()
+                case .deleteAllText: DeleteAllRecognizedTextView()
+                case .debugExportCSV: ExportToCSVView()
+                case .textFileSharer: TextFileSharerView()
+                case .textFileCreator: TextFileCreatorView()
+                case .secondView: SecondView()
+                }
+            }
             .alert("Sign Out", isPresented: $showingSignOut) {
                 Button("Cancel", role: .cancel) { }
                 Button("Sign Out", role: .destructive) {
@@ -252,6 +284,7 @@ struct SettingsView: View {
                 Text("Are you sure you want to sign out?")
             }
         }
+        // REMOVED: .onChange path persistence - caused SwiftUI.AnyNavigationPath.Error.comparisonTypeMismatch crashes
     }
 }
 

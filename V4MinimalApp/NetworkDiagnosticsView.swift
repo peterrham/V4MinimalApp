@@ -53,13 +53,17 @@ struct Endpoint: Identifiable {
     let port: UInt16
     let icon: String
     let description: String
+    let fullName: String
+    let path: String
 
-    init(name: String, host: String, port: UInt16, icon: String, description: String) {
+    init(name: String, host: String, port: UInt16, icon: String, description: String, fullName: String = "", path: String = "/") {
         self.name = name
         self.host = host
         self.port = port
         self.icon = icon
         self.description = description
+        self.fullName = fullName.isEmpty ? name : fullName
+        self.path = path
     }
 }
 
@@ -79,6 +83,8 @@ struct NetworkDiagnosticsView: View {
     @State private var isScreenshotStreaming: Bool = false
     @State private var screenshotInterval: Double = 2.0
 
+    @State private var expandedEndpoints: Set<UUID> = []
+
     // Predefined endpoints
     let endpoints: [Endpoint] = [
         Endpoint(
@@ -86,35 +92,45 @@ struct NetworkDiagnosticsView: View {
             host: "google.com",
             port: 443,
             icon: "globe",
-            description: "Internet connectivity"
+            description: "Internet connectivity",
+            fullName: "Google HTTPS — basic connectivity check",
+            path: "/"
         ),
         Endpoint(
             name: "Gemini Batch",
             host: "generativelanguage.googleapis.com",
             port: 443,
             icon: "brain",
-            description: "Gemini REST API (detection)"
+            description: "Gemini REST API (detection)",
+            fullName: "Google Gemini generateContent REST API (gemini-2.5-flash-lite)",
+            path: "/v1beta/models/gemini-2.5-flash-lite:generateContent"
         ),
         Endpoint(
             name: "Gemini Live",
             host: "generativelanguage.googleapis.com",
             port: 443,
             icon: "waveform",
-            description: "Gemini WebSocket (planned)"
+            description: "Gemini WebSocket (planned)",
+            fullName: "Google Gemini BidiGenerateContent WebSocket (planned)",
+            path: "/ws/google.ai.generativelanguage.v1beta.GenerativeService/BidiGenerateContent"
         ),
         Endpoint(
             name: "OpenAI Chat",
             host: "api.openai.com",
             port: 443,
             icon: "brain.head.profile",
-            description: "Chat Completions REST API"
+            description: "Chat Completions REST API",
+            fullName: "OpenAI Chat Completions v1 REST API (gpt-4o-mini)",
+            path: "/v1/chat/completions"
         ),
         Endpoint(
             name: "OpenAI Realtime",
             host: "api.openai.com",
             port: 443,
             icon: "waveform.badge.mic",
-            description: "Realtime Audio WebSocket"
+            description: "Realtime Audio WebSocket",
+            fullName: "OpenAI Realtime v1 WebSocket API (gpt-4o-realtime-preview)",
+            path: "/v1/realtime?model=gpt-4o-realtime-preview"
         )
     ]
 
@@ -489,12 +505,12 @@ struct NetworkDiagnosticsView: View {
     }
 
     private func endpointRow(_ endpoint: Endpoint) -> some View {
-        Button {
-            testEndpoint(endpoint)
-        } label: {
-            HStack(spacing: AppTheme.Spacing.m) {
-                let status = connectionStatuses[endpoint.id] ?? .idle
+        let isExpanded = expandedEndpoints.contains(endpoint.id)
+        let status = connectionStatuses[endpoint.id] ?? .idle
 
+        return VStack(spacing: 0) {
+            // Main row
+            HStack(spacing: AppTheme.Spacing.m) {
                 ZStack {
                     Circle()
                         .fill(status.color.opacity(0.15))
@@ -532,12 +548,84 @@ struct NetworkDiagnosticsView: View {
                         .font(.caption2)
                         .foregroundStyle(status.color)
                 }
+
+                // Expand chevron
+                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
             .padding(AppTheme.Spacing.m)
-            .background(Color(.secondarySystemBackground))
-            .cornerRadius(10)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                testEndpoint(endpoint)
+            }
+            .onLongPressGesture {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    if isExpanded {
+                        expandedEndpoints.remove(endpoint.id)
+                    } else {
+                        expandedEndpoints.insert(endpoint.id)
+                    }
+                }
+            }
+
+            // Expanded detail
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 6) {
+                    Divider()
+                        .padding(.horizontal, 4)
+
+                    HStack(spacing: 6) {
+                        Text("DNS")
+                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 32, alignment: .trailing)
+                        Text(endpoint.host)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.primary)
+                            .textSelection(.enabled)
+                    }
+
+                    HStack(spacing: 6) {
+                        Text("Port")
+                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 32, alignment: .trailing)
+                        Text("\(endpoint.port)")
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.primary)
+                    }
+
+                    HStack(alignment: .top, spacing: 6) {
+                        Text("Path")
+                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 32, alignment: .trailing)
+                        Text(endpoint.path)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.primary)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    HStack(alignment: .top, spacing: 6) {
+                        Text("API")
+                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 32, alignment: .trailing)
+                        Text(endpoint.fullName)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.horizontal, AppTheme.Spacing.m)
+                .padding(.bottom, AppTheme.Spacing.s)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
-        .buttonStyle(ScaleButtonStyle())
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(10)
     }
 
     // MARK: - Test All Button

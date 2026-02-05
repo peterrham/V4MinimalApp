@@ -13,14 +13,14 @@ struct DebugView: View {
     @State private var tidyResult: String?
 
     @StateObject private var googleSignInManager = GoogleSignInManager(clientID: "748381179204-hp1qqcpa5jr929nj0hs6sou0sb6df60a.apps.googleusercontent.com")
-    
+
     var body: some View {
         ScrollView {
         Card {
             VStack(spacing: 12) {
 
                 // Guided Recording - motion-coached video capture
-                NavigationLink(destination: GuidedRecordingView()) {
+                NavigationLink(value: SettingsPage.guidedRecording) {
                     HStack(spacing: 12) {
                         ZStack {
                             Circle()
@@ -54,7 +54,7 @@ struct DebugView: View {
                 .buttonStyle(.plain)
 
                 // Debug Options - Tap tests, toggles
-                NavigationLink(destination: DebugOptionsView()) {
+                NavigationLink(value: SettingsPage.debugOptions) {
                     HStack(spacing: 12) {
                         ZStack {
                             Circle()
@@ -88,7 +88,7 @@ struct DebugView: View {
                 .buttonStyle(.plain)
 
                 // Pipeline Debug - Compare detection approaches
-                NavigationLink(destination: PipelineDebugView()) {
+                NavigationLink(value: SettingsPage.pipelineDebug) {
                     HStack(spacing: 12) {
                         ZStack {
                             Circle()
@@ -122,7 +122,7 @@ struct DebugView: View {
                 .buttonStyle(.plain)
 
                 // Audio Recognition - Old speech recognition screen
-                NavigationLink(destination: ContentView()) {
+                NavigationLink(value: SettingsPage.audioRecognition) {
                     HStack(spacing: 12) {
                         ZStack {
                             Circle()
@@ -156,7 +156,7 @@ struct DebugView: View {
                 .buttonStyle(.plain)
 
                 // OpenAI Chat - Talk to GPT
-                NavigationLink(destination: OpenAIChatView()) {
+                NavigationLink(value: SettingsPage.openAIChat) {
                     HStack(spacing: 12) {
                         ZStack {
                             Circle()
@@ -190,7 +190,7 @@ struct DebugView: View {
                 .buttonStyle(.plain)
 
                 // OpenAI Realtime - Voice conversation with GPT-4o
-                NavigationLink(destination: OpenAIRealtimeView()) {
+                NavigationLink(value: SettingsPage.openAIRealtime) {
                     HStack(spacing: 12) {
                         ZStack {
                             Circle()
@@ -224,7 +224,7 @@ struct DebugView: View {
                 .buttonStyle(.plain)
 
                 // Network Diagnostics - Featured Entry
-                NavigationLink(destination: NetworkDiagnosticsView()) {
+                NavigationLink(value: SettingsPage.networkDiagnostics) {
                     HStack(spacing: 12) {
                         ZStack {
                             Circle()
@@ -241,6 +241,40 @@ struct DebugView: View {
                                 .fontWeight(.medium)
                                 .foregroundStyle(.primary)
                             Text("Test connectivity to debug server")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(12)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
+                // Audio Diagnostics - Test microphone
+                NavigationLink(value: SettingsPage.audioDiagnostics) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.pink.opacity(0.15))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "mic.badge.xmark")
+                                .font(.system(size: 20))
+                                .foregroundStyle(.pink)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Audio Diagnostics")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
+                            Text("Test microphone and permissions")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -298,7 +332,7 @@ struct DebugView: View {
                 Button("Print To Log") {
                     appBootLog.debugWithContext("printing to log")
                 }.buttonStyle(UnifiedButtonStyle())
-                
+
                 Button("Force Refresh Token") {
                     googleSignInManager.refreshAccessToken(reason: "debug-force-button") { result in
                         switch result {
@@ -310,7 +344,7 @@ struct DebugView: View {
                     }
                 }
                 .buttonStyle(UnifiedButtonStyle())
-                
+
                 Button("Enable 30s Proactive Refresh (Test Mode)") {
                     googleSignInManager.enableFixedRefreshInterval(seconds: 30)
                 }
@@ -320,12 +354,12 @@ struct DebugView: View {
                     googleSignInManager.disableFixedRefreshInterval()
                 }
                 .buttonStyle(UnifiedButtonStyle())
-                              
-                NavigationLink(destination: GoogleSignInView()) {
+
+                NavigationLink(value: SettingsPage.googleSignIn) {
                     Text("GoogleSignInView")
                         .unifiedNavLabel()
                 }
-                
+
                 Button("Copy sqlite") {
                     isShowingShareSheet = true
                 }
@@ -335,30 +369,30 @@ struct DebugView: View {
                     // Present the share sheet
                     ShareSheet(activityItems: [sqlLitePathURL])
                 }
-                 
+
                 // NavigationLink(destination: GoogleAuthenticatorView()) {
                 // NavigationLink(destination: GoogleSheetWriterView()) {
-                NavigationLink(destination: GoogleAuthenticateViaSafariView()) {
+                NavigationLink(value: SettingsPage.googleAuthSafari) {
                     Text("Write Google Sheet")
                         .unifiedNavLabel()
                 }
-                NavigationLink(destination: DeleteAllRecognizedTextView()) {
+                NavigationLink(value: SettingsPage.deleteAllText) {
                     Text("DeleteAllRecognizedTextView")
                         .unifiedNavLabel()
                 }
-                NavigationLink(destination: ExportToCSVView()) {
+                NavigationLink(value: SettingsPage.debugExportCSV) {
                     Text("ExportToCSVView")
                         .unifiedNavLabel()
                 }
-                NavigationLink(destination: TextFileSharerView()) {
+                NavigationLink(value: SettingsPage.textFileSharer) {
                     Text("TextFileSharerView")
                         .unifiedNavLabel()
                 }
-                NavigationLink(destination: TextFileCreatorView()) {
+                NavigationLink(value: SettingsPage.textFileCreator) {
                     Text("TextFileCreatorView")
                         .unifiedNavLabel()
                 }
-                NavigationLink(destination: SecondView()) {
+                NavigationLink(value: SettingsPage.secondView) {
                     Text("Go to Second Page")
                         .unifiedNavLabel()
                 }
@@ -371,4 +405,3 @@ struct DebugView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 }
-

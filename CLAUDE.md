@@ -188,6 +188,27 @@ Add a third "Bug" option for experimental UI features:
 - App display name → Added `CFBundleDisplayName = "Home Inventory"` to Info.plist
 - App icon AssetCatalogSimulatorAgent crash → Bypassed asset catalog icon processing entirely (set `ASSETCATALOG_COMPILER_APPICON_NAME = ""`); pre-rendered icon PNGs placed directly in bundle via `CFBundleIcons` in Info.plist
 - **ItemCardCompact kills all touch events when used outside a multi-column grid** → The image uses `.aspectRatio(contentMode: .fill)` + `.frame(height: 120)`. `.fill` renders the image larger than the frame; `.clipShape()` only clips visually, NOT the hit-testing area. In a 2-column `LazyVGrid`, the narrow column width limits overflow. Standalone or in a single-column grid (full screen width), the overflow is massive and blocks ALL ScrollView touches. **Rule: always use `ItemCardCompact` inside a multi-column `LazyVGrid` — never standalone.** Attempts to fix with `.clipped()`, `Color.clear.overlay()`, or wrapping in `Button` all failed. The grid column constraint is the only reliable fix.
+- **Navigation path persistence crash** → `SwiftUI.AnyNavigationPath.Error.comparisonTypeMismatch` when persisting NavigationStack path to UserDefaults via `@AppStorage`. Fix: Don't persist navigation paths; always start with empty `@State private var path: [Page] = []`.
+- **Audio Recognition crash on navigation** → Multiple causes: (1) `@StateObject` creates objects during view struct creation, not onAppear; (2) `AVAudioEngine()` as stored property conflicts with CameraManager's audio session; (3) `@Environment(\.managedObjectContext)` missing from environment. Fix: Use `@State` with optional + lazy init in onAppear; use `lazy var` for audio objects.
+
+## Initialization Anti-Patterns (MUST AVOID)
+
+These patterns cause crashes. See `InitializationDiagnostics.swift` for automated checks.
+
+| Anti-Pattern | Crash Type | Safe Pattern |
+|--------------|------------|--------------|
+| `private var audioEngine = AVAudioEngine()` | Audio session conflict | `private lazy var audioEngine: AVAudioEngine = { AVAudioEngine() }()` |
+| `@StateObject private var heavy = HeavyObject()` | Init during view creation | `@State private var heavy: HeavyObject?` + create in `.onAppear` |
+| `@AppStorage("navPath")` for NavigationStack | `comparisonTypeMismatch` | `@State private var path: [Page] = []` (never persist) |
+| `@Environment(\.managedObjectContext)` without provider | Missing environment | Ensure `.environment()` modifier in parent view |
+| `@FetchRequest` without context | Core Data crash | Provide context or use manual fetch in onAppear |
+| Audio access before permission | Audio engine crash | Check `recordPermission == .granted` first |
+| **Nested NavigationStack** inside navigationDestination | SwiftUI internal crash | Use `ScrollView` or plain `VStack` for destination views |
+
+### Files with Safe Patterns
+- `AudioSafetyCheck.swift` - Run diagnostics before creating audio objects
+- `InitializationDiagnostics.swift` - Automated anti-pattern detection
+- `ContentView.swift` - Example of lazy audio initialization
 
 ## Current State (as of Jan 30, 2026 session)
 
@@ -449,3 +470,140 @@ V4MinimalApp/
 3. **Add a test target** and write tests for pure logic first (models, parsing, deduplication)
 4. **Split InventoryStore** into focused components with protocols
 5. **Organize files into folders** matching architectural layers
+
+---
+
+## Testing Strategy (Incremental)
+
+### Current State: 0% Automated Test Coverage
+
+- Zero test targets, zero test files, zero mocks
+- `ENABLE_TESTABILITY = YES` is already set in build settings (good)
+- Manual test checklist exists: `TESTING_CHECKLIST.md` (50+ scenarios)
+- Debug UI exists: `DebugOptionsView.swift` (tap tests, toggles) — but no assertions or pass/fail
+
+### Three-Layer Testing Plan
+
+The plan has three layers that build on each other. Each phase is independently valuable — no phase requires completing the previous one, but they compound.
+
+#### Phase 1: In-App Diagnostic Test Runner
+
+Add a `DiagnosticsView` accessible from Debug. This runs real tests inside the app itself, on the device, against actual data and services. Results are displayed as a scrollable pass/fail list and logged to NetworkLogger.
+
+**Why in-app first (not XCTest):**
+- No Xcode project changes needed (no test target, no CI)
+- Tests run on the real device with real permissions, real camera, real network
+- Visible to the user — builds confidence that things work
+- Can test things XCTest cannot: audio session, camera pipeline, network reachability, file I/O in the real sandbox
+
+**Test categories to implement in DiagnosticsView:**
+
+| Category | Tests | What They Validate |
+|----------|-------|--------------------|
+| **Data Integrity** | Parse sample Gemini JSON, verify DetectedObject output; parse comma-separated fallback; reject refusal text; roundtrip InventoryItem encode/decode | Parsing logic, Codable conformance |
+| **Category Mapping** | `ItemCategory.from("sofa")` == `.furniture`; all known aliases map correctly; unknown strings → `.other` | Alias table completeness |
+| **Name Normalization** | Whitespace trimming, case folding, empty string handling | `InventoryStore.normalizedName()` |
+| **Deduplication** | Exact match, substring containment, cross-containment, no false positives | `findExistingItemByName()` |
+| **Inventory I/O** | Write items to JSON, read back, verify equality; handle empty file; handle corrupted file | Persistence layer |
+| **Photo Storage** | Save JPEG to `inventory_photos/`, read back, verify non-zero size | File I/O in sandbox |
+| **API Connectivity** | TCP connect to each endpoint (reuse NetworkDiagnosticsView logic) | Network reachability |
+| **API Key Config** | Gemini key loaded and non-empty; OpenAI key loaded and non-empty | Config/secrets setup |
+| **Audio Session** | Can configure `.playAndRecord`; mic permission granted | AVAudioSession |
+| **Camera Access** | Authorization status is `.authorized` | AVCaptureDevice |
+
+**DiagnosticsView UI:**
+- "Run All Tests" button at top
+- Scrollable list of test results: green checkmark / red X, test name, duration in ms, failure detail
+- Summary bar: "18/20 passed (2 failed)" with overall green/red
+- Each test row expandable to show failure message
+- "Copy Results" button → copies plain text summary to clipboard
+- All results also logged via `NetworkLogger.shared` with category `"Diagnostics"`
+
+**Implementation approach:**
+- `DiagnosticTest` struct: name, category, async closure returning `DiagnosticResult` (pass/fail + message + duration)
+- `DiagnosticsRunner` class: `@MainActor ObservableObject`, holds `[DiagnosticTest]`, runs them sequentially, publishes `[DiagnosticResult]`
+- `DiagnosticsView`: observes `DiagnosticsRunner`, renders results
+- Tests are pure Swift closures — no XCTest dependency, no test target needed
+
+#### Phase 2: XCTest Unit Tests (Xcode Test Target)
+
+Once Phase 1 tests prove the logic is correct, extract the same test logic into a proper XCTest target for CI and coverage metrics.
+
+**Step 2a: Create test target**
+- Add `V4MinimalAppTests` target to `V4MinimalApp.xcodeproj`
+- Configure `@testable import V4MinimalApp`
+
+**Step 2b: Pure function tests (no refactoring needed)**
+
+These functions are already testable as-is — they take inputs and return outputs with no side effects:
+
+| Function | File | Line | Test Count (est.) |
+|----------|------|------|-------------------|
+| `ItemCategory.from(rawString:)` | Models.swift | 81 | 15-20 |
+| `InventoryStore.normalizedName()` | InventoryStore.swift | 595 | 5-8 |
+| `parseDetectionsWithBoxes(from:timestamp:)` | GeminiStreamingVisionService.swift | 327 | 10-15 |
+| `parseDetections(from:timestamp:)` | GeminiStreamingVisionService.swift | 372 | 5-8 |
+| `isValidDetectionName()` | GeminiStreamingVisionService.swift | — | 8-10 |
+| `InventoryItem` Codable roundtrip | Models.swift | — | 5-8 |
+| `findDuplicateGroups()` | InventoryStore.swift | 658 | 5-8 |
+
+**Estimated: ~50-70 unit tests from pure functions alone, no architecture changes.**
+
+**Step 2c: Extract and test (light refactoring)**
+
+Move dedup logic out of `InventoryStore` into a pure function:
+```swift
+static func findMatch(name: String, in items: [InventoryItem], homeId: String) -> Int?
+```
+This makes `findExistingItemByName()` testable without instantiating `InventoryStore`.
+
+Do the same for Gemini response validation (refusal detection, JSON fragment detection).
+
+**Step 2d: Coverage metrics**
+
+- `xcodebuild test -enableCodeCoverage YES` generates `.xcresult` bundles
+- `xcrun xccov view --report Build/Logs/Test/*.xcresult` prints coverage percentages
+- Target: start measuring after Step 2b, track file-level coverage
+- Focus coverage on the files that matter: `Models.swift`, `InventoryStore.swift`, `GeminiStreamingVisionService.swift`, `GeminiVisionService.swift`
+- Don't chase 100% — aim for 80%+ on parsing/persistence logic, 0% on views is fine initially
+
+#### Phase 3: UI Testing
+
+**Step 3a: XCUITest target**
+
+Add `V4MinimalAppUITests` target. Write smoke tests for critical flows:
+
+| Flow | Steps | Assertion |
+|------|-------|-----------|
+| App launch | Launch → Home tab visible | Home title exists |
+| Tab navigation | Tap each tab | Each tab's title appears |
+| Inventory list | Navigate to Inventory | List or empty state shown |
+| Settings | Navigate to Settings | Settings title visible |
+| Scan tab | Navigate to Scan | Camera permission prompt or camera view |
+
+**Step 3b: Snapshot testing (optional)**
+
+Use `swift-snapshot-testing` library to capture and compare UI screenshots. Catches unintended layout regressions.
+
+**Step 3c: Accessibility audit**
+
+`XCUIApplication().performAccessibilityAudit()` (iOS 17+) — automatically checks for missing labels, contrast issues, hit target sizes. Free regression testing.
+
+### Testing Rules for Claude Code
+
+When making changes to this codebase:
+
+1. **If you add a pure function** (parsing, validation, normalization, mapping), add a corresponding in-app diagnostic test in `DiagnosticsRunner` and note it for future XCTest extraction
+2. **If you modify parsing logic** (Gemini response parsing, JSON handling, category mapping), verify the existing diagnostic tests still pass conceptually — do not break the test contract
+3. **If you add a new service**, define a protocol for it from the start (`protocol FooServiceProtocol`) even if there's only one implementation — this makes future mocking possible
+4. **If you extract a ViewModel**, write XCTest unit tests for the ViewModel's business logic methods
+5. **Never put testable logic directly in a SwiftUI View body** — if logic needs testing, it belongs in a function, ViewModel, or service
+
+### Priority Order
+
+1. **Phase 1** — `DiagnosticsView` + `DiagnosticsRunner` (in-app, immediate value, no project changes)
+2. **Phase 2b** — XCTest target + pure function tests (~50 tests)
+3. **Phase 2d** — Coverage metrics (measure what you have)
+4. **Phase 3a** — XCUITest smoke tests (5-10 tests)
+5. **Phase 2c** — Light refactoring for testability (extract pure functions from InventoryStore)
+6. **Phase 3b/3c** — Snapshot and accessibility testing (stretch goals)

@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @State private var selectedTab = 0
+    @AppStorage("lastSelectedTab") private var selectedTab = 0
     @ObservedObject private var settings = DetectionSettings.shared
 
     private let tabs: [(icon: String, label: String)] = [

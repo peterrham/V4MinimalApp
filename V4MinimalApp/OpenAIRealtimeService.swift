@@ -99,15 +99,15 @@ class OpenAIRealtimeService: ObservableObject {
     private var webSocketTask: URLSessionWebSocketTask?
     private var urlSession: URLSession?
 
-    // Audio recording (own mic)
-    private var audioEngine: AVAudioEngine?
+    // Recording engine (created on-demand in startRecording, torn down in stopRecording)
+    private var recordingEngine: AVAudioEngine?
     private var audioConverter: AVAudioConverter?
     private var converterInputFormat: AVAudioFormat?
 
-    // Audio playback
+    // Playback engine (created when first audio delta arrives, torn down on next recording)
     private var playbackEngine: AVAudioEngine?
     private var playerNode: AVAudioPlayerNode?
-    private let playbackFormat = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 24000, channels: 1, interleaved: true)!
+    private var playbackFormat: AVAudioFormat?  // Set to mixer's native rate
 
     // MARK: - Initialization
 
@@ -171,6 +171,20 @@ class OpenAIRealtimeService: ObservableObject {
         addLog(.system, "session.connecting", "Opening WebSocket...")
         NetworkLogger.shared.info("WebSocket connecting...", category: "OpenAI-Realtime")
 
+        // Configure audio session FIRST, before creating any AVAudioEngine
+        let audioSession = AVAudioSession.sharedInstance()
+        do {
+            try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+            try audioSession.setActive(true)
+            try audioSession.overrideOutputAudioPort(.speaker)
+            NetworkLogger.shared.info("Audio session configured: playAndRecord, speaker output, volume=\(audioSession.outputVolume)", category: "OpenAI-Realtime")
+        } catch {
+            self.error = "Audio session setup failed: \(error.localizedDescription)"
+            connectionState = .error
+            NetworkLogger.shared.error("Audio session setup failed: \(error.localizedDescription)", category: "OpenAI-Realtime")
+            return
+        }
+
         guard let url = URL(string: "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview") else {
             error = "Invalid WebSocket URL"
             connectionState = .error
@@ -188,7 +202,6 @@ class OpenAIRealtimeService: ObservableObject {
         self.webSocketTask = task
         task.resume()
 
-        setupPlaybackEngine()
         receiveMessages()
 
         // Connection timeout
@@ -209,7 +222,7 @@ class OpenAIRealtimeService: ObservableObject {
         webSocketTask = nil
 
         stopRecording()
-        stopPlaybackEngine()
+        teardownPlaybackEngine()
 
         connectionState = .disconnected
         addLog(.system, "session.disconnected", "WebSocket closed")
@@ -223,12 +236,14 @@ class OpenAIRealtimeService: ObservableObject {
             "type": "session.update",
             "session": [
                 "modalities": ["text", "audio"],
-                "instructions": "You are a helpful assistant. Respond concisely.",
-                "voice": "alloy",
+                "instructions": "You are a helpful, enthusiastic assistant. Speak quickly and energetically with natural inflection, like a lively conversation. Keep responses short and punchy. Always respond in English.",
+                "voice": "shimmer",
+                "temperature": 1,
                 "input_audio_format": "pcm16",
                 "output_audio_format": "pcm16",
                 "input_audio_transcription": [
-                    "model": "whisper-1"
+                    "model": "whisper-1",
+                    "language": "en"
                 ],
                 "turn_detection": NSNull()
             ]
@@ -243,37 +258,47 @@ class OpenAIRealtimeService: ObservableObject {
         guard connectionState == .connected else { return }
         guard !isRecording else { return }
 
+        NetworkLogger.shared.info("startRecording: begin", category: "OpenAI-Realtime")
+
+        // Tear down any playback engine from previous response
+        teardownPlaybackEngine()
+
+        // Create a fresh engine for this recording session
         let engine = AVAudioEngine()
-        self.audioEngine = engine
+        self.recordingEngine = engine
 
         let inputNode = engine.inputNode
-        let inputFormat = inputNode.outputFormat(forBus: 0)
+        let inputFormat = inputNode.inputFormat(forBus: 0)
 
-        // Configure audio session
-        let session = AVAudioSession.sharedInstance()
-        do {
-            try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetooth])
-            try session.setActive(true)
-        } catch {
-            NetworkLogger.shared.error("Failed to configure audio session: \(error.localizedDescription)", category: "OpenAI-Realtime")
+        NetworkLogger.shared.info("startRecording: inputFormat = \(inputFormat.sampleRate)Hz, \(inputFormat.channelCount)ch", category: "OpenAI-Realtime")
+
+        // Validate input format
+        guard inputFormat.sampleRate > 0, inputFormat.channelCount > 0 else {
+            NetworkLogger.shared.error("startRecording: invalid input format, aborting", category: "OpenAI-Realtime")
             return
         }
 
-        // Setup converter: device native -> PCM16 24kHz mono
-        let outputFormat = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 24000, channels: 1, interleaved: true)!
-        if audioConverter == nil || converterInputFormat != inputFormat {
-            audioConverter = AVAudioConverter(from: inputFormat, to: outputFormat)
-            audioConverter?.sampleRateConverterQuality = AVAudioQuality.max.rawValue
-            converterInputFormat = inputFormat
+        // Use a known-safe format for the tap: mono Float32 at the device sample rate
+        guard let tapFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: inputFormat.sampleRate, channels: 1, interleaved: false) else {
+            NetworkLogger.shared.error("startRecording: failed to create tap format", category: "OpenAI-Realtime")
+            return
         }
 
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { [weak self] buffer, _ in
+        // Setup converter: tap format -> PCM16 24kHz mono
+        let outputFormat = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 24000, channels: 1, interleaved: true)!
+        audioConverter = AVAudioConverter(from: tapFormat, to: outputFormat)
+        audioConverter?.sampleRateConverterQuality = AVAudioQuality.max.rawValue
+        converterInputFormat = tapFormat
+
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: tapFormat) { [weak self] buffer, _ in
+            // Copy buffer data immediately on the audio thread
+            guard let copy = Self.copyBuffer(buffer) else { return }
             Task { @MainActor [weak self] in
-                self?.processAndSendAudioBuffer(buffer)
+                self?.processAndSendAudioBuffer(copy)
             }
         }
 
-        engine.prepare()
+        // Start engine with the tap installed
         do {
             try engine.start()
             isRecording = true
@@ -286,17 +311,21 @@ class OpenAIRealtimeService: ObservableObject {
             timingMetrics.totalResponseDeltasReceived = 0
             timingMetrics.totalResponseBytesReceived = 0
             addLog(.system, "recording.started", "Microphone active")
-            NetworkLogger.shared.info("Recording started", category: "OpenAI-Realtime")
+            NetworkLogger.shared.info("Recording started (tap format: \(tapFormat.sampleRate)Hz)", category: "OpenAI-Realtime")
         } catch {
-            NetworkLogger.shared.error("Failed to start audio engine: \(error.localizedDescription)", category: "OpenAI-Realtime")
+            NetworkLogger.shared.error("Failed to restart engine with tap: \(error.localizedDescription)", category: "OpenAI-Realtime")
         }
     }
 
     func stopRecording() {
         guard isRecording else { return }
-        audioEngine?.inputNode.removeTap(onBus: 0)
-        audioEngine?.stop()
-        audioEngine = nil
+
+        if let engine = recordingEngine {
+            engine.inputNode.removeTap(onBus: 0)
+            engine.stop()
+        }
+        recordingEngine = nil
+
         isRecording = false
         addLog(.system, "recording.stopped", "Microphone off")
         NetworkLogger.shared.info("Recording stopped", category: "OpenAI-Realtime")
@@ -545,49 +574,131 @@ class OpenAIRealtimeService: ObservableObject {
         }
     }
 
-    // MARK: - Audio Playback
+    // MARK: - Playback Engine
 
-    private func setupPlaybackEngine() {
+    /// Start a dedicated playback engine on first audio delta
+    private func ensurePlaybackEngine() {
+        guard playbackEngine == nil else { return }
+
+        // Re-apply speaker override
+        try? AVAudioSession.sharedInstance().overrideOutputAudioPort(.speaker)
+
         let engine = AVAudioEngine()
         let player = AVAudioPlayerNode()
         engine.attach(player)
-        engine.connect(player, to: engine.mainMixerNode, format: playbackFormat)
+
+        // Connect player at mixer's native rate to avoid AVAudioEngine resampling issues
+        let mixerRate = engine.mainMixerNode.outputFormat(forBus: 0).sampleRate
+        let fmt = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: mixerRate, channels: 1, interleaved: false)!
+        engine.connect(player, to: engine.mainMixerNode, format: fmt)
+        self.playbackFormat = fmt
 
         do {
             try engine.start()
             player.play()
             self.playbackEngine = engine
             self.playerNode = player
-            NetworkLogger.shared.debug("Playback engine started", category: "OpenAI-Realtime")
+            NetworkLogger.shared.info("Playback engine started (Float32 \(mixerRate)Hz, streaming)", category: "OpenAI-Realtime")
         } catch {
             NetworkLogger.shared.error("Failed to start playback engine: \(error.localizedDescription)", category: "OpenAI-Realtime")
         }
     }
 
-    private func stopPlaybackEngine() {
+    private func teardownPlaybackEngine() {
         playerNode?.stop()
         playbackEngine?.stop()
         playerNode = nil
         playbackEngine = nil
+        playbackFormat = nil
     }
 
     private func playAudioDelta(_ base64String: String) {
-        guard let data = Data(base64Encoded: base64String) else { return }
-        guard let player = playerNode, player.engine != nil else { return }
-
-        let frameCount = AVAudioFrameCount(data.count / 2) // 2 bytes per Int16 sample
-        guard frameCount > 0,
-              let buffer = AVAudioPCMBuffer(pcmFormat: playbackFormat, frameCapacity: frameCount) else {
+        guard let data = Data(base64Encoded: base64String) else {
+            NetworkLogger.shared.error("playAudioDelta: base64 decode failed", category: "OpenAI-Realtime")
             return
         }
 
-        buffer.frameLength = frameCount
+        // Create playback engine on first delta (recording engine is already torn down)
+        ensurePlaybackEngine()
+
+        guard let player = playerNode, let engine = playbackEngine, engine.isRunning,
+              let outFmt = playbackFormat else {
+            NetworkLogger.shared.error("playAudioDelta: playback engine not ready", category: "OpenAI-Realtime")
+            return
+        }
+
+        if !player.isPlaying {
+            player.play()
+        }
+
+        // Decode PCM16 Int16 samples from 24kHz source
+        let srcFrameCount = data.count / 2
+        guard srcFrameCount > 0 else { return }
+
+        // Upsample 24kHz → output rate (e.g. 44100Hz) via linear interpolation
+        let outputRate = outFmt.sampleRate
+        let srcRate = 24000.0
+        let ratio = outputRate / srcRate
+        let dstFrameCount = Int(Double(srcFrameCount) * ratio)
+
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: outFmt, frameCapacity: AVAudioFrameCount(dstFrameCount)) else { return }
+        buffer.frameLength = AVAudioFrameCount(dstFrameCount)
+
+        guard let floatData = buffer.floatChannelData else { return }
+        let gain: Float = 1.8  // Boost to match ChatGPT native app loudness
         data.withUnsafeBytes { rawBuf in
-            guard let src = rawBuf.baseAddress else { return }
-            memcpy(buffer.int16ChannelData![0], src, data.count)
+            let int16Ptr = rawBuf.bindMemory(to: Int16.self)
+            let srcCount = int16Ptr.count
+            for i in 0..<dstFrameCount {
+                let srcPos = Double(i) / ratio
+                let idx = Int(srcPos)
+                let frac = Float(srcPos - Double(idx))
+                let s0 = Float(int16Ptr[min(idx, srcCount - 1)]) / 32768.0
+                let s1 = Float(int16Ptr[min(idx + 1, srcCount - 1)]) / 32768.0
+                let sample = (s0 + (s1 - s0) * frac) * gain
+                floatData[0][i] = min(max(sample, -1.0), 1.0) // Clamp to prevent clipping
+            }
         }
 
         player.scheduleBuffer(buffer)
+
+        let deltaNum = timingMetrics.totalResponseDeltasReceived
+        if deltaNum <= 3 || deltaNum % 50 == 0 {
+            NetworkLogger.shared.debug("playAudioDelta #\(deltaNum): \(srcFrameCount)→\(dstFrameCount) frames (\(srcRate)→\(outputRate)Hz)", category: "OpenAI-Realtime")
+        }
+    }
+
+    // MARK: - Buffer Copy (audio thread safe)
+
+    /// Copies an AVAudioPCMBuffer so it can be safely sent across threads.
+    /// The original buffer from an audio tap is reused by the system.
+    private static func copyBuffer(_ buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
+        guard let copy = AVAudioPCMBuffer(pcmFormat: buffer.format, frameCapacity: buffer.frameLength) else {
+            return nil
+        }
+        copy.frameLength = buffer.frameLength
+
+        let channelCount = Int(buffer.format.channelCount)
+        if let srcFloat = buffer.floatChannelData, let dstFloat = copy.floatChannelData {
+            let bytes = Int(buffer.frameLength) * MemoryLayout<Float>.size
+            for ch in 0..<channelCount {
+                memcpy(dstFloat[ch], srcFloat[ch], bytes)
+            }
+        } else if let srcInt16 = buffer.int16ChannelData, let dstInt16 = copy.int16ChannelData {
+            let bytes = Int(buffer.frameLength) * MemoryLayout<Int16>.size
+            for ch in 0..<channelCount {
+                memcpy(dstInt16[ch], srcInt16[ch], bytes)
+            }
+        } else if let srcInt32 = buffer.int32ChannelData, let dstInt32 = copy.int32ChannelData {
+            let bytes = Int(buffer.frameLength) * MemoryLayout<Int32>.size
+            for ch in 0..<channelCount {
+                memcpy(dstInt32[ch], srcInt32[ch], bytes)
+            }
+        } else {
+            return nil
+        }
+
+        return copy
     }
 
     // MARK: - Event Log
