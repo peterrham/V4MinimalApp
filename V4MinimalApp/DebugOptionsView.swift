@@ -13,6 +13,7 @@ import os.log
 struct DebugOptionsView: View {
     @AppStorage("showHomeDebugBar") private var showHomeDebugBar = false
     @AppStorage("verboseTapLogging") private var verboseTapLogging = false
+    @AppStorage("showScreenNameOverlay") private var showScreenNameOverlay = false
     @AppStorage("homeUIConfig") private var homeUIConfig = "clean"
 
     @State private var plainButtonTaps = 0
@@ -61,6 +62,15 @@ struct DebugOptionsView: View {
                             title: "Verbose Tap Logging",
                             subtitle: "os_log for every button tap event",
                             isOn: $verboseTapLogging
+                        )
+
+                        Divider()
+
+                        toggleRow(
+                            icon: "textformat.size",
+                            title: "Show Screen Names",
+                            subtitle: "Display view name below status bar",
+                            isOn: $showScreenNameOverlay
                         )
                     }
                 }

@@ -267,6 +267,7 @@ struct ItemDetailView: View {
         .fullScreenCover(item: $selectedPhoto) { photo in
             ZoomablePhotoView(photoFilename: photo, item: item)
         }
+        .debugScreenName("ItemDetailView")
     }
 }
 

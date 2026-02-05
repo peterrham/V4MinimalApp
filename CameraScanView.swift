@@ -501,11 +501,11 @@ struct CameraScanView: View {
                             .symbolEffect(.pulse, isActive: cameraManager.isRecording)
                             .disabled(!cameraManager.isSessionRunning)
                         }
-                        .padding(.horizontal, AppTheme.Spacing.xl)
+                        .padding(.horizontal, 40)  // Increased from xl (24) to prevent edge clipping
                         .padding(.bottom, AppTheme.Spacing.xl)
                     }
                 }
-                
+
                 // Instructions overlay - auto-dismisses after 4 seconds, or tap to dismiss
                 if detectedItems.isEmpty && !cameraManager.isRecording && showInstructionOverlay {
                     VStack {
@@ -797,6 +797,7 @@ struct CameraScanView: View {
             } message: {
                 Text(analysisError ?? "")
             }
+            .debugScreenName("CameraScanView")
         }
     }
 

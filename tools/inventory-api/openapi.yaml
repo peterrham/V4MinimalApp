@@ -1,0 +1,243 @@
+openapi: 3.1.0
+info:
+  title: Home Inventory API
+  description: Access your home inventory data - search items, get room summaries, check what you own.
+  version: 1.0.0
+
+servers:
+  - url: https://your-deployed-api.vercel.app
+    description: Production server (replace with your actual URL)
+
+paths:
+  /inventory/summary:
+    get:
+      operationId: getInventorySummary
+      summary: Get inventory summary
+      description: Returns total item count, total value, counts by room and category, and recently added items. Use this first to understand what's in the inventory.
+      responses:
+        '200':
+          description: Inventory summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalItems:
+                    type: integer
+                    description: Total number of items in inventory
+                  totalValue:
+                    type: number
+                    description: Sum of all item values
+                  roomCounts:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                    description: Item counts per room
+                  categoryCounts:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                    description: Item counts per category
+                  recentItems:
+                    type: array
+                    items:
+                      type: string
+                    description: Names of 10 most recently added items
+
+  /inventory/items:
+    get:
+      operationId: getInventoryItems
+      summary: Get inventory items
+      description: Returns inventory items, optionally filtered by room or category.
+      parameters:
+        - name: room
+          in: query
+          description: Filter by room name (e.g., "Kitchen", "Living Room")
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: Filter by category (e.g., "Electronics", "Furniture")
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum items to return (default 50, max 200)
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of inventory items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InventoryItem'
+                  count:
+                    type: integer
+                  filters:
+                    type: object
+
+  /inventory/search:
+    get:
+      operationId: searchInventory
+      summary: Search inventory
+      description: Search for items by name, brand, notes, color, or any text field. Use this when the user asks about specific items.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query (searches name, brand, notes, color)
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum results (default 20)
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InventoryItem'
+                  count:
+                    type: integer
+                  query:
+                    type: string
+
+  /inventory/rooms:
+    get:
+      operationId: getRooms
+      summary: List all rooms
+      description: Get all rooms with their item counts and total values.
+      responses:
+        '200':
+          description: List of rooms
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rooms:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        itemCount:
+                          type: integer
+                        totalValue:
+                          type: number
+
+  /inventory/room/{room_name}:
+    get:
+      operationId: getRoomItems
+      summary: Get items in a room
+      description: Get all items in a specific room with total value.
+      parameters:
+        - name: room_name
+          in: path
+          required: true
+          description: Name of the room
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Room contents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  room:
+                    type: string
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InventoryItem'
+                  count:
+                    type: integer
+                  totalValue:
+                    type: number
+
+  /inventory/categories:
+    get:
+      operationId: getCategories
+      summary: List all categories
+      description: Get all item categories with counts.
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        count:
+                          type: integer
+
+components:
+  schemas:
+    InventoryItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          description: Item name
+        category:
+          type: string
+          description: Category (Electronics, Furniture, Kitchen, etc.)
+        room:
+          type: string
+          description: Room where item is located
+        brand:
+          type: string
+        color:
+          type: string
+        size:
+          type: string
+        quantity:
+          type: integer
+        estimatedValue:
+          type: number
+          description: Estimated current value in dollars
+        purchasePrice:
+          type: number
+          description: Original purchase price
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    apiKey:
+      type: http
+      scheme: bearer
+      description: API key for authentication
+
+security:
+  - apiKey: []

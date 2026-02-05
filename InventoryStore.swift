@@ -453,10 +453,31 @@ class InventoryStore: ObservableObject {
 
         let category = ItemCategory.from(rawString: result.category ?? "")
 
+        // Convert bounding box to CodableBoundingBox
+        var codableBox: CodableBoundingBox?
+        if let bb = result.boundingBox {
+            codableBox = CodableBoundingBox(
+                yMin: Double(bb.yMin),
+                xMin: Double(bb.xMin),
+                yMax: Double(bb.yMax),
+                xMax: Double(bb.xMax)
+            )
+        }
+
         if let existingIndex = findExistingItemByName( result.name) {
             mergePhotoResult(result, category: category, into: &items[existingIndex])
             let filename = savePhotoWithUniqueId(photoData, for: items[existingIndex].id)
             items[existingIndex].photos.append(filename)
+            // Update bounding box if we have one and item doesn't
+            if let box = codableBox, items[existingIndex].boundingBox == nil {
+                items[existingIndex].boundingBox = box
+            }
+            // Save source frame if item doesn't have one
+            if items[existingIndex].sourceFramePhoto == nil,
+               let frameData = photo.jpegData(compressionQuality: 0.7) {
+                let frameFilename = savePhotoWithUniqueId(frameData, for: items[existingIndex].id)
+                items[existingIndex].sourceFramePhoto = frameFilename
+            }
         } else {
             var item = InventoryItem(
                 name: result.name,
@@ -467,10 +488,17 @@ class InventoryStore: ObservableObject {
                 itemColor: result.color,
                 size: result.size,
                 notes: result.description ?? "",
+                boundingBox: codableBox,
                 homeId: currentHomeId
             )
+            // Save cropped photo as main thumbnail
             let filename = savePhotoWithUniqueId(photoData, for: item.id)
             item.photos.append(filename)
+            // Save full source frame for context viewing
+            if codableBox != nil, let frameData = photo.jpegData(compressionQuality: 0.7) {
+                let frameFilename = savePhotoWithUniqueId(frameData, for: item.id)
+                item.sourceFramePhoto = frameFilename
+            }
             items.append(item)
         }
         saveItems()
@@ -479,16 +507,61 @@ class InventoryStore: ObservableObject {
 
     /// Add multiple items from multi-item photo analysis (batch save)
     func addItemsFromPhotoAnalysis(_ results: [PhotoIdentificationResult], photo: UIImage) {
+        // Pre-save the source frame once for all items (use a shared ID)
+        let sharedFrameId = UUID()
+        var sourceFrameFilename: String?
+        if let frameData = photo.jpegData(compressionQuality: 0.7) {
+            sourceFrameFilename = savePhotoWithUniqueId(frameData, for: sharedFrameId)
+        }
+
+        // Build sibling info from all results with bounding boxes
+        let siblings: [FrameSibling] = results.compactMap { r in
+            guard let bb = r.boundingBox else { return nil }
+            return FrameSibling(
+                name: r.name,
+                boundingBox: CodableBoundingBox(
+                    yMin: Double(bb.yMin),
+                    xMin: Double(bb.xMin),
+                    yMax: Double(bb.yMax),
+                    xMax: Double(bb.xMax)
+                )
+            )
+        }
+
         for result in results {
             let photoData = preparePhotoData(from: photo, boundingBox: result.boundingBox)
             guard let photoData else { continue }
 
             let category = ItemCategory.from(rawString: result.category ?? "")
 
+            // Convert bounding box
+            var codableBox: CodableBoundingBox?
+            if let bb = result.boundingBox {
+                codableBox = CodableBoundingBox(
+                    yMin: Double(bb.yMin),
+                    xMin: Double(bb.xMin),
+                    yMax: Double(bb.yMax),
+                    xMax: Double(bb.xMax)
+                )
+            }
+
+            // Get siblings for this item (exclude self)
+            let itemSiblings = siblings.filter { $0.name != result.name }
+
             if let existingIndex = findExistingItemByName( result.name) {
                 mergePhotoResult(result, category: category, into: &items[existingIndex])
                 let filename = savePhotoWithUniqueId(photoData, for: items[existingIndex].id)
                 items[existingIndex].photos.append(filename)
+                // Update fields if not already set
+                if let box = codableBox, items[existingIndex].boundingBox == nil {
+                    items[existingIndex].boundingBox = box
+                }
+                if items[existingIndex].sourceFramePhoto == nil {
+                    items[existingIndex].sourceFramePhoto = sourceFrameFilename
+                }
+                if items[existingIndex].frameSiblings == nil && !itemSiblings.isEmpty {
+                    items[existingIndex].frameSiblings = itemSiblings
+                }
             } else {
                 var item = InventoryItem(
                     name: result.name,
@@ -499,10 +572,13 @@ class InventoryStore: ObservableObject {
                     itemColor: result.color,
                     size: result.size,
                     notes: result.description ?? "",
+                    boundingBox: codableBox,
+                    frameSiblings: itemSiblings.isEmpty ? nil : itemSiblings,
                     homeId: currentHomeId
                 )
                 let filename = savePhotoWithUniqueId(photoData, for: item.id)
                 item.photos.append(filename)
+                item.sourceFramePhoto = sourceFrameFilename
                 items.append(item)
             }
         }

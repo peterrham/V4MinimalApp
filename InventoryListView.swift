@@ -352,6 +352,7 @@ struct InventoryListView: View {
             } message: {
                 Text("This will permanently delete all \(inventoryStore.currentHomeItems.count) items in \"\(inventoryStore.currentHome?.name ?? "this home")\" and their photos.")
             }
+            .debugScreenName("InventoryListView")
     }
 }
 

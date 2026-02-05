@@ -126,9 +126,10 @@ struct LiveObjectDetectionView: View {
             .onChange(of: visionService.detectedObjects.count) { _, _ in
                 addNewDetectionsToSession()
             }
+            .debugScreenName("LiveObjectDetectionView")
         }
     }
-    
+
     // MARK: - UI Components
     
     private var topControls: some View {

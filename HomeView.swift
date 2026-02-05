@@ -330,6 +330,7 @@ struct HomeView: View {
                 CameraScanView()
             }
         }
+        .debugScreenName("HomeView")
         .onAppear {
             haptic.prepare()
         }

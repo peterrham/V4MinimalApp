@@ -82,6 +82,7 @@ struct QueuedPhotoScanView: View {
                 sessionStore: sessionStore
             )
         }
+        .debugScreenName("QueuedPhotoScanView")
     }
 
     // MARK: - Camera Preview

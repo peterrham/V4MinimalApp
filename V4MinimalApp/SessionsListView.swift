@@ -76,6 +76,7 @@ struct SessionsListView: View {
         } message: {
             Text("This will permanently delete all \(sortedSessions.count) sessions and their photos. This cannot be undone.")
         }
+        .debugScreenName("SessionsListView")
     }
 
     private func deleteAllSessions() {

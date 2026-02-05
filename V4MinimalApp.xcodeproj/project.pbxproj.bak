@@ -1,0 +1,744 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		BE3DD6962F261350002C9706 /* PHOTOS_LIBRARY_SETUP.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6952F261350002C9706 /* PHOTOS_LIBRARY_SETUP.md */; };
+		BE3DD6982F26135B002C9706 /* VideoSavedToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3DD6972F26135B002C9706 /* VideoSavedToast.swift */; };
+		BE3DD69A2F26138D002C9706 /* VIDEO_AUTO_SAVE_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6992F26138D002C9706 /* VIDEO_AUTO_SAVE_SUMMARY.md */; };
+		BE3DD69C2F26139B002C9706 /* QUICK_START_AUTO_SAVE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD69B2F26139B002C9706 /* QUICK_START_AUTO_SAVE.md */; };
+		BE3DD69E2F2613C9002C9706 /* VIDEO_FLOW_DIAGRAM.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD69D2F2613C9002C9706 /* VIDEO_FLOW_DIAGRAM.md */; };
+		BE3DD6A02F2616BE002C9706 /* VideoUploadQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3DD69F2F2616BE002C9706 /* VideoUploadQueue.swift */; };
+		BE3DD6A22F2616DF002C9706 /* VideoUploadQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3DD6A12F2616DF002C9706 /* VideoUploadQueueView.swift */; };
+		BE3DD6A42F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6A32F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md */; };
+		BE3DD6A62F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6A52F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md */; };
+		BE3DD6A82F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6A72F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md */; };
+		BE3DD6AA2F261B12002C9706 /* GeminiVisionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3DD6A92F261B12002C9706 /* GeminiVisionService.swift */; };
+		BE3DD6AE2F261B4D002C9706 /* Config.plist.template in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6AD2F261B4D002C9706 /* Config.plist.template */; };
+		BE3DD6B02F261B51002C9706 /* GITIGNORE_ADDITIONS.txt in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6AF2F261B51002C9706 /* GITIGNORE_ADDITIONS.txt */; };
+		BE3DD6B22F261B76002C9706 /* GEMINI_IMPLEMENTATION.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6B12F261B76002C9706 /* GEMINI_IMPLEMENTATION.md */; };
+		BE3DD6B42F261B95002C9706 /* GeminiPromptExamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3DD6B32F261B95002C9706 /* GeminiPromptExamples.swift */; };
+		BE3DD6B62F261BCA002C9706 /* GEMINI_README.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6B52F261BCA002C9706 /* GEMINI_README.md */; };
+		BE3DD6B82F261C0C002C9706 /* QUICK_START 2.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6B72F261C0C002C9706 /* QUICK_START 2.md */; };
+		BE3DD6BA2F261C4D002C9706 /* IMPLEMENTATION_COMPLETE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6B92F261C4D002C9706 /* IMPLEMENTATION_COMPLETE.md */; };
+		BE3DD6BC2F261C80002C9706 /* UI_LOCATIONS.md in Resources */ = {isa = PBXBuildFile; fileRef = BE3DD6BB2F261C80002C9706 /* UI_LOCATIONS.md */; };
+		BE54A2872CDDA6D200C6B639 /* NewMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEEFAA42CD2C9120072891A /* NewMain.swift */; };
+		BE54A2892CDDA81E00C6B639 /* SpeechRecognitionExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */; };
+		BE54A28B2CDDA81E00C6B639 /* SpeechRecognition.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */; };
+		BE54A28D2CDDA81E00C6B639 /* ExportToCSVView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE6204AD2CD97169001823E5 /* ExportToCSVView.swift */; };
+		BE7A78DB2CE273C500045E0F /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = BE7A78DA2CE273C500045E0F /* GoogleSignIn */; };
+		BE7A78DD2CE273C500045E0F /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = BE7A78DC2CE273C500045E0F /* GoogleSignInSwift */; };
+		BE8B14B22CE3DBBA00714DB0 /* AppendExtention.swift in Resources */ = {isa = PBXBuildFile; fileRef = BE8B14B12CE3DBBA00714DB0 /* AppendExtention.swift */; };
+		BE8B15682CE5273700714DB0 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8B15672CE5273700714DB0 /* AppState.swift */; };
+		BE8B156A2CE5979200714DB0 /* MainApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8B15692CE5979200714DB0 /* MainApp.swift */; };
+		BE8C22932F25D55600E32ACB /* Styles.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22922F25D55600E32ACB /* Styles.swift */; };
+		BE8C22952F25D76800E32ACB /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22942F25D76800E32ACB /* Theme.swift */; };
+		BE8C22972F25D76900E32ACB /* SecondaryButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22962F25D76900E32ACB /* SecondaryButtonStyle.swift */; };
+		BE8C22992F25E78500E32ACB /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22982F25E78500E32ACB /* MainTabView.swift */; };
+		BE8C229B2F25E80400E32ACB /* ImplementationPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C229A2F25E80400E32ACB /* ImplementationPlan.swift */; };
+		BE8C229D2F25E82400E32ACB /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C229C2F25E82400E32ACB /* Models.swift */; };
+		BE8C229F2F25E84B00E32ACB /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C229E2F25E84B00E32ACB /* HomeView.swift */; };
+		BE8C22A12F25E87200E32ACB /* InventoryListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22A02F25E87200E32ACB /* InventoryListView.swift */; };
+		BE8C22A32F25E89600E32ACB /* ItemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22A22F25E89600E32ACB /* ItemDetailView.swift */; };
+		BE8C22A52F25E8B400E32ACB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22A42F25E8B400E32ACB /* SettingsView.swift */; };
+		BE8C22A72F25E8D100E32ACB /* CameraScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22A62F25E8D100E32ACB /* CameraScanView.swift */; };
+		BE8C22A92F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22A82F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md */; };
+		BE8C22AB2F25E99500E32ACB /* QUICK_START_GUIDE.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22AA2F25E99500E32ACB /* QUICK_START_GUIDE.swift */; };
+		BE8C22AD2F25F18300E32ACB /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22AC2F25F18300E32ACB /* CameraManager.swift */; };
+		BE8C22AF2F25F18900E32ACB /* CameraPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22AE2F25F18900E32ACB /* CameraPreview.swift */; };
+		BE8C22B12F25F1C600E32ACB /* CAMERA_SETUP.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22B02F25F1C600E32ACB /* CAMERA_SETUP.md */; };
+		BE8C22B52F25F6A300E32ACB /* GoogleDriveService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22B42F25F6A300E32ACB /* GoogleDriveService.swift */; };
+		BE8C22B72F25F6F700E32ACB /* GOOGLE_DRIVE_SETUP.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22B62F25F6F700E32ACB /* GOOGLE_DRIVE_SETUP.md */; };
+		BE8C22B92F25F70E00E32ACB /* GoogleDriveService+Authentication.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22B82F25F70E00E32ACB /* GoogleDriveService+Authentication.swift */; };
+		BE8C22BB2F25F73100E32ACB /* VIDEO_RECORDING_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22BA2F25F73100E32ACB /* VIDEO_RECORDING_SUMMARY.md */; };
+		BE8C22BD2F25F74E00E32ACB /* LocalVideoStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22BC2F25F74E00E32ACB /* LocalVideoStorage.swift */; };
+		BE8C22BF2F25F79600E32ACB /* QUICK_START.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22BE2F25F79600E32ACB /* QUICK_START.md */; };
+		BE8C22C12F2604F400E32ACB /* StreamingVideoUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22C02F2604F400E32ACB /* StreamingVideoUploader.swift */; };
+		BE8C22C32F26050A00E32ACB /* CameraManager+StreamingUpload.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE8C22C22F26050A00E32ACB /* CameraManager+StreamingUpload.swift */; };
+		BE8C22C52F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22C42F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md */; };
+		BE8C22C72F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22C62F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md */; };
+		BE8C22C92F2605BD00E32ACB /* UI_GUIDE_STREAMING.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22C82F2605BD00E32ACB /* UI_GUIDE_STREAMING.md */; };
+		BE8C22CB2F260B3E00E32ACB /* STREAMING_UPLOAD_USAGE_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22CA2F260B3E00E32ACB /* STREAMING_UPLOAD_USAGE_GUIDE.md */; };
+		BE8C22CD2F260B6E00E32ACB /* STREAMING_IMPROVEMENTS_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22CC2F260B6E00E32ACB /* STREAMING_IMPROVEMENTS_SUMMARY.md */; };
+		BE8C22CF2F260B9300E32ACB /* STREAMING_QUICK_REFERENCE.md in Resources */ = {isa = PBXBuildFile; fileRef = BE8C22CE2F260B9300E32ACB /* STREAMING_QUICK_REFERENCE.md */; };
+		BEAF835B2F1F2EBB001837B7 /* GoogleDriveUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */; };
+		BECA718B2F22FE0C00FB1F99 /* EarlyInit.c in Sources */ = {isa = PBXBuildFile; fileRef = BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */; };
+		BECE6BD12F260EA5009344A1 /* GoogleCloudStorageUploader.swift in Sources */ = {isa = PBXBuildFile; fileRef = BECE6BD02F260EA5009344A1 /* GoogleCloudStorageUploader.swift */; };
+		BEE210CA2F26AEEB006F2740 /* GEMINI_TROUBLESHOOTING.md in Resources */ = {isa = PBXBuildFile; fileRef = BEE210C92F26AEEB006F2740 /* GEMINI_TROUBLESHOOTING.md */; };
+		BEE210CC2F26AF2A006F2740 /* DEBUGGING_IMPROVEMENTS.md in Resources */ = {isa = PBXBuildFile; fileRef = BEE210CB2F26AF2A006F2740 /* DEBUGGING_IMPROVEMENTS.md */; };
+		BEEB319D2F26251F002E0842 /* GeminiStreamingVisionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEB319C2F26251F002E0842 /* GeminiStreamingVisionService.swift */; };
+		BEEB319F2F26252A002E0842 /* CameraManager+FrameCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEB319E2F26252A002E0842 /* CameraManager+FrameCapture.swift */; };
+		BEEB31A12F262541002E0842 /* StreamingObjectDetectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEB31A02F262541002E0842 /* StreamingObjectDetectionView.swift */; };
+		BEEB31A32F262561002E0842 /* LiveObjectDetectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEB31A22F262561002E0842 /* LiveObjectDetectionView.swift */; };
+		BEEB31A52F262598002E0842 /* LIVE_DETECTION_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31A42F262598002E0842 /* LIVE_DETECTION_GUIDE.md */; };
+		BEEB31A72F2625AC002E0842 /* INTEGRATION_EXAMPLE.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEEB31A62F2625AC002E0842 /* INTEGRATION_EXAMPLE.swift */; };
+		BEEB31A92F2625EB002E0842 /* LIVE_DETECTION_ARCHITECTURE.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31A82F2625EB002E0842 /* LIVE_DETECTION_ARCHITECTURE.md */; };
+		BEEB31AB2F26260F002E0842 /* QUICK_START_LIVE_DETECTION.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31AA2F26260F002E0842 /* QUICK_START_LIVE_DETECTION.md */; };
+		BEEB31AD2F262643002E0842 /* PHOTO_VS_LIVE_COMPARISON.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31AC2F262643002E0842 /* PHOTO_VS_LIVE_COMPARISON.md */; };
+		BEEB31AF2F26268F002E0842 /* IMPLEMENTATION_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31AE2F26268F002E0842 /* IMPLEMENTATION_SUMMARY.md */; };
+		BEEB31B12F2626CE002E0842 /* TESTING_CHECKLIST.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31B02F2626CE002E0842 /* TESTING_CHECKLIST.md */; };
+		BEEB31B32F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md in Resources */ = {isa = PBXBuildFile; fileRef = BEEB31B22F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md */; };
+		BENET0022F280002002C9706 /* NetworkLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = BENET0012F280001002C9706 /* NetworkLogger.swift */; };
+		BEINVS022F290002002C9706 /* InventoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEINVS012F290001002C9706 /* InventoryStore.swift */; };
+		BEBGES022F2A0002002C9706 /* BackgroundEnrichmentService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEBGES012F2A0001002C9706 /* BackgroundEnrichmentService.swift */; };
+		BECSVW022F2A0002002C9706 /* CameraSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BECSVW012F2A0001002C9706 /* CameraSettingsView.swift */; };
+		BEDSET022F2A0002002C9706 /* DetectionSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEDSET012F2A0001002C9706 /* DetectionSettings.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		BE3DD6952F261350002C9706 /* PHOTOS_LIBRARY_SETUP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PHOTOS_LIBRARY_SETUP.md; sourceTree = "<group>"; };
+		BE3DD6972F26135B002C9706 /* VideoSavedToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoSavedToast.swift; sourceTree = "<group>"; };
+		BE3DD6992F26138D002C9706 /* VIDEO_AUTO_SAVE_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = VIDEO_AUTO_SAVE_SUMMARY.md; sourceTree = "<group>"; };
+		BE3DD69B2F26139B002C9706 /* QUICK_START_AUTO_SAVE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QUICK_START_AUTO_SAVE.md; sourceTree = "<group>"; };
+		BE3DD69D2F2613C9002C9706 /* VIDEO_FLOW_DIAGRAM.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = VIDEO_FLOW_DIAGRAM.md; sourceTree = "<group>"; };
+		BE3DD69F2F2616BE002C9706 /* VideoUploadQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoUploadQueue.swift; sourceTree = "<group>"; };
+		BE3DD6A12F2616DF002C9706 /* VideoUploadQueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoUploadQueueView.swift; sourceTree = "<group>"; };
+		BE3DD6A32F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = VIDEO_UPLOAD_QUEUE_GUIDE.md; sourceTree = "<group>"; };
+		BE3DD6A52F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = VIDEO_UPLOAD_QUEUE_SUMMARY.md; sourceTree = "<group>"; };
+		BE3DD6A72F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = UPLOAD_QUEUE_ARCHITECTURE.md; sourceTree = "<group>"; };
+		BE3DD6A92F261B12002C9706 /* GeminiVisionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiVisionService.swift; sourceTree = "<group>"; };
+		BE3DD6AD2F261B4D002C9706 /* Config.plist.template */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Config.plist.template; sourceTree = "<group>"; };
+		BE3DD6AF2F261B51002C9706 /* GITIGNORE_ADDITIONS.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = GITIGNORE_ADDITIONS.txt; sourceTree = "<group>"; };
+		BE3DD6B12F261B76002C9706 /* GEMINI_IMPLEMENTATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GEMINI_IMPLEMENTATION.md; sourceTree = "<group>"; };
+		BE3DD6B32F261B95002C9706 /* GeminiPromptExamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiPromptExamples.swift; sourceTree = "<group>"; };
+		BE3DD6B52F261BCA002C9706 /* GEMINI_README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GEMINI_README.md; sourceTree = "<group>"; };
+		BE3DD6B72F261C0C002C9706 /* QUICK_START 2.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "QUICK_START 2.md"; sourceTree = "<group>"; };
+		BE3DD6B92F261C4D002C9706 /* IMPLEMENTATION_COMPLETE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = IMPLEMENTATION_COMPLETE.md; sourceTree = "<group>"; };
+		BE3DD6BB2F261C80002C9706 /* UI_LOCATIONS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = UI_LOCATIONS.md; sourceTree = "<group>"; };
+		BE54A2172CDDA27F00C6B639 /* V4MinimalApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = V4MinimalApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BE6204AD2CD97169001823E5 /* ExportToCSVView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportToCSVView.swift; sourceTree = "<group>"; };
+		BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognitionExtension.swift; sourceTree = "<group>"; };
+		BE8B14B12CE3DBBA00714DB0 /* AppendExtention.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppendExtention.swift; sourceTree = "<group>"; };
+		BE8B15672CE5273700714DB0 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		BE8B15692CE5979200714DB0 /* MainApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainApp.swift; sourceTree = "<group>"; };
+		BE8C22922F25D55600E32ACB /* Styles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Styles.swift; sourceTree = "<group>"; };
+		BE8C22942F25D76800E32ACB /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		BE8C22962F25D76900E32ACB /* SecondaryButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryButtonStyle.swift; sourceTree = "<group>"; };
+		BE8C22982F25E78500E32ACB /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		BE8C229A2F25E80400E32ACB /* ImplementationPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImplementationPlan.swift; sourceTree = "<group>"; };
+		BE8C229C2F25E82400E32ACB /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		BE8C229E2F25E84B00E32ACB /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		BE8C22A02F25E87200E32ACB /* InventoryListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryListView.swift; sourceTree = "<group>"; };
+		BE8C22A22F25E89600E32ACB /* ItemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailView.swift; sourceTree = "<group>"; };
+		BE8C22A42F25E8B400E32ACB /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		BE8C22A62F25E8D100E32ACB /* CameraScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraScanView.swift; sourceTree = "<group>"; };
+		BE8C22A82F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = IMPLEMENTATION_ROADMAP.md; sourceTree = "<group>"; };
+		BE8C22AA2F25E99500E32ACB /* QUICK_START_GUIDE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QUICK_START_GUIDE.swift; sourceTree = "<group>"; };
+		BE8C22AC2F25F18300E32ACB /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
+		BE8C22AE2F25F18900E32ACB /* CameraPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreview.swift; sourceTree = "<group>"; };
+		BE8C22B02F25F1C600E32ACB /* CAMERA_SETUP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CAMERA_SETUP.md; sourceTree = "<group>"; };
+		BE8C22B42F25F6A300E32ACB /* GoogleDriveService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveService.swift; sourceTree = "<group>"; };
+		BE8C22B62F25F6F700E32ACB /* GOOGLE_DRIVE_SETUP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GOOGLE_DRIVE_SETUP.md; sourceTree = "<group>"; };
+		BE8C22B82F25F70E00E32ACB /* GoogleDriveService+Authentication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GoogleDriveService+Authentication.swift"; sourceTree = "<group>"; };
+		BE8C22BA2F25F73100E32ACB /* VIDEO_RECORDING_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = VIDEO_RECORDING_SUMMARY.md; sourceTree = "<group>"; };
+		BE8C22BC2F25F74E00E32ACB /* LocalVideoStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalVideoStorage.swift; sourceTree = "<group>"; };
+		BE8C22BE2F25F79600E32ACB /* QUICK_START.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QUICK_START.md; sourceTree = "<group>"; };
+		BE8C22C02F2604F400E32ACB /* StreamingVideoUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingVideoUploader.swift; sourceTree = "<group>"; };
+		BE8C22C22F26050A00E32ACB /* CameraManager+StreamingUpload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraManager+StreamingUpload.swift"; sourceTree = "<group>"; };
+		BE8C22C42F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = STREAMING_UPLOAD_GUIDE.md; sourceTree = "<group>"; };
+		BE8C22C62F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = STREAMING_UPLOAD_SUMMARY.md; sourceTree = "<group>"; };
+		BE8C22C82F2605BD00E32ACB /* UI_GUIDE_STREAMING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = UI_GUIDE_STREAMING.md; sourceTree = "<group>"; };
+		BE8C22CA2F260B3E00E32ACB /* STREAMING_UPLOAD_USAGE_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = STREAMING_UPLOAD_USAGE_GUIDE.md; sourceTree = "<group>"; };
+		BE8C22CC2F260B6E00E32ACB /* STREAMING_IMPROVEMENTS_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = STREAMING_IMPROVEMENTS_SUMMARY.md; sourceTree = "<group>"; };
+		BE8C22CE2F260B9300E32ACB /* STREAMING_QUICK_REFERENCE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = STREAMING_QUICK_REFERENCE.md; sourceTree = "<group>"; };
+		BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognition.swift; sourceTree = "<group>"; };
+		BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveUploader.swift; sourceTree = "<group>"; };
+		BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = EarlyInit.c; sourceTree = "<group>"; };
+		BECE6BD02F260EA5009344A1 /* GoogleCloudStorageUploader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleCloudStorageUploader.swift; sourceTree = "<group>"; };
+		BEE210C92F26AEEB006F2740 /* GEMINI_TROUBLESHOOTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GEMINI_TROUBLESHOOTING.md; sourceTree = "<group>"; };
+		BEE210CB2F26AF2A006F2740 /* DEBUGGING_IMPROVEMENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DEBUGGING_IMPROVEMENTS.md; sourceTree = "<group>"; };
+		BEEB319C2F26251F002E0842 /* GeminiStreamingVisionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiStreamingVisionService.swift; sourceTree = "<group>"; };
+		BEEB319E2F26252A002E0842 /* CameraManager+FrameCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CameraManager+FrameCapture.swift"; sourceTree = "<group>"; };
+		BEEB31A02F262541002E0842 /* StreamingObjectDetectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingObjectDetectionView.swift; sourceTree = "<group>"; };
+		BEEB31A22F262561002E0842 /* LiveObjectDetectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveObjectDetectionView.swift; sourceTree = "<group>"; };
+		BEEB31A42F262598002E0842 /* LIVE_DETECTION_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LIVE_DETECTION_GUIDE.md; sourceTree = "<group>"; };
+		BEEB31A62F2625AC002E0842 /* INTEGRATION_EXAMPLE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = INTEGRATION_EXAMPLE.swift; sourceTree = "<group>"; };
+		BEEB31A82F2625EB002E0842 /* LIVE_DETECTION_ARCHITECTURE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LIVE_DETECTION_ARCHITECTURE.md; sourceTree = "<group>"; };
+		BEEB31AA2F26260F002E0842 /* QUICK_START_LIVE_DETECTION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QUICK_START_LIVE_DETECTION.md; sourceTree = "<group>"; };
+		BEEB31AC2F262643002E0842 /* PHOTO_VS_LIVE_COMPARISON.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PHOTO_VS_LIVE_COMPARISON.md; sourceTree = "<group>"; };
+		BEEB31AE2F26268F002E0842 /* IMPLEMENTATION_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = IMPLEMENTATION_SUMMARY.md; sourceTree = "<group>"; };
+		BEEB31B02F2626CE002E0842 /* TESTING_CHECKLIST.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TESTING_CHECKLIST.md; sourceTree = "<group>"; };
+		BEEB31B22F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SYSTEM_OVERVIEW_VISUAL.md; sourceTree = "<group>"; };
+		BEEEFAA42CD2C9120072891A /* NewMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewMain.swift; sourceTree = "<group>"; };
+		BEEEFAAA2CD2DC350072891A /* VoiceDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = VoiceDataModel.xcdatamodel; sourceTree = "<group>"; };
+		BENET0012F280001002C9706 /* NetworkLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkLogger.swift; sourceTree = "<group>"; };
+		BEINVS012F290001002C9706 /* InventoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryStore.swift; sourceTree = "<group>"; };
+		BESECR012F290010002C9706 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		BEBGES012F2A0001002C9706 /* BackgroundEnrichmentService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundEnrichmentService.swift; sourceTree = "<group>"; };
+		BECSVW012F2A0001002C9706 /* CameraSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSettingsView.swift; sourceTree = "<group>"; };
+		BEDSET012F2A0001002C9706 /* DetectionSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionSettings.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		BE54A2642CDDA2E700C6B639 /* Exceptions for "V4MinimalApp" folder in "V4MinimalApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				V4MinimalAppApp.swift,
+			);
+			target = BE54A2162CDDA27F00C6B639 /* V4MinimalApp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		BE54A2922CDDA81E00C6B639 /* Exceptions for "V4MinimalApp" folder in "Compile Sources" phase from "V4MinimalApp" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = BE54A2132CDDA27F00C6B639 /* Sources */;
+			membershipExceptions = (
+				Assets.xcassets,
+				"Preview Content/Preview Assets.xcassets",
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		BE54A2182CDDA27F00C6B639 /* V4MinimalApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				BE54A2642CDDA2E700C6B639 /* Exceptions for "V4MinimalApp" folder in "V4MinimalApp" target */,
+				BE54A2922CDDA81E00C6B639 /* Exceptions for "V4MinimalApp" folder in "Compile Sources" phase from "V4MinimalApp" target */,
+			);
+			path = V4MinimalApp;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BE54A2142CDDA27F00C6B639 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BE7A78DB2CE273C500045E0F /* GoogleSignIn in Frameworks */,
+				BE7A78DD2CE273C500045E0F /* GoogleSignInSwift in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		BE20F1102CDC2D17004F3007 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		BEEEFA862CD292BA0072891A = {
+			isa = PBXGroup;
+			children = (
+				BE8B15692CE5979200714DB0 /* MainApp.swift */,
+				BE8B15672CE5273700714DB0 /* AppState.swift */,
+				BE867F972CD578A3001FCABE /* SpeechRecognitionExtension.swift */,
+				BEAD2E302CD452C500AB0FBD /* SpeechRecognition.swift */,
+				BEEEFAA92CD2DC350072891A /* VoiceDataModel.xcdatamodeld */,
+				BEEEFAA42CD2C9120072891A /* NewMain.swift */,
+				BENET0012F280001002C9706 /* NetworkLogger.swift */,
+				BE6204AD2CD97169001823E5 /* ExportToCSVView.swift */,
+				BE54A2182CDDA27F00C6B639 /* V4MinimalApp */,
+				BE20F1102CDC2D17004F3007 /* Frameworks */,
+				BEEEFA902CD292BA0072891A /* Products */,
+				BE8B14B12CE3DBBA00714DB0 /* AppendExtention.swift */,
+				BEAF835A2F1F2EBB001837B7 /* GoogleDriveUploader.swift */,
+				BECA718A2F22FE0C00FB1F99 /* EarlyInit.c */,
+				BE8C22922F25D55600E32ACB /* Styles.swift */,
+				BE8C22942F25D76800E32ACB /* Theme.swift */,
+				BE8C22962F25D76900E32ACB /* SecondaryButtonStyle.swift */,
+				BE8C22982F25E78500E32ACB /* MainTabView.swift */,
+				BE8C229A2F25E80400E32ACB /* ImplementationPlan.swift */,
+				BE8C229C2F25E82400E32ACB /* Models.swift */,
+				BE8C229E2F25E84B00E32ACB /* HomeView.swift */,
+				BE8C22A02F25E87200E32ACB /* InventoryListView.swift */,
+				BE8C22A22F25E89600E32ACB /* ItemDetailView.swift */,
+				BE8C22A42F25E8B400E32ACB /* SettingsView.swift */,
+				BE8C22A62F25E8D100E32ACB /* CameraScanView.swift */,
+				BE8C22A82F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md */,
+				BE8C22AA2F25E99500E32ACB /* QUICK_START_GUIDE.swift */,
+				BE8C22AC2F25F18300E32ACB /* CameraManager.swift */,
+				BE8C22AE2F25F18900E32ACB /* CameraPreview.swift */,
+				BE8C22B02F25F1C600E32ACB /* CAMERA_SETUP.md */,
+				BE8C22B42F25F6A300E32ACB /* GoogleDriveService.swift */,
+				BE8C22B62F25F6F700E32ACB /* GOOGLE_DRIVE_SETUP.md */,
+				BE8C22B82F25F70E00E32ACB /* GoogleDriveService+Authentication.swift */,
+				BE8C22BA2F25F73100E32ACB /* VIDEO_RECORDING_SUMMARY.md */,
+				BE8C22BC2F25F74E00E32ACB /* LocalVideoStorage.swift */,
+				BE8C22BE2F25F79600E32ACB /* QUICK_START.md */,
+				BE8C22C02F2604F400E32ACB /* StreamingVideoUploader.swift */,
+				BE8C22C22F26050A00E32ACB /* CameraManager+StreamingUpload.swift */,
+				BE8C22C42F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md */,
+				BE8C22C62F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md */,
+				BE8C22C82F2605BD00E32ACB /* UI_GUIDE_STREAMING.md */,
+				BE8C22CA2F260B3E00E32ACB /* STREAMING_UPLOAD_USAGE_GUIDE.md */,
+				BE8C22CC2F260B6E00E32ACB /* STREAMING_IMPROVEMENTS_SUMMARY.md */,
+				BE8C22CE2F260B9300E32ACB /* STREAMING_QUICK_REFERENCE.md */,
+				BECE6BD02F260EA5009344A1 /* GoogleCloudStorageUploader.swift */,
+				BE3DD6952F261350002C9706 /* PHOTOS_LIBRARY_SETUP.md */,
+				BE3DD6972F26135B002C9706 /* VideoSavedToast.swift */,
+				BE3DD6992F26138D002C9706 /* VIDEO_AUTO_SAVE_SUMMARY.md */,
+				BE3DD69B2F26139B002C9706 /* QUICK_START_AUTO_SAVE.md */,
+				BE3DD69D2F2613C9002C9706 /* VIDEO_FLOW_DIAGRAM.md */,
+				BE3DD69F2F2616BE002C9706 /* VideoUploadQueue.swift */,
+				BE3DD6A12F2616DF002C9706 /* VideoUploadQueueView.swift */,
+				BE3DD6A32F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md */,
+				BE3DD6A52F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md */,
+				BE3DD6A72F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md */,
+				BE3DD6A92F261B12002C9706 /* GeminiVisionService.swift */,
+				BE3DD6AD2F261B4D002C9706 /* Config.plist.template */,
+				BE3DD6AF2F261B51002C9706 /* GITIGNORE_ADDITIONS.txt */,
+				BE3DD6B12F261B76002C9706 /* GEMINI_IMPLEMENTATION.md */,
+				BE3DD6B32F261B95002C9706 /* GeminiPromptExamples.swift */,
+				BE3DD6B52F261BCA002C9706 /* GEMINI_README.md */,
+				BE3DD6B72F261C0C002C9706 /* QUICK_START 2.md */,
+				BE3DD6B92F261C4D002C9706 /* IMPLEMENTATION_COMPLETE.md */,
+				BE3DD6BB2F261C80002C9706 /* UI_LOCATIONS.md */,
+				BEEB319C2F26251F002E0842 /* GeminiStreamingVisionService.swift */,
+				BEEB319E2F26252A002E0842 /* CameraManager+FrameCapture.swift */,
+				BEEB31A02F262541002E0842 /* StreamingObjectDetectionView.swift */,
+				BEEB31A22F262561002E0842 /* LiveObjectDetectionView.swift */,
+				BEEB31A42F262598002E0842 /* LIVE_DETECTION_GUIDE.md */,
+				BEEB31A62F2625AC002E0842 /* INTEGRATION_EXAMPLE.swift */,
+				BEEB31A82F2625EB002E0842 /* LIVE_DETECTION_ARCHITECTURE.md */,
+				BEEB31AA2F26260F002E0842 /* QUICK_START_LIVE_DETECTION.md */,
+				BEEB31AC2F262643002E0842 /* PHOTO_VS_LIVE_COMPARISON.md */,
+				BEEB31AE2F26268F002E0842 /* IMPLEMENTATION_SUMMARY.md */,
+				BEEB31B02F2626CE002E0842 /* TESTING_CHECKLIST.md */,
+				BEEB31B22F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md */,
+				BEE210C92F26AEEB006F2740 /* GEMINI_TROUBLESHOOTING.md */,
+				BEE210CB2F26AF2A006F2740 /* DEBUGGING_IMPROVEMENTS.md */,
+				BEINVS012F290001002C9706 /* InventoryStore.swift */,
+				BESECR012F290010002C9706 /* Secrets.xcconfig */,
+				BEBGES012F2A0001002C9706 /* BackgroundEnrichmentService.swift */,
+				BECSVW012F2A0001002C9706 /* CameraSettingsView.swift */,
+				BEDSET012F2A0001002C9706 /* DetectionSettings.swift */,
+			);
+			sourceTree = "<group>";
+		};
+		BEEEFA902CD292BA0072891A /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BE54A2172CDDA27F00C6B639 /* V4MinimalApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BE54A2162CDDA27F00C6B639 /* V4MinimalApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BE54A2272CDDA28100C6B639 /* Build configuration list for PBXNativeTarget "V4MinimalApp" */;
+			buildPhases = (
+				BE54A2132CDDA27F00C6B639 /* Sources */,
+				BE54A2142CDDA27F00C6B639 /* Frameworks */,
+				BE54A2152CDDA27F00C6B639 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				BE54A2182CDDA27F00C6B639 /* V4MinimalApp */,
+			);
+			name = V4MinimalApp;
+			packageProductDependencies = (
+				BE7A78DA2CE273C500045E0F /* GoogleSignIn */,
+				BE7A78DC2CE273C500045E0F /* GoogleSignInSwift */,
+			);
+			productName = V4MinimalApp;
+			productReference = BE54A2172CDDA27F00C6B639 /* V4MinimalApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BEEEFA872CD292BA0072891A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1610;
+				LastUpgradeCheck = 1610;
+				TargetAttributes = {
+					BE54A2162CDDA27F00C6B639 = {
+						CreatedOnToolsVersion = 16.1;
+					};
+				};
+			};
+			buildConfigurationList = BEEEFA8A2CD292BA0072891A /* Build configuration list for PBXProject "V4MinimalApp" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = BEEEFA862CD292BA0072891A;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				BE7A78D92CE273C500045E0F /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = BEEEFA902CD292BA0072891A /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BE54A2162CDDA27F00C6B639 /* V4MinimalApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		BE54A2152CDDA27F00C6B639 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BE8C22CB2F260B3E00E32ACB /* STREAMING_UPLOAD_USAGE_GUIDE.md in Resources */,
+				BE8C22C52F26056500E32ACB /* STREAMING_UPLOAD_GUIDE.md in Resources */,
+				BE3DD6A82F261797002C9706 /* UPLOAD_QUEUE_ARCHITECTURE.md in Resources */,
+				BE8C22BB2F25F73100E32ACB /* VIDEO_RECORDING_SUMMARY.md in Resources */,
+				BEEB31B32F262733002E0842 /* SYSTEM_OVERVIEW_VISUAL.md in Resources */,
+				BE3DD69C2F26139B002C9706 /* QUICK_START_AUTO_SAVE.md in Resources */,
+				BE8C22CF2F260B9300E32ACB /* STREAMING_QUICK_REFERENCE.md in Resources */,
+				BE8C22B72F25F6F700E32ACB /* GOOGLE_DRIVE_SETUP.md in Resources */,
+				BE3DD69A2F26138D002C9706 /* VIDEO_AUTO_SAVE_SUMMARY.md in Resources */,
+				BE8C22A92F25E91900E32ACB /* IMPLEMENTATION_ROADMAP.md in Resources */,
+				BE3DD6B62F261BCA002C9706 /* GEMINI_README.md in Resources */,
+				BEEB31B12F2626CE002E0842 /* TESTING_CHECKLIST.md in Resources */,
+				BE8C22C72F26058D00E32ACB /* STREAMING_UPLOAD_SUMMARY.md in Resources */,
+				BEEB31AB2F26260F002E0842 /* QUICK_START_LIVE_DETECTION.md in Resources */,
+				BE3DD6962F261350002C9706 /* PHOTOS_LIBRARY_SETUP.md in Resources */,
+				BEEB31A92F2625EB002E0842 /* LIVE_DETECTION_ARCHITECTURE.md in Resources */,
+				BEEB31A52F262598002E0842 /* LIVE_DETECTION_GUIDE.md in Resources */,
+				BE3DD6BA2F261C4D002C9706 /* IMPLEMENTATION_COMPLETE.md in Resources */,
+				BE8C22CD2F260B6E00E32ACB /* STREAMING_IMPROVEMENTS_SUMMARY.md in Resources */,
+				BE8C22B12F25F1C600E32ACB /* CAMERA_SETUP.md in Resources */,
+				BE3DD6A62F26175B002C9706 /* VIDEO_UPLOAD_QUEUE_SUMMARY.md in Resources */,
+				BE3DD6AE2F261B4D002C9706 /* Config.plist.template in Resources */,
+				BE3DD6BC2F261C80002C9706 /* UI_LOCATIONS.md in Resources */,
+				BE3DD6A42F261742002C9706 /* VIDEO_UPLOAD_QUEUE_GUIDE.md in Resources */,
+				BEEB31AD2F262643002E0842 /* PHOTO_VS_LIVE_COMPARISON.md in Resources */,
+				BE3DD6B22F261B76002C9706 /* GEMINI_IMPLEMENTATION.md in Resources */,
+				BE3DD69E2F2613C9002C9706 /* VIDEO_FLOW_DIAGRAM.md in Resources */,
+				BE3DD6B82F261C0C002C9706 /* QUICK_START 2.md in Resources */,
+				BEEB31AF2F26268F002E0842 /* IMPLEMENTATION_SUMMARY.md in Resources */,
+				BE3DD6B02F261B51002C9706 /* GITIGNORE_ADDITIONS.txt in Resources */,
+				BE8C22C92F2605BD00E32ACB /* UI_GUIDE_STREAMING.md in Resources */,
+				BEE210CA2F26AEEB006F2740 /* GEMINI_TROUBLESHOOTING.md in Resources */,
+				BEE210CC2F26AF2A006F2740 /* DEBUGGING_IMPROVEMENTS.md in Resources */,
+				BE8B14B22CE3DBBA00714DB0 /* AppendExtention.swift in Resources */,
+				BE8C22BF2F25F79600E32ACB /* QUICK_START.md in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BE54A2132CDDA27F00C6B639 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BE8C22932F25D55600E32ACB /* Styles.swift in Sources */,
+				BE8C22AB2F25E99500E32ACB /* QUICK_START_GUIDE.swift in Sources */,
+				BE8C22B92F25F70E00E32ACB /* GoogleDriveService+Authentication.swift in Sources */,
+				BE8C22C32F26050A00E32ACB /* CameraManager+StreamingUpload.swift in Sources */,
+				BE8C22B52F25F6A300E32ACB /* GoogleDriveService.swift in Sources */,
+				BE3DD6982F26135B002C9706 /* VideoSavedToast.swift in Sources */,
+				BE3DD6AA2F261B12002C9706 /* GeminiVisionService.swift in Sources */,
+				BE3DD6B42F261B95002C9706 /* GeminiPromptExamples.swift in Sources */,
+				BE8C22A72F25E8D100E32ACB /* CameraScanView.swift in Sources */,
+				BE8C22BD2F25F74E00E32ACB /* LocalVideoStorage.swift in Sources */,
+				BE8C22A32F25E89600E32ACB /* ItemDetailView.swift in Sources */,
+				BECE6BD12F260EA5009344A1 /* GoogleCloudStorageUploader.swift in Sources */,
+				BE3DD6A02F2616BE002C9706 /* VideoUploadQueue.swift in Sources */,
+				BE8C22992F25E78500E32ACB /* MainTabView.swift in Sources */,
+				BE8C229B2F25E80400E32ACB /* ImplementationPlan.swift in Sources */,
+				BE8C229F2F25E84B00E32ACB /* HomeView.swift in Sources */,
+				BE8C22AF2F25F18900E32ACB /* CameraPreview.swift in Sources */,
+				BE8C229D2F25E82400E32ACB /* Models.swift in Sources */,
+				BE8C22A52F25E8B400E32ACB /* SettingsView.swift in Sources */,
+				BE54A2892CDDA81E00C6B639 /* SpeechRecognitionExtension.swift in Sources */,
+				BE8C22C12F2604F400E32ACB /* StreamingVideoUploader.swift in Sources */,
+				BE8C22AD2F25F18300E32ACB /* CameraManager.swift in Sources */,
+				BEAF835B2F1F2EBB001837B7 /* GoogleDriveUploader.swift in Sources */,
+				BE8C22A12F25E87200E32ACB /* InventoryListView.swift in Sources */,
+				BE54A28B2CDDA81E00C6B639 /* SpeechRecognition.swift in Sources */,
+				BE8B156A2CE5979200714DB0 /* MainApp.swift in Sources */,
+				BEEB319F2F26252A002E0842 /* CameraManager+FrameCapture.swift in Sources */,
+				BEEB31A72F2625AC002E0842 /* INTEGRATION_EXAMPLE.swift in Sources */,
+				BEEB31A12F262541002E0842 /* StreamingObjectDetectionView.swift in Sources */,
+				BE8B15682CE5273700714DB0 /* AppState.swift in Sources */,
+				BE54A28D2CDDA81E00C6B639 /* ExportToCSVView.swift in Sources */,
+				BE3DD6A22F2616DF002C9706 /* VideoUploadQueueView.swift in Sources */,
+				BEEB31A32F262561002E0842 /* LiveObjectDetectionView.swift in Sources */,
+				BEEB319D2F26251F002E0842 /* GeminiStreamingVisionService.swift in Sources */,
+				BECA718B2F22FE0C00FB1F99 /* EarlyInit.c in Sources */,
+				BE54A2872CDDA6D200C6B639 /* NewMain.swift in Sources */,
+				BE8C22952F25D76800E32ACB /* Theme.swift in Sources */,
+				BE8C22972F25D76900E32ACB /* SecondaryButtonStyle.swift in Sources */,
+				BENET0022F280002002C9706 /* NetworkLogger.swift in Sources */,
+				BEINVS022F290002002C9706 /* InventoryStore.swift in Sources */,
+				BEBGES022F2A0002002C9706 /* BackgroundEnrichmentService.swift in Sources */,
+				BECSVW022F2A0002002C9706 /* CameraSettingsView.swift in Sources */,
+				BEDSET022F2A0002002C9706 /* DetectionSettings.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		BE54A2282CDDA28100C6B639 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = BESECR012F290010002C9706 /* Secrets.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"V4MinimalApp/Preview Content\"";
+				DEVELOPMENT_TEAM = BX37W36VT3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = V4MinimalApp/Info.plist;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Need microphone for speech recogntion";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Use voice to enter items";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Test-Organization.V2NoScopesApp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BE54A2292CDDA28100C6B639 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = BESECR012F290010002C9706 /* Secrets.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"V4MinimalApp/Preview Content\"";
+				DEVELOPMENT_TEAM = BX37W36VT3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = V4MinimalApp/Info.plist;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Need microphone for speech recogntion";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Use voice to enter items";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "Test-Organization.V2NoScopesApp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		BEEEFA9B2CD292BC0072891A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				NEW_SETTING = "";
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		BEEEFA9C2CD292BC0072891A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.1;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				NEW_SETTING = "";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		BE54A2272CDDA28100C6B639 /* Build configuration list for PBXNativeTarget "V4MinimalApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BE54A2282CDDA28100C6B639 /* Debug */,
+				BE54A2292CDDA28100C6B639 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BEEEFA8A2CD292BA0072891A /* Build configuration list for PBXProject "V4MinimalApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BEEEFA9B2CD292BC0072891A /* Debug */,
+				BEEEFA9C2CD292BC0072891A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		BE7A78D92CE273C500045E0F /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		BE7A78DA2CE273C500045E0F /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BE7A78D92CE273C500045E0F /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		BE7A78DC2CE273C500045E0F /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BE7A78D92CE273C500045E0F /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
+
+/* Begin XCVersionGroup section */
+		BEEEFAA92CD2DC350072891A /* VoiceDataModel.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				BEEEFAAA2CD2DC350072891A /* VoiceDataModel.xcdatamodel */,
+			);
+			currentVersion = BEEEFAAA2CD2DC350072891A /* VoiceDataModel.xcdatamodel */;
+			path = VoiceDataModel.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
+	};
+	rootObject = BEEEFA872CD292BA0072891A /* Project object */;
+}

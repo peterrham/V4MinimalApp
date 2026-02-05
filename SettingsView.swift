@@ -17,6 +17,7 @@ enum SettingsPage: String, Hashable, Codable {
     case openAIChat, openAIRealtime, networkDiagnostics
     case googleSignIn, googleAuthSafari, deleteAllText
     case debugExportCSV, textFileSharer, textFileCreator, secondView
+    case uiExerciser
 }
 
 struct SettingsView: View {
@@ -272,6 +273,7 @@ struct SettingsView: View {
                 case .textFileSharer: TextFileSharerView()
                 case .textFileCreator: TextFileCreatorView()
                 case .secondView: SecondView()
+                case .uiExerciser: UIExerciserView()
                 }
             }
             .alert("Sign Out", isPresented: $showingSignOut) {
@@ -284,6 +286,7 @@ struct SettingsView: View {
             } message: {
                 Text("Are you sure you want to sign out?")
             }
+            .debugScreenName("SettingsView")
         }
         // REMOVED: .onChange path persistence - caused SwiftUI.AnyNavigationPath.Error.comparisonTypeMismatch crashes
     }

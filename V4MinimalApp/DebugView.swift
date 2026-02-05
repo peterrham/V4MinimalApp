@@ -325,6 +325,40 @@ struct DebugView: View {
                 }
                 .buttonStyle(.plain)
 
+                // UI Exerciser - Auto-tap through screens
+                NavigationLink(value: SettingsPage.uiExerciser) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.indigo.opacity(0.15))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "hand.tap.fill")
+                                .font(.system(size: 20))
+                                .foregroundStyle(.indigo)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("UI Exerciser")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
+                            Text("Auto-tap through all screens")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(12)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
                 Divider()
                     .padding(.vertical, 4)
 
@@ -437,5 +471,6 @@ struct DebugView: View {
         }
         .navigationTitle("Debug")
         .navigationBarTitleDisplayMode(.inline)
+        .debugScreenName("DebugView")
     }
 }
