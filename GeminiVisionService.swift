@@ -506,6 +506,191 @@ class GeminiVisionService: ObservableObject {
         }
     }
 
+    // MARK: - Batch Processing (Multiple Images)
+
+    /// Identify all unique items from multiple images in a single API call
+    func identifyAllItemsFromMultipleImages(_ images: [UIImage]) async -> [PhotoIdentificationResult] {
+        geminiDebugLog("📸 identifyAllItemsFromMultipleImages called with \(images.count) images")
+
+        guard !apiKey.isEmpty else {
+            error = "API key not configured"
+            return []
+        }
+
+        guard !images.isEmpty else {
+            return []
+        }
+
+        isProcessing = true
+        error = nil
+
+        let prompt = """
+        I'm showing you \(images.count) photos from the same home/space.
+        List ALL UNIQUE individual items visible across ALL photos for home inventory.
+        DEDUPLICATE: If the same item appears in multiple photos, list it only ONCE.
+        Include even partially visible items with your best guess.
+        Return JSON array only:
+        [{"name":"...","brand":"...","color":"...","size":"...","category":"...","estimatedValue":...,"description":"..."}]
+        category: one of Electronics, Furniture, Appliance, Decor, Kitchen, Clothing, Books, Tools, Sports, Toys, Valuables, Other.
+        estimatedValue: number in USD or null.
+        description: 1-2 sentence detail. Use null for unknown fields.
+        Each item must have a UNIQUE descriptive name. Do NOT repeat the same name.
+        JSON only, no markdown fences.
+        """
+
+        do {
+            // Prepare all images
+            var base64Images: [String] = []
+            for image in images {
+                let maxDim: CGFloat = 1536  // Slightly smaller for multi-image
+                let sendImage: UIImage
+                if max(image.size.width, image.size.height) > maxDim {
+                    let scale = maxDim / max(image.size.width, image.size.height)
+                    let newSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+                    let format = UIGraphicsImageRendererFormat()
+                    format.scale = 1.0
+                    let renderer = UIGraphicsImageRenderer(size: newSize, format: format)
+                    sendImage = renderer.image { _ in image.draw(in: CGRect(origin: .zero, size: newSize)) }
+                } else {
+                    sendImage = image
+                }
+
+                guard let imageData = sendImage.jpegData(compressionQuality: 0.75) else {
+                    continue
+                }
+                base64Images.append(imageData.base64EncodedString())
+            }
+
+            geminiDebugLog("📸 Batch: prepared \(base64Images.count) images")
+
+            let request = try createRequestMultiImage(base64Images: base64Images, prompt: prompt, maxOutputTokens: 8192)
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw GeminiError.invalidResponse
+            }
+
+            geminiDebugLog("📸 Batch response status: \(httpResponse.statusCode)")
+
+            guard httpResponse.statusCode == 200 else {
+                let errorText = String(data: data, encoding: .utf8) ?? "Unknown error"
+                throw GeminiError.apiError(statusCode: httpResponse.statusCode, message: errorText)
+            }
+
+            // Parse response
+            let geminiResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
+            guard let candidate = geminiResponse.candidates.first,
+                  let content = candidate.content.parts.first else {
+                throw GeminiError.invalidResponse
+            }
+            let responseText = content.text
+            geminiDebugLog("📸 Batch response: \(responseText.prefix(200))...")
+
+            let results = PhotoIdentificationResult.parseMultiple(from: responseText)
+            geminiDebugLog("📸 Batch parsed \(results.count) unique items from \(images.count) photos")
+
+            isProcessing = false
+            return results
+
+        } catch {
+            self.error = error.localizedDescription
+            geminiDebugLog("📸 Batch error: \(error)")
+            isProcessing = false
+            return []
+        }
+    }
+
+    // MARK: - Incremental Processing (Context-Aware)
+
+    /// Identify NEW items in an image, given a list of already-found items
+    func identifyNewItems(_ image: UIImage, alreadyFound: [String]) async -> [PhotoIdentificationResult] {
+        geminiDebugLog("📸 identifyNewItems called, already found: \(alreadyFound.count) items")
+
+        guard !apiKey.isEmpty else {
+            error = "API key not configured"
+            return []
+        }
+
+        isProcessing = true
+        error = nil
+
+        // Build context of already-found items
+        let foundList = alreadyFound.joined(separator: ", ")
+
+        let prompt = """
+        I've already inventoried these items from previous photos: [\(foundList)]
+
+        Look at this NEW photo and list ONLY items that are NOT in my existing list.
+        Skip any item that matches or is very similar to something already listed.
+        Return ONLY genuinely new items I haven't seen before.
+
+        Return JSON array only:
+        [{"name":"...","brand":"...","color":"...","size":"...","category":"...","estimatedValue":...,"description":"...","box":[ymin,xmin,ymax,xmax]}]
+        category: one of Electronics, Furniture, Appliance, Decor, Kitchen, Clothing, Books, Tools, Sports, Toys, Valuables, Other.
+        estimatedValue: number in USD or null. box: bounding box coords 0-1000.
+        description: 1-2 sentence detail. Use null for unknown fields.
+        Return empty array [] if no new items are found.
+        JSON only, no markdown fences.
+        """
+
+        do {
+            // Resize image
+            let maxDim: CGFloat = 2048
+            let sendImage: UIImage
+            if max(image.size.width, image.size.height) > maxDim {
+                let scale = maxDim / max(image.size.width, image.size.height)
+                let newSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+                let format = UIGraphicsImageRendererFormat()
+                format.scale = 1.0
+                let renderer = UIGraphicsImageRenderer(size: newSize, format: format)
+                sendImage = renderer.image { _ in image.draw(in: CGRect(origin: .zero, size: newSize)) }
+            } else {
+                sendImage = image
+            }
+
+            guard let imageData = sendImage.jpegData(compressionQuality: 0.85) else {
+                throw GeminiError.imageConversionFailed
+            }
+            let base64Image = imageData.base64EncodedString()
+            geminiDebugLog("📸 Incremental: image \(imageData.count / 1024)KB, context \(alreadyFound.count) items")
+
+            let request = try createRequest(base64Image: base64Image, prompt: prompt, maxOutputTokens: 4096)
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw GeminiError.invalidResponse
+            }
+
+            geminiDebugLog("📸 Incremental response status: \(httpResponse.statusCode)")
+
+            guard httpResponse.statusCode == 200 else {
+                let errorText = String(data: data, encoding: .utf8) ?? "Unknown error"
+                throw GeminiError.apiError(statusCode: httpResponse.statusCode, message: errorText)
+            }
+
+            // Parse response
+            let geminiResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
+            guard let candidate = geminiResponse.candidates.first,
+                  let content = candidate.content.parts.first else {
+                throw GeminiError.invalidResponse
+            }
+            let responseText = content.text
+            geminiDebugLog("📸 Incremental response: \(responseText.prefix(200))...")
+
+            let results = PhotoIdentificationResult.parseMultiple(from: responseText)
+            geminiDebugLog("📸 Incremental found \(results.count) NEW items")
+
+            isProcessing = false
+            return results
+
+        } catch {
+            self.error = error.localizedDescription
+            geminiDebugLog("📸 Incremental error: \(error)")
+            isProcessing = false
+            return []
+        }
+    }
+
     // MARK: - Private Methods
 
     private func createRequest(base64Image: String, prompt: String, maxOutputTokens: Int = 100) throws -> URLRequest {
@@ -542,7 +727,49 @@ class GeminiVisionService: ObservableObject {
         ]
         
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-        
+
+        return request
+    }
+
+    /// Create a request with multiple images
+    private func createRequestMultiImage(base64Images: [String], prompt: String, maxOutputTokens: Int = 4096) throws -> URLRequest {
+        guard let url = URL(string: "\(apiEndpoint)?key=\(apiKey)") else {
+            throw GeminiError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 120  // Longer timeout for multi-image
+
+        // Build parts array: prompt first, then all images
+        var parts: [[String: Any]] = [
+            ["text": prompt]
+        ]
+
+        for base64Image in base64Images {
+            parts.append([
+                "inline_data": [
+                    "mime_type": "image/jpeg",
+                    "data": base64Image
+                ]
+            ])
+        }
+
+        let requestBody: [String: Any] = [
+            "contents": [
+                ["parts": parts]
+            ],
+            "generationConfig": [
+                "temperature": 0.4,
+                "topK": 32,
+                "topP": 1,
+                "maxOutputTokens": maxOutputTokens
+            ]
+        ]
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
         return request
     }
 }

@@ -121,6 +121,40 @@ struct DebugView: View {
                 }
                 .buttonStyle(.plain)
 
+                // Photo Queue Debug - Queue stats, session history
+                NavigationLink(value: SettingsPage.photoQueueDebug) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.purple.opacity(0.15))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "photo.stack.fill")
+                                .font(.system(size: 20))
+                                .foregroundStyle(.purple)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Photo Queue Debug")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
+                            Text("Queue stats, session history")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(12)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
                 // Audio Recognition - Old speech recognition screen
                 NavigationLink(value: SettingsPage.audioRecognition) {
                     HStack(spacing: 12) {

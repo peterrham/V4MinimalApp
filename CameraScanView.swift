@@ -30,6 +30,7 @@ struct CameraScanView: View {
     @State private var enableStreamingUpload = false
     @State private var showLiveDetection = false
     @State private var showYOLODetection = false
+    @State private var showPhotoQueue = false
     @State private var showInstructionOverlay = true
     @State private var multiItemResults: [PhotoIdentificationResult] = []
     @State private var libraryPhoto: UIImage?
@@ -185,6 +186,23 @@ struct CameraScanView: View {
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
                             .background(Capsule().fill(.orange.opacity(0.8)))
+                        }
+
+                        // Photo Queue button
+                        Button {
+                            showPhotoQueue = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "photo.stack.fill")
+                                Text("QUEUE")
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                            }
+                            .font(.caption)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            .background(Capsule().fill(.purple.opacity(0.8)))
                         }
 
                         // Upload Queue Badge
@@ -764,6 +782,9 @@ struct CameraScanView: View {
             }
             .fullScreenCover(isPresented: $showYOLODetection) {
                 YOLOLiveDetectionView()
+            }
+            .fullScreenCover(isPresented: $showPhotoQueue) {
+                QueuedPhotoScanView()
             }
             .sheet(isPresented: $showingMultiItemSheet) {
                 multiItemSheet

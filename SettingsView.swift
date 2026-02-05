@@ -13,7 +13,7 @@ enum SettingsPage: String, Hashable, Codable {
     case homes, rooms, backup, cameraSettings, exportCSV
     case inventoryTable, normalization, debugView, apiLogs, evaluation
     // Debug subpages
-    case guidedRecording, debugOptions, pipelineDebug, audioRecognition, audioDiagnostics
+    case guidedRecording, debugOptions, pipelineDebug, photoQueueDebug, audioRecognition, audioDiagnostics
     case openAIChat, openAIRealtime, networkDiagnostics
     case googleSignIn, googleAuthSafari, deleteAllText
     case debugExportCSV, textFileSharer, textFileCreator, secondView
@@ -259,6 +259,7 @@ struct SettingsView: View {
                 case .guidedRecording: GuidedRecordingView()
                 case .debugOptions: DebugOptionsView()
                 case .pipelineDebug: PipelineDebugView()
+                case .photoQueueDebug: PhotoQueueDebugView()
                 case .audioRecognition: ContentView()
                 case .openAIChat: OpenAIChatView()
                 case .openAIRealtime: OpenAIRealtimeView()
