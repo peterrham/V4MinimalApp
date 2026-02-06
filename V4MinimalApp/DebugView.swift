@@ -359,6 +359,40 @@ struct DebugView: View {
                 }
                 .buttonStyle(.plain)
 
+                // LiDAR Diagnostics - Depth sensor testing
+                NavigationLink(value: SettingsPage.lidarDiagnostics) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.cyan.opacity(0.15))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "dot.radiowaves.left.and.right")
+                                .font(.system(size: 20))
+                                .foregroundStyle(.cyan)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("LiDAR Diagnostics")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
+                            Text("Depth sensor, point cloud, confidence")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(12)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
                 Divider()
                     .padding(.vertical, 4)
 

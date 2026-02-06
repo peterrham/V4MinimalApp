@@ -18,6 +18,7 @@ enum SettingsPage: String, Hashable, Codable {
     case googleSignIn, googleAuthSafari, deleteAllText
     case debugExportCSV, textFileSharer, textFileCreator, secondView
     case uiExerciser
+    case lidarDiagnostics
 }
 
 struct SettingsView: View {
@@ -274,6 +275,7 @@ struct SettingsView: View {
                 case .textFileCreator: TextFileCreatorView()
                 case .secondView: SecondView()
                 case .uiExerciser: UIExerciserView()
+                case .lidarDiagnostics: LiDARDiagnosticsView()
                 }
             }
             .alert("Sign Out", isPresented: $showingSignOut) {

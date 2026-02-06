@@ -55,5 +55,7 @@
 	<string>Needed to scan inventory.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Allow user to save this.</string>
+	<key>NSWorldSensingUsageDescription</key>
+	<string>Used for LiDAR depth scanning to measure room dimensions and identify objects.</string>
 </dict>
 </plist>

@@ -7,10 +7,12 @@ Also receives screenshots on a separate port for visual debugging.
 Writes logs to a file that Claude Code can read for debugging.
 
 Usage:
-    python3 log_server.py [--port PORT] [--screenshot-port PORT] [--output FILE]
+    python3 log_server.py [--port PORT] [--screenshot-port PORT] [--output FILE] [--rotate MINUTES]
 
 Example:
-    python3 log_server.py --port 9999 --screenshot-port 9998 --output /tmp/app_logs.txt
+    python3 log_server.py -o /tmp/app_logs.txt              # Rotate every 15 min (default)
+    python3 log_server.py -o /tmp/app_logs.txt --rotate 30   # Rotate every 30 min
+    python3 log_server.py -o /tmp/app_logs.txt --rotate 0    # No rotation (single file)
 """
 
 import socket
@@ -263,15 +265,19 @@ class ScreenshotServer:
 
 
 class LogServer:
-    def __init__(self, port: int, output_file: str = None, quiet: bool = False):
+    def __init__(self, port: int, output_file: str = None, quiet: bool = False,
+                 rotate_minutes: int = 0):
         self.port = port
         self.output_file = output_file
         self.quiet = quiet
+        self.rotate_minutes = rotate_minutes
         self.running = False
         self.server_socket = None
         self.out_file = None
         self.clients = []
         self.lock = threading.Lock()
+        self.rotation_timer = None
+        self.current_log_path = None
 
     def handle_client(self, client_socket, addr):
         """Handle a single client connection."""
@@ -324,6 +330,61 @@ class LogServer:
             if not self.quiet:
                 print(f"{Colors.YELLOW}Client disconnected: {addr[0]}:{addr[1]}{Colors.RESET}")
 
+    def _make_rotated_path(self):
+        """Generate a log file path with timestamp for rotation."""
+        base = self.output_file
+        ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        # e.g. /tmp/app_logs.txt -> /tmp/app_logs_20260205_195300.txt
+        root, ext = os.path.splitext(base)
+        return f"{root}_{ts}{ext}"
+
+    def _open_log_file(self):
+        """Open the log output file, with timestamped name if rotation is enabled."""
+        if not self.output_file:
+            return
+
+        if self.rotate_minutes > 0:
+            rotated_path = self._make_rotated_path()
+            self.current_log_path = rotated_path
+        else:
+            self.current_log_path = self.output_file
+
+        self.out_file = open(self.current_log_path, 'a', buffering=1)
+
+        # If rotating, also maintain a symlink at the base path for easy access
+        if self.rotate_minutes > 0:
+            try:
+                if os.path.islink(self.output_file) or os.path.exists(self.output_file):
+                    os.remove(self.output_file)
+                os.symlink(self.current_log_path, self.output_file)
+            except OSError:
+                pass  # Symlink may fail on some systems, that's fine
+
+        print(f"{Colors.CYAN}Writing logs to: {self.current_log_path}{Colors.RESET}")
+
+    def _rotate_log(self):
+        """Rotate the log file: close current, open new with fresh timestamp."""
+        if not self.running or not self.output_file:
+            return
+
+        with self.lock:
+            old_path = self.current_log_path
+            if self.out_file:
+                self.out_file.close()
+            self._open_log_file()
+
+        if not self.quiet:
+            print(f"{Colors.CYAN}Log rotated: {old_path} -> {self.current_log_path}{Colors.RESET}")
+
+        self._schedule_rotation()
+
+    def _schedule_rotation(self):
+        """Schedule the next log rotation."""
+        if self.rotate_minutes > 0 and self.running:
+            self.rotation_timer = threading.Timer(self.rotate_minutes * 60, self._rotate_log)
+            self.rotation_timer.daemon = True
+            self.rotation_timer.start()
+
     def run(self):
         """Run the TCP log server."""
         local_ip = get_local_ip()
@@ -340,12 +401,13 @@ class LogServer:
             print(f"{Colors.RED}Error: Could not bind to port {self.port}: {e}{Colors.RESET}")
             sys.exit(1)
 
-        # Open output file if specified
-        if self.output_file:
-            self.out_file = open(self.output_file, 'a', buffering=1)  # Line buffered
-            print(f"{Colors.CYAN}Writing logs to: {self.output_file}{Colors.RESET}")
-
         self.running = True
+
+        # Open output file if specified
+        self._open_log_file()
+
+        # Start rotation timer if enabled
+        self._schedule_rotation()
 
         # Main accept loop
         while self.running:
@@ -370,6 +432,10 @@ class LogServer:
         """Gracefully shutdown the server."""
         print(f"\n{Colors.YELLOW}Shutting down...{Colors.RESET}")
         self.running = False
+
+        # Cancel rotation timer
+        if self.rotation_timer:
+            self.rotation_timer.cancel()
 
         # Close all client connections
         with self.lock:
@@ -403,7 +469,9 @@ def main():
 Examples:
   %(prog)s                          # Listen on port 9999 (logs) and 9998 (screenshots)
   %(prog)s --port 8888              # Listen on port 8888 for logs
-  %(prog)s -o /tmp/app_logs.txt     # Write logs to file
+  %(prog)s -o /tmp/app_logs.txt     # Write logs to file (rotate every 15 min)
+  %(prog)s -o /tmp/logs.txt -r 30   # Rotate every 30 minutes
+  %(prog)s -o /tmp/logs.txt -r 0    # No rotation (single file)
   %(prog)s -o /tmp/logs.txt -q      # Write to file only (quiet mode)
         """
     )
@@ -417,6 +485,8 @@ Examples:
                         help='Directory to save screenshots (default: /tmp/app_screenshots)')
     parser.add_argument('-q', '--quiet', action='store_true',
                         help='Quiet mode - only write to file, no terminal output')
+    parser.add_argument('-r', '--rotate', type=int, default=15, metavar='MINUTES',
+                        help='Rotate log file every N minutes (default: 15, 0 to disable)')
 
     args = parser.parse_args()
 
@@ -435,6 +505,10 @@ Examples:
     print(f"  Screenshot dir:    {Colors.MAGENTA}{args.screenshot_dir}{Colors.RESET}")
     if args.output:
         print(f"  Log file:          {Colors.CYAN}{args.output}{Colors.RESET}")
+    if args.rotate > 0:
+        print(f"  Log rotation:      {Colors.CYAN}every {args.rotate} minutes{Colors.RESET}")
+    else:
+        print(f"  Log rotation:      {Colors.GRAY}disabled{Colors.RESET}")
     print(f"\n  {Colors.YELLOW}Configure iOS app with:{Colors.RESET}")
     print(f"    Host: {Colors.BOLD}{local_ip}{Colors.RESET}")
     print(f"    Log Port: {Colors.BOLD}{args.port}{Colors.RESET}")
@@ -442,7 +516,7 @@ Examples:
     print(f"\n{Colors.GRAY}Waiting for connections... (Ctrl+C to stop){Colors.RESET}\n")
 
     # Create servers
-    log_server = LogServer(args.port, args.output, args.quiet)
+    log_server = LogServer(args.port, args.output, args.quiet, args.rotate)
     screenshot_server = ScreenshotServer(args.screenshot_port, args.screenshot_dir, args.quiet)
 
     # Handle graceful shutdown
