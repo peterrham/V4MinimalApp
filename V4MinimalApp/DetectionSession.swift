@@ -53,7 +53,7 @@ struct DetectionSession: Codable, Identifiable {
 
     static func autoName(date: Date = Date()) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d, h:mm a"
-        return "Session \(formatter.string(from: date))"
+        formatter.dateFormat = "M/d HH:mm"
+        return formatter.string(from: date)
     }
 }

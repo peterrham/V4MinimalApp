@@ -14,7 +14,6 @@ struct PhotoQueueResultsSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var expandedPhotoIds: Set<UUID> = []
-    @State private var savedItemIds: Set<UUID> = []
 
     var body: some View {
         NavigationStack {
@@ -31,11 +30,6 @@ struct PhotoQueueResultsSheet: View {
                 } else {
                     resultsList
                 }
-
-                // Save All footer
-                if unsavedCount > 0 {
-                    saveAllFooter
-                }
             }
             .navigationTitle("Queue Results")
             .navigationBarTitleDisplayMode(.inline)
@@ -49,7 +43,6 @@ struct PhotoQueueResultsSheet: View {
                     if !queueManager.results.isEmpty {
                         Button("Clear") {
                             queueManager.clearResults()
-                            savedItemIds.removeAll()
                         }
                         .foregroundColor(.red)
                     }
@@ -60,12 +53,6 @@ struct PhotoQueueResultsSheet: View {
 
     // MARK: - Computed Properties
 
-    private var unsavedCount: Int {
-        queueManager.results.reduce(0) { total, result in
-            total + result.items.filter { !savedItemIds.contains($0.id) && !$0.isSaved }.count
-        }
-    }
-
     private var totalItemCount: Int {
         queueManager.results.reduce(0) { $0 + $1.items.count }
     }
@@ -73,32 +60,80 @@ struct PhotoQueueResultsSheet: View {
     // MARK: - Summary Header
 
     private var summaryHeader: some View {
-        HStack(spacing: AppTheme.Spacing.l) {
-            statCard(
-                icon: "photo.stack.fill",
-                value: "\(queueManager.results.count)",
-                label: "Photos",
-                color: .purple
-            )
-            statCard(
-                icon: "cube.box.fill",
-                value: "\(totalItemCount)",
-                label: "Items",
-                color: .blue
-            )
-            statCard(
-                icon: "clock.fill",
-                value: "\(queueManager.averageProcessingTimeMs)ms",
-                label: "Avg Time",
-                color: .orange
-            )
-            statCard(
-                icon: "chart.line.uptrend.xyaxis",
-                value: String(format: "%.1f", queueManager.averageItemsPerPhoto),
-                label: "Per Photo",
-                color: .green
-            )
+        VStack(spacing: AppTheme.Spacing.m) {
+            // Processing status banner
+            processingStatusBanner
+
+            // Stats row
+            HStack(spacing: AppTheme.Spacing.l) {
+                statCard(
+                    icon: "photo.stack.fill",
+                    value: "\(queueManager.totalPhotosProcessed)/\(queueManager.totalPhotosQueued)",
+                    label: "Photos",
+                    color: .purple
+                )
+                statCard(
+                    icon: "cube.box.fill",
+                    value: "\(totalItemCount)",
+                    label: "Items",
+                    color: .blue
+                )
+                statCard(
+                    icon: "clock.fill",
+                    value: "\(queueManager.averageProcessingTimeMs)ms",
+                    label: "Avg Time",
+                    color: .orange
+                )
+                statCard(
+                    icon: "chart.line.uptrend.xyaxis",
+                    value: String(format: "%.1f", queueManager.averageItemsPerPhoto),
+                    label: "Per Photo",
+                    color: .green
+                )
+            }
         }
+    }
+
+    private var processingStatusBanner: some View {
+        let total = queueManager.totalPhotosQueued
+        let processed = queueManager.totalPhotosProcessed
+        let isProcessing = queueManager.isProcessing
+        let isDone = processed == total && total > 0
+
+        return HStack(spacing: 10) {
+            if isProcessing {
+                ProgressView()
+                    .scaleEffect(0.8)
+                Text("Processing \(processed)/\(total) photos...")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+            } else if isDone {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                Text("Complete - \(total) photos processed")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+            } else if total == 0 {
+                Image(systemName: "photo.badge.plus")
+                    .foregroundColor(.secondary)
+                Text("No photos queued")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            } else {
+                Image(systemName: "pause.circle.fill")
+                    .foregroundColor(.orange)
+                Text("\(processed)/\(total) processed - Waiting")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(isDone ? Color.green.opacity(0.1) : (isProcessing ? Color.orange.opacity(0.1) : Color.gray.opacity(0.1)))
+        )
     }
 
     private func statCard(icon: String, value: String, label: String, color: Color) -> some View {
@@ -198,15 +233,11 @@ struct PhotoQueueResultsSheet: View {
     }
 
     private func itemRow(_ item: PhotoQueueItem, photoId: UUID) -> some View {
-        let isSaved = savedItemIds.contains(item.id) || item.isSaved
-
-        return HStack(spacing: 12) {
+        HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.name)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .strikethrough(isSaved)
-                    .foregroundColor(isSaved ? .secondary : .primary)
 
                 let subtitle = [item.brand, item.color, item.category]
                     .compactMap { $0 }
@@ -227,113 +258,13 @@ struct PhotoQueueResultsSheet: View {
                     .foregroundColor(.green)
             }
 
-            if isSaved {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.title3)
-                    .foregroundColor(.green)
-            } else {
-                Button {
-                    saveItem(item, photoId: photoId)
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title3)
-                        .foregroundColor(.blue)
-                }
-                .buttonStyle(.plain)
-            }
+            // Items are auto-saved to session
+            Image(systemName: "checkmark.circle.fill")
+                .font(.title3)
+                .foregroundColor(.green)
         }
-        .opacity(isSaved ? 0.6 : 1.0)
     }
 
-    // MARK: - Save All Footer
-
-    private var saveAllFooter: some View {
-        Button {
-            saveAllItems()
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "square.and.arrow.down.on.square.fill")
-                Text("Save All (\(unsavedCount))")
-                    .fontWeight(.semibold)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(Capsule().fill(.green))
-            .foregroundColor(.white)
-        }
-        .padding(.horizontal, AppTheme.Spacing.l)
-        .padding(.vertical, AppTheme.Spacing.m)
-        .background(Color(.systemBackground))
-    }
-
-    // MARK: - Actions
-
-    private func saveItem(_ item: PhotoQueueItem, photoId: UUID) {
-        // Find the result containing this item to get the photo
-        guard let result = queueManager.results.first(where: { $0.photoId == photoId }),
-              let filename = result.photoFilename else { return }
-
-        let url = queueManager.photoURL(for: filename)
-        guard let image = UIImage(contentsOfFile: url.path) else { return }
-
-        // Create PhotoIdentificationResult for compatibility using a helper
-        let photoResult = createPhotoResult(from: item)
-
-        inventoryStore.addItemFromPhotoAnalysis(photoResult, photo: image)
-
-        withAnimation {
-            savedItemIds.insert(item.id)
-        }
-
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
-    }
-
-    private func saveAllItems() {
-        // Create a detection session for all items
-        sessionStore.createSession()
-
-        for result in queueManager.results {
-            guard let filename = result.photoFilename else { continue }
-            let url = queueManager.photoURL(for: filename)
-            guard let image = UIImage(contentsOfFile: url.path) else { continue }
-
-            for item in result.items where !savedItemIds.contains(item.id) && !item.isSaved {
-                let photoResult = createPhotoResult(from: item)
-
-                // Add to inventory
-                inventoryStore.addItemFromPhotoAnalysis(photoResult, photo: image)
-
-                withAnimation {
-                    savedItemIds.insert(item.id)
-                }
-            }
-        }
-
-        sessionStore.endSession()
-
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
-    }
-
-    /// Create a PhotoIdentificationResult from a PhotoQueueItem
-    private func createPhotoResult(from item: PhotoQueueItem) -> PhotoIdentificationResult {
-        var box: (yMin: CGFloat, xMin: CGFloat, yMax: CGFloat, xMax: CGFloat)?
-        if let bb = item.boundingBox {
-            box = (CGFloat(bb.yMin), CGFloat(bb.xMin), CGFloat(bb.yMax), CGFloat(bb.xMax))
-        }
-
-        var result = PhotoIdentificationResult.parse(from: "{}")
-        result.name = item.name
-        result.brand = item.brand
-        result.color = item.color
-        result.size = item.size
-        result.category = item.category
-        result.estimatedValue = item.estimatedValue
-        result.description = item.description
-        result.boundingBox = box
-        return result
-    }
 }
 
 // MARK: - Preview

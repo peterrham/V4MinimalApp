@@ -31,6 +31,13 @@ class PhotoQueueManager: ObservableObject {
     @Published var processingMode: PhotoQueueProcessingMode = .incremental
     var maxConcurrentWorkers = 2
 
+    // MARK: - Auto-Save to Session
+
+    /// Optional stores for auto-saving items to detection session
+    weak var inventoryStore: InventoryStore?
+    weak var sessionStore: DetectionSessionStore?
+    private var hasCreatedSession = false
+
     // MARK: - Incremental Mode State
 
     /// Items found so far (for incremental deduplication context)
@@ -149,6 +156,12 @@ class PhotoQueueManager: ObservableObject {
         saveSessions()
         NetworkLogger.shared.info("Photo Queue session ended: \(session.totalPhotos) photos, \(session.totalItems) items", category: "PhotoQueue")
         currentSession = nil
+
+        // Also end the detection session if one was created
+        if hasCreatedSession {
+            sessionStore?.endSession()
+            hasCreatedSession = false
+        }
     }
 
     /// Reset all state for a fresh start.
@@ -163,6 +176,7 @@ class PhotoQueueManager: ObservableObject {
         averageItemsPerPhoto = 0
         processingTimes.removeAll()
         currentSession = nil
+        hasCreatedSession = false
     }
 
     // MARK: - Concurrent Processing (Original)
@@ -420,6 +434,47 @@ class PhotoQueueManager: ObservableObject {
 
         // Update items per photo
         averageItemsPerPhoto = totalPhotosProcessed > 0 ? Double(totalItemsDetected) / Double(totalPhotosProcessed) : 0
+
+        // Auto-save items to detection session
+        autoSaveToSession(result)
+    }
+
+    /// Auto-save detected items to a detection session
+    private func autoSaveToSession(_ result: PhotoQueueResult) {
+        guard let inventoryStore = inventoryStore,
+              let sessionStore = sessionStore else { return }
+
+        // Create session on first result
+        if !hasCreatedSession {
+            sessionStore.createSession()
+            hasCreatedSession = true
+        }
+
+        // Get the photo for this result
+        guard let filename = result.photoFilename else { return }
+        let url = photoURL(for: filename)
+        guard let image = UIImage(contentsOfFile: url.path) else { return }
+
+        // Convert items to PhotoIdentificationResults and save
+        let photoResults = result.items.map { item -> PhotoIdentificationResult in
+            var box: (yMin: CGFloat, xMin: CGFloat, yMax: CGFloat, xMax: CGFloat)?
+            if let bb = item.boundingBox {
+                box = (CGFloat(bb.yMin), CGFloat(bb.xMin), CGFloat(bb.yMax), CGFloat(bb.xMax))
+            }
+            var photoResult = PhotoIdentificationResult(name: item.name)
+            photoResult.brand = item.brand
+            photoResult.color = item.color
+            photoResult.size = item.size
+            photoResult.category = item.category
+            photoResult.estimatedValue = item.estimatedValue
+            photoResult.description = item.description
+            photoResult.boundingBox = box
+            return photoResult
+        }
+
+        // Add to session
+        sessionStore.addPhotoResults(photoResults, sourceImage: image)
+        NetworkLogger.shared.info("Auto-saved \(photoResults.count) items to session", category: "PhotoQueue")
     }
 
     // MARK: - Persistence

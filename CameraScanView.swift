@@ -10,6 +10,28 @@ import os
 import AVFoundation
 import PhotosUI
 
+/// Video processing mode for library-selected videos
+enum VideoProcessingMode: String, CaseIterable, Identifiable {
+    case frameExtraction = "Frames"
+    case geminiVideo = "Gemini Video"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .frameExtraction: return "film.stack"
+        case .geminiVideo: return "video.badge.waveform"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .frameExtraction: return "Extract frames every 2s, process each as image"
+        case .geminiVideo: return "Upload entire video to Gemini for bulk recognition"
+        }
+    }
+}
+
 struct CameraScanView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var inventoryStore: InventoryStore
@@ -26,7 +48,13 @@ struct CameraScanView: View {
     @State private var isUploading = false
     @State private var uploadProgress: Double = 0
     @State private var showPhotoPicker = false
-    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedPhotoItems: [PhotosPickerItem] = []
+    @State private var libraryPhotosForQueue: [UIImage] = []
+    @State private var libraryVideosForQueue: [URL] = []
+    @State private var isProcessingMedia = false
+    @State private var mediaProcessingStatus = ""
+    @State private var videoProcessingMode: VideoProcessingMode = .frameExtraction
+    @StateObject private var pipelineRunner = PipelineRunner()
     @State private var enableStreamingUpload = false
     @State private var showLiveDetection = false
     @State private var showYOLODetection = false
@@ -232,7 +260,39 @@ struct CameraScanView: View {
                         }
                     }
                     .padding(AppTheme.Spacing.l)
-                    
+
+                    // Video processing mode picker
+                    HStack(spacing: 8) {
+                        ForEach(VideoProcessingMode.allCases) { mode in
+                            Button {
+                                videoProcessingMode = mode
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: mode.icon)
+                                        .font(.caption2)
+                                    Text(mode.rawValue)
+                                        .font(.caption2)
+                                        .fontWeight(.semibold)
+                                }
+                                .foregroundColor(videoProcessingMode == mode ? .white : .white.opacity(0.7))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    Capsule().fill(videoProcessingMode == mode ? .blue : .white.opacity(0.2))
+                                )
+                            }
+                        }
+
+                        Spacer()
+
+                        // Info tooltip
+                        Text(videoProcessingMode.description)
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.6))
+                            .lineLimit(1)
+                    }
+                    .padding(.horizontal, AppTheme.Spacing.l)
+
                     Spacer()
                     
                     // Photo Identification Display
@@ -407,17 +467,17 @@ struct CameraScanView: View {
                         
                         // Control buttons
                         HStack(spacing: AppTheme.Spacing.xl) {
-                            // Gallery - Open Photo Library
-                            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                            // Gallery - Open Photo Library (multi-select images & videos)
+                            PhotosPicker(selection: $selectedPhotoItems, maxSelectionCount: 20, matching: .any(of: [.images, .videos])) {
                                 Image(systemName: "photo.on.rectangle")
                                     .font(.title2)
                                     .foregroundColor(.white)
                                     .frame(width: 60, height: 60)
                                     .background(Circle().fill(.ultraThinMaterial))
                             }
-                            .onChange(of: selectedPhotoItem) { oldValue, newValue in
+                            .onChange(of: selectedPhotoItems) { oldValue, newValue in
                                 Task {
-                                    await loadSelectedPhoto()
+                                    await loadSelectedMediaForQueue()
                                 }
                             }
                             
@@ -501,9 +561,25 @@ struct CameraScanView: View {
                             .symbolEffect(.pulse, isActive: cameraManager.isRecording)
                             .disabled(!cameraManager.isSessionRunning)
                         }
-                        .padding(.horizontal, 40)  // Increased from xl (24) to prevent edge clipping
+                        .padding(.horizontal, 80)  // Moved buttons inward from edges
                         .padding(.bottom, AppTheme.Spacing.xl)
                     }
+                }
+
+                // Media processing overlay
+                if isProcessingMedia {
+                    Color.black.opacity(0.7)
+                        .ignoresSafeArea()
+                        .overlay {
+                            VStack(spacing: 20) {
+                                ProgressView()
+                                    .tint(.white)
+                                    .scaleEffect(1.5)
+                                Text(mediaProcessingStatus)
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                            }
+                        }
                 }
 
                 // Instructions overlay - auto-dismisses after 4 seconds, or tap to dismiss
@@ -783,8 +859,10 @@ struct CameraScanView: View {
             .fullScreenCover(isPresented: $showYOLODetection) {
                 YOLOLiveDetectionView()
             }
-            .fullScreenCover(isPresented: $showPhotoQueue) {
-                QueuedPhotoScanView()
+            .fullScreenCover(isPresented: $showPhotoQueue, onDismiss: {
+                libraryPhotosForQueue = []  // Clear after dismiss
+            }) {
+                QueuedPhotoScanView(initialPhotos: libraryPhotosForQueue)
             }
             .sheet(isPresented: $showingMultiItemSheet) {
                 multiItemSheet
@@ -1071,61 +1149,126 @@ struct CameraScanView: View {
     }
     
     // MARK: - Helper Methods
-    
-    private func loadSelectedPhoto() async {
-        guard let item = selectedPhotoItem else { return }
 
-        do {
-            if let data = try await item.loadTransferable(type: Data.self),
-               let image = UIImage(data: data) {
-                let mp = image.size.width * image.size.height / 1_000_000
-                NetworkLogger.shared.info("Photo loaded from library: \(Int(image.size.width))x\(Int(image.size.height)) (\(String(format: "%.1f", mp))MP)", category: "Photo")
+    /// Load multiple selected photos/videos and open QueuedPhotoScanView
+    /// Videos are processed by extracting frames at 2-second intervals
+    private func loadSelectedMediaForQueue() async {
+        guard !selectedPhotoItems.isEmpty else { return }
 
-                await MainActor.run {
-                    withAnimation { isIdentifyingPhoto = true }
-                }
+        await MainActor.run {
+            isProcessingMedia = true
+            mediaProcessingStatus = "Loading media..."
+        }
 
-                NetworkLogger.shared.info("Calling identifyAllItems...", category: "Photo")
-                let results = await GeminiVisionService.shared.identifyAllItems(image)
-                let apiError = await GeminiVisionService.shared.error
-                NetworkLogger.shared.info("identifyAllItems returned \(results.count) results, error: \(apiError ?? "none")", category: "Photo")
+        var loadedImages: [UIImage] = []
+        let itemCount = selectedPhotoItems.count
 
-                // Auto-save to a detection session
-                if !results.isEmpty {
-                    await MainActor.run {
-                        savePhotoResultsToSession(results, image: image)
-                    }
-                }
+        for (index, item) in selectedPhotoItems.enumerated() {
+            // Check if this is a video by looking at supported types
+            let isVideo = item.supportedContentTypes.contains { type in
+                type.conforms(to: .movie) || type.conforms(to: .video)
+            }
 
-                await MainActor.run {
-                    withAnimation {
-                        isIdentifyingPhoto = false
-                        if results.isEmpty {
-                            if let err = apiError {
-                                analysisError = err
-                            } else {
-                                analysisError = "No items found in this photo."
+            if isVideo {
+                do {
+                    // Load video as a Movie (temporary file URL)
+                    if let movie = try await item.loadTransferable(type: VideoTransferable.self) {
+                        switch videoProcessingMode {
+                        case .frameExtraction:
+                            // Extract frames at 2-second intervals
+                            await MainActor.run {
+                                mediaProcessingStatus = "Extracting frames from video \(index + 1)/\(itemCount)..."
                             }
-                        } else {
-                            NetworkLogger.shared.info("Showing multi-item sheet with \(results.count) items", category: "Photo")
-                            multiItemResults = results
-                            libraryPhoto = image
-                            savedItemIds = []
-                            showingMultiItemSheet = true
+                            let frames = try await PipelineRunner.extractFrames(
+                                from: movie.url,
+                                intervalSeconds: 2.0,
+                                maxSize: CGSize(width: 1280, height: 720)
+                            )
+                            NetworkLogger.shared.info("Extracted \(frames.count) frames from video", category: "Media")
+                            for frame in frames {
+                                loadedImages.append(frame.image)
+                            }
+
+                        case .geminiVideo:
+                            // Process with Gemini Video API
+                            await MainActor.run {
+                                mediaProcessingStatus = "Uploading video \(index + 1)/\(itemCount) to Gemini..."
+                            }
+                            let results = await pipelineRunner.processVideoWithGemini(movie.url)
+                            NetworkLogger.shared.info("Gemini Video found \(results.count) items", category: "Media")
+
+                            // For Gemini Video, show results in multi-item sheet
+                            if !results.isEmpty {
+                                // Extract a thumbnail frame to show with results
+                                let thumbnailFrames = try await PipelineRunner.extractFrames(
+                                    from: movie.url,
+                                    intervalSeconds: 999999, // Just get first frame
+                                    maxSize: CGSize(width: 1280, height: 720)
+                                )
+                                let thumbnail = thumbnailFrames.first?.image
+
+                                await MainActor.run {
+                                    multiItemResults = results
+                                    libraryPhoto = thumbnail
+                                    savedItemIds = []
+                                    isProcessingMedia = false
+                                    mediaProcessingStatus = ""
+                                    showingMultiItemSheet = true
+                                }
+                                // Don't add to loadedImages - we show results directly
+                                return
+                            }
                         }
                     }
+                } catch {
+                    NetworkLogger.shared.error("Failed to process video: \(error.localizedDescription)", category: "Media")
                 }
-            }
-        } catch {
-            NetworkLogger.shared.error("Failed to load photo: \(error.localizedDescription)", category: "Photo")
-            await MainActor.run {
-                withAnimation { isIdentifyingPhoto = false }
+            } else {
+                // Load as image
+                await MainActor.run {
+                    mediaProcessingStatus = "Loading image \(index + 1)/\(itemCount)..."
+                }
+
+                do {
+                    if let data = try await item.loadTransferable(type: Data.self),
+                       let image = UIImage(data: data) {
+                        loadedImages.append(image)
+                    }
+                } catch {
+                    NetworkLogger.shared.error("Failed to load photo: \(error.localizedDescription)", category: "Media")
+                }
             }
         }
 
-        selectedPhotoItem = nil
+        await MainActor.run {
+            isProcessingMedia = false
+            mediaProcessingStatus = ""
+            if !loadedImages.isEmpty {
+                libraryPhotosForQueue = loadedImages
+                showPhotoQueue = true
+            }
+            selectedPhotoItems = []
+        }
     }
-    
+
+    /// Transferable wrapper for video files
+    struct VideoTransferable: Transferable {
+        let url: URL
+
+        static var transferRepresentation: some TransferRepresentation {
+            FileRepresentation(contentType: .movie) { video in
+                SentTransferredFile(video.url)
+            } importing: { received in
+                // Copy to temp location
+                let tempURL = FileManager.default.temporaryDirectory
+                    .appendingPathComponent(UUID().uuidString)
+                    .appendingPathExtension(received.file.pathExtension)
+                try FileManager.default.copyItem(at: received.file, to: tempURL)
+                return VideoTransferable(url: tempURL)
+            }
+        }
+    }
+
     private func formatDuration(_ duration: TimeInterval) -> String {
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60

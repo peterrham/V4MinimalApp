@@ -17,6 +17,10 @@ struct QueuedPhotoScanView: View {
     @State private var showResultsSheet = false
     @State private var showDebugInfo = false
     @State private var photoCaptureObserver: NSObjectProtocol?
+    @State private var didQueueInitialPhotos = false
+
+    /// Optional photos to queue immediately on appear (from library picker)
+    var initialPhotos: [UIImage] = []
 
     var body: some View {
         ZStack {
@@ -47,8 +51,23 @@ struct QueuedPhotoScanView: View {
         }
         .navigationBarHidden(true)
         .onAppear {
+            // Set up auto-save to session
+            queueManager.inventoryStore = inventoryStore
+            queueManager.sessionStore = sessionStore
+
             if cameraManager.isAuthorized && !cameraManager.isSessionRunning {
                 cameraManager.startSession()
+            }
+            // Queue any initial photos from library picker (only once)
+            if !initialPhotos.isEmpty && !didQueueInitialPhotos {
+                didQueueInitialPhotos = true
+                for photo in initialPhotos {
+                    queueManager.queuePhoto(photo)
+                }
+                // Show results sheet after a short delay to let processing start
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    showResultsSheet = true
+                }
             }
             // Add observer once on appear
             photoCaptureObserver = NotificationCenter.default.addObserver(
@@ -150,36 +169,51 @@ struct QueuedPhotoScanView: View {
 
                 Spacer()
 
-                // Queue count badge
+                // Progress indicator showing completed/total
                 if queueManager.totalPhotosQueued > 0 {
-                    HStack(spacing: 6) {
-                        Image(systemName: "photo.stack.fill")
-                            .font(.caption)
-                        Text("\(queueManager.queue.filter { $0.status == .queued }.count) queued")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Capsule().fill(.purple.opacity(0.8)))
-                }
+                    let total = queueManager.totalPhotosQueued
+                    let completed = queueManager.totalPhotosProcessed
+                    let remaining = queueManager.queue.filter { $0.status == .queued }.count
+                    let processing = queueManager.currentlyProcessing.count
 
-                // Processing indicator
-                if queueManager.isProcessing {
-                    HStack(spacing: 6) {
-                        ProgressView()
-                            .tint(.white)
-                            .scaleEffect(0.7)
-                        Text("\(queueManager.currentlyProcessing.count) processing")
-                            .font(.caption)
-                            .fontWeight(.semibold)
+                    HStack(spacing: 8) {
+                        // Main progress badge
+                        HStack(spacing: 6) {
+                            Image(systemName: "photo.stack.fill")
+                                .font(.caption)
+                            Text("\(completed)/\(total)")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Capsule().fill(completed == total && total > 0 ? .green.opacity(0.8) : .purple.opacity(0.8)))
+
+                        // Processing indicator (shown while processing)
+                        if processing > 0 {
+                            HStack(spacing: 4) {
+                                ProgressView()
+                                    .tint(.white)
+                                    .scaleEffect(0.6)
+                                Text("\(processing)")
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Capsule().fill(.orange.opacity(0.8)))
+                        }
+
+                        // Waiting count (if any)
+                        if remaining > 0 && !queueManager.isProcessing {
+                            Text("\(remaining) waiting")
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.7))
+                        }
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Capsule().fill(.orange.opacity(0.8)))
-            }
+                }
 
                 Spacer()
 

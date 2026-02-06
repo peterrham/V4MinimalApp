@@ -81,6 +81,30 @@ class PipelineRunner: ObservableObject {
         cancelled = true
     }
 
+    // MARK: - Simple Video Processing (for Queue)
+
+    /// Process a video with Gemini Video API and return detected items as PhotoIdentificationResults
+    /// This is a simplified interface for the photo queue, without evaluation harness overhead
+    func processVideoWithGemini(_ videoURL: URL) async -> [PhotoIdentificationResult] {
+        isRunning = true
+        progress = 0
+        statusMessage = "Processing video with Gemini..."
+
+        let (items, _) = await runGeminiVideo(videoURL: videoURL)
+
+        isRunning = false
+        progress = 1.0
+
+        // Convert EvalDetectedItem to PhotoIdentificationResult
+        return items.map { item in
+            var result = PhotoIdentificationResult(name: item.name)
+            result.category = item.category
+            result.brand = item.brand
+            result.color = item.color
+            return result
+        }
+    }
+
     // MARK: - Run Pipeline
 
     func runPipeline(
